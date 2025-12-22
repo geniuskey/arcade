@@ -1,0 +1,3120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>😎리오의 공포학교</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #gameCanvas {
+            border: 4px solid #4a4a6a;
+            border-radius: 8px 8px 0 0;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.2);
+        }
+
+        /* StarCraft-style Bottom Bar */
+        #bottomBar {
+            width: 968px;
+            height: 160px;
+            background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 50%, #0a0a1e 100%);
+            border: 4px solid #4a4a6a;
+            border-top: 2px solid #6a6a8a;
+            border-radius: 0 0 8px 8px;
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            gap: 12px;
+        }
+
+        #slotsContainer {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        #slotsContainer .slot-row {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        #slotsContainer .slot-label {
+            font-size: 9px;
+            color: #888;
+            width: 30px;
+            text-align: right;
+            padding-right: 5px;
+        }
+
+        #minimapContainer {
+            flex-shrink: 0;
+            margin-left: auto;
+        }
+
+        #minimap {
+            border: 2px solid #6a6a8a;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        #ui {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            color: white;
+            font-size: 11px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            min-width: 160px;
+        }
+
+        #ui div {
+            padding: 2px 6px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 3px;
+            border-left: 2px solid #4a6a8a;
+        }
+
+        #holdingIndicator {
+            padding: 5px 10px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 4px;
+            color: #aaa;
+            font-size: 11px;
+            text-align: center;
+        }
+
+        #holdingIndicator.weapon {
+            border: 2px solid #4ade80;
+            color: #4ade80;
+        }
+
+        #holdingIndicator.key {
+            border: 2px solid #ffd700;
+            color: #ffd700;
+        }
+
+        #countdown {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 120px;
+            color: #ff4444;
+            text-shadow: 0 0 30px red, 0 0 60px red;
+            z-index: 50;
+            display: none;
+        }
+
+        #warningText {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 28px;
+            color: #ffcc00;
+            text-shadow: 0 0 10px orange;
+            z-index: 50;
+            display: none;
+            text-align: center;
+        }
+
+
+        #helpText {
+            flex: 1;
+            color: #aaa;
+            font-size: 11px;
+            text-align: center;
+            padding: 5px;
+            line-height: 1.4;
+        }
+
+        #helpText span {
+            display: inline-block;
+            padding: 2px 6px;
+            margin: 2px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 3px;
+            color: #ddd;
+        }
+
+        #startScreen, #gameOverScreen, #victoryScreen, #shopScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 100;
+        }
+
+        #startScreen h1, #gameOverScreen h1, #victoryScreen h1, #shopScreen h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px red;
+        }
+
+        #victoryScreen h1 {
+            text-shadow: 0 0 20px gold;
+        }
+
+        #shopScreen h1 {
+            text-shadow: 0 0 20px cyan;
+        }
+
+        #startScreen p, #gameOverScreen p, #victoryScreen p {
+            font-size: 16px;
+            margin-bottom: 20px;
+            max-width: 550px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        button {
+            padding: 15px 40px;
+            font-size: 20px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+
+        button:hover {
+            background: #c0392b;
+            transform: scale(1.05);
+        }
+
+        button.shop-btn {
+            background: #3498db;
+        }
+
+        button.shop-btn:hover {
+            background: #2980b9;
+        }
+
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .slot-group {
+            display: flex;
+            gap: 3px;
+        }
+
+        .inv-slot {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(180deg, #3a3a4e 0%, #2a2a3e 100%);
+            border: 2px solid #555;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .inv-slot.reserved {
+            background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%);
+            border: 2px dashed #444;
+            cursor: not-allowed;
+        }
+
+        .inv-slot.reserved::after {
+            content: '🔒';
+            font-size: 16px;
+            opacity: 0.5;
+        }
+
+        .inv-slot.active {
+            border-color: #4ade80;
+            box-shadow: 0 0 10px #4ade80;
+        }
+
+        .inv-slot.swapping {
+            border-color: #f59e0b;
+            box-shadow: 0 0 10px #f59e0b;
+        }
+
+        .inv-slot img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+        }
+
+        .inv-slot .key-hint {
+            position: absolute;
+            top: 1px;
+            left: 3px;
+            font-size: 9px;
+            color: #888;
+        }
+
+        .inv-slot .slot-emoji {
+            font-size: 24px;
+        }
+
+        .inv-slot .cooldown-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0,0,0,0.7);
+            color: #ff6b6b;
+            font-size: 10px;
+            text-align: center;
+        }
+
+        .inv-slot.key-slot {
+            background: linear-gradient(180deg, #4a4a3e 0%, #3a3a2e 100%);
+        }
+
+        .inv-slot.key-slot.active {
+            border-color: #ffd700;
+            box-shadow: 0 0 10px #ffd700;
+        }
+
+        #coinDisplay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: gold;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 8px 15px;
+            background: rgba(0,0,0,0.7);
+            border: 2px solid gold;
+            border-radius: 8px;
+            z-index: 10;
+        }
+
+        #stageDisplay {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ff6b6b;
+            font-size: 20px;
+            padding: 8px 20px;
+            background: rgba(0,0,0,0.7);
+            border-radius: 8px;
+            z-index: 10;
+        }
+
+        .shop-items {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .shop-item {
+            background: rgba(50,50,70,0.9);
+            border: 2px solid #555;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            min-width: 150px;
+        }
+
+        .shop-item img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+        }
+
+        .shop-item h3 {
+            margin: 10px 0 5px;
+            font-size: 16px;
+        }
+
+        .shop-item p {
+            font-size: 12px;
+            color: #aaa;
+            margin: 5px 0;
+        }
+
+        .shop-item .price {
+            color: gold;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+
+        .shop-item button {
+            padding: 8px 20px;
+            font-size: 14px;
+        }
+
+        .shop-item.owned {
+            border-color: #4ade80;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="countdown">5</div>
+        <div id="warningText">⚠️ 친구가 이상해지고 있어요! 도망가세요!!</div>
+        <div id="stageDisplay">STAGE 1</div>
+        <div id="coinDisplay">💰 0</div>
+
+        <!-- StarCraft-style Bottom Bar -->
+        <div id="bottomBar">
+            <!-- Slots Container (Left) -->
+            <div id="slotsContainer">
+                <!-- Weapon Slots Row -->
+                <div class="slot-row">
+                    <span class="slot-label">무기</span>
+                    <div class="slot-group" id="weaponSlots">
+                        <div class="inv-slot weapon-slot" id="slot1"><span class="key-hint">1</span></div>
+                        <div class="inv-slot weapon-slot" id="slot2"><span class="key-hint">2</span></div>
+                        <div class="inv-slot weapon-slot" id="slot3"><span class="key-hint">3</span></div>
+                        <div class="inv-slot weapon-slot" id="slot4"><span class="key-hint">4</span></div>
+                        <div class="inv-slot weapon-slot reserved" id="slot5"><span class="key-hint">5</span></div>
+                    </div>
+                </div>
+                <!-- Key Slots Row -->
+                <div class="slot-row">
+                    <span class="slot-label">열쇠</span>
+                    <div class="slot-group" id="keySlots">
+                        <div class="inv-slot key-slot" id="keySlot0"><span class="key-hint">6</span></div>
+                        <div class="inv-slot key-slot" id="keySlot1"><span class="key-hint">7</span></div>
+                        <div class="inv-slot key-slot" id="keySlot2"><span class="key-hint">8</span></div>
+                        <div class="inv-slot key-slot" id="keySlot3"><span class="key-hint">9</span></div>
+                        <div class="inv-slot key-slot" id="keySlot4"><span class="key-hint">0</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Holding Indicator -->
+            <div id="holdingIndicator">손에 든 것 없음</div>
+
+            <!-- Status Info -->
+            <div id="ui">
+                <div>⏱️ <span id="surviveTime">0</span>초 | 👥 <span id="survivors">9/9</span></div>
+                <div>❤️ <span id="playerHP">100/100</span> | 🫣 <span id="hidingStatus">활동중</span></div>
+                <div>👹 빌런: <span id="villainHP">-</span></div>
+            </div>
+
+            <!-- Help Text -->
+            <div id="helpText">
+                <span>WASD</span> 이동 | <span>SPACE</span> 공격<br>
+                <span>H</span> 숨기 | <span>E</span> 줍기<br>
+                <span>1-5</span> 무기 | <span>6-0</span> 열쇠
+            </div>
+
+            <!-- Minimap (Right) -->
+            <div id="minimapContainer">
+                <canvas id="minimap"></canvas>
+            </div>
+        </div>
+
+        <div id="startScreen">
+            <h1>😎리오의 공포학교</h1>
+            <p>
+                평화로운 학교, 친구들과 함께 공부하던 중...<br>
+                갑자기 한 친구 🤪가 미쳐버렸어요!<br><br>
+                <strong>과연, 😎 리오는 어떻게 이 상황을 극복할까요?</strong><br><br>
+                📌 5초 안에 무기를 줍거나 다른 교실로 도망가세요!<br>
+                ⚔️ SPACE로 공격, E로 무기 줍기<br>
+                🫣 H로 책상/사물함에 숨기<br>
+                👀 빌런은 벽 너머를 볼 수 없어요!<br>
+                🚪 탈출구를 열 열쇠 5개 중 1개만 맞아요!<br>
+                🍎 음식과 열쇠는 자동으로 획득!<br><br>
+                <span style="color: #ffcc00">1234 키로 무기 선택 | 스테이지 클리어 시 20코인 획득</span>
+            </p>
+            <button onclick="startGame()">게임 시작</button>
+        </div>
+
+        <div id="gameOverScreen" class="hidden">
+            <h1>💀 GAME OVER</h1>
+            <p id="gameOverText">생존시간: 0초</p>
+            <button onclick="startGame()">다시 시작</button>
+        </div>
+
+        <div id="victoryScreen" class="hidden">
+            <h1>🎉 승리!</h1>
+            <p id="victoryText">빌런을 물리쳤습니다!</p>
+            <div style="margin: 10px 0;">
+                <button onclick="goToShop()" id="shopBtn" class="shop-btn hidden">🛒 상점</button>
+                <button onclick="nextStage()">다음 스테이지 ▶</button>
+            </div>
+        </div>
+
+        <div id="shopScreen" class="hidden">
+            <h1>🛒 상점</h1>
+            <p>💰 보유 코인: <span id="shopCoins">0</span></p>
+            <div class="shop-items" id="shopItems"></div>
+            <button onclick="closeShop()">닫기</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const minimapCanvas = document.getElementById('minimap');
+        const minimapCtx = minimapCanvas.getContext('2d');
+
+        canvas.width = 960;
+        canvas.height = 640;
+        minimapCanvas.width = 240;
+        minimapCanvas.height = 108;
+
+        const TILE_SIZE = 32;
+        const MAP_WIDTH = 60;
+        const MAP_HEIGHT = 27;
+
+        // Tile types
+        const FLOOR = 0, WALL = 1, DESK = 2, LOCKER = 3, DOOR = 4, BLACKBOARD = 5, TOILET = 6, PLANT = 7, WINDOW = 8;
+
+        // Map Generator Module
+        function generateMap(stage) {
+            const map = [];
+            // Initialize with walls
+            for (let y = 0; y < MAP_HEIGHT; y++) {
+                map[y] = [];
+                for (let x = 0; x < MAP_WIDTH; x++) {
+                    map[y][x] = WALL;
+                }
+            }
+
+            // Add windows on the border
+            addBorderWindows(map);
+
+            // Main horizontal corridor in the middle (y = 12 to 14, 3 tiles high)
+            const corridorY = 12;
+            const corridorHeight = 3;
+            for (let y = corridorY; y < corridorY + corridorHeight; y++) {
+                for (let x = 1; x < MAP_WIDTH - 1; x++) {
+                    map[y][x] = FLOOR;
+                }
+            }
+
+            // Room configurations - vary by stage for replayability
+            const roomConfigs = getRoomConfigs(stage);
+
+            // Create upper rooms (y = 1 to 11, door at y = 11, height = 11)
+            let currentX = 1;
+            for (const config of roomConfigs.upper) {
+                if (currentX + config.width > MAP_WIDTH - 1) break;
+                createSchoolRoom(map, currentX, 1, config.width, 11, config.type, 'upper');
+                currentX += config.width + 1; // +1 for wall between rooms
+            }
+
+            // Create lower rooms (y = 15 to 25, door at y = 15, height = 11)
+            currentX = 1;
+            for (const config of roomConfigs.lower) {
+                if (currentX + config.width > MAP_WIDTH - 1) break;
+                createSchoolRoom(map, currentX, 15, config.width, 11, config.type, 'lower');
+                currentX += config.width + 1;
+            }
+
+            return map;
+        }
+
+        function addBorderWindows(map) {
+            // Top and bottom border - alternating windows and walls
+            for (let x = 0; x < MAP_WIDTH; x++) {
+                map[0][x] = (x % 3 === 1) ? WINDOW : WALL;
+                map[MAP_HEIGHT - 1][x] = (x % 3 === 1) ? WINDOW : WALL;
+            }
+            // Left and right border
+            for (let y = 0; y < MAP_HEIGHT; y++) {
+                map[y][0] = (y % 3 === 1) ? WINDOW : WALL;
+                map[y][MAP_WIDTH - 1] = (y % 3 === 1) ? WINDOW : WALL;
+            }
+            // Corners always walls
+            map[0][0] = WALL;
+            map[0][MAP_WIDTH - 1] = WALL;
+            map[MAP_HEIGHT - 1][0] = WALL;
+            map[MAP_HEIGHT - 1][MAP_WIDTH - 1] = WALL;
+        }
+
+        function getRoomConfigs(stage) {
+            // Different room arrangements based on stage
+            const layouts = [
+                // Layout 1: 5 classrooms each side
+                {
+                    upper: [
+                        { type: 'classroom', width: 10 },
+                        { type: 'classroom', width: 10 },
+                        { type: 'bathroom', width: 8 },
+                        { type: 'classroom', width: 10 },
+                        { type: 'storage', width: 8 },
+                        { type: 'classroom', width: 10 }
+                    ],
+                    lower: [
+                        { type: 'storage', width: 8 },
+                        { type: 'classroom', width: 10 },
+                        { type: 'classroom', width: 10 },
+                        { type: 'bathroom', width: 8 },
+                        { type: 'classroom', width: 10 },
+                        { type: 'classroom', width: 10 }
+                    ]
+                },
+                // Layout 2: More bathrooms and storage
+                {
+                    upper: [
+                        { type: 'classroom', width: 12 },
+                        { type: 'bathroom', width: 6 },
+                        { type: 'classroom', width: 12 },
+                        { type: 'storage', width: 6 },
+                        { type: 'classroom', width: 12 },
+                        { type: 'bathroom', width: 6 }
+                    ],
+                    lower: [
+                        { type: 'bathroom', width: 6 },
+                        { type: 'classroom', width: 12 },
+                        { type: 'storage', width: 6 },
+                        { type: 'classroom', width: 12 },
+                        { type: 'bathroom', width: 6 },
+                        { type: 'classroom', width: 12 }
+                    ]
+                },
+                // Layout 3: Large classrooms
+                {
+                    upper: [
+                        { type: 'classroom', width: 14 },
+                        { type: 'storage', width: 7 },
+                        { type: 'classroom', width: 14 },
+                        { type: 'bathroom', width: 7 },
+                        { type: 'classroom', width: 14 }
+                    ],
+                    lower: [
+                        { type: 'bathroom', width: 7 },
+                        { type: 'classroom', width: 14 },
+                        { type: 'storage', width: 7 },
+                        { type: 'classroom', width: 14 },
+                        { type: 'classroom', width: 14 }
+                    ]
+                }
+            ];
+
+            return layouts[(stage - 1) % layouts.length];
+        }
+
+        function createSchoolRoom(map, startX, startY, width, height, roomType, position) {
+            const endX = Math.min(startX + width, MAP_WIDTH - 1);
+            const endY = Math.min(startY + height, MAP_HEIGHT - 1);
+
+            // Determine room interior (leave wall on corridor side)
+            let interiorStartY, interiorEndY, doorY;
+            if (position === 'upper') {
+                // Upper room: floor from startY to endY-2, wall at endY-1
+                interiorStartY = startY;
+                interiorEndY = endY - 1;
+                doorY = endY - 1; // Wall facing corridor
+            } else {
+                // Lower room: wall at startY, floor from startY+1 to endY
+                interiorStartY = startY + 1;
+                interiorEndY = endY;
+                doorY = startY; // Wall facing corridor
+            }
+
+            // Create floor (interior only)
+            for (let y = interiorStartY; y < interiorEndY; y++) {
+                for (let x = startX; x < endX; x++) {
+                    map[y][x] = FLOOR;
+                }
+            }
+
+            // Add doors on the corridor-facing wall (close to side walls)
+            const frontDoorX = startX + 1;  // Near left wall
+            const backDoorX = endX - 2;     // Near right wall
+
+            if (frontDoorX < endX && frontDoorX > startX) {
+                map[doorY][frontDoorX] = DOOR;
+            }
+            if (backDoorX > startX + 1 && backDoorX < endX) {
+                map[doorY][backDoorX] = DOOR;
+            }
+
+            // Add furniture based on room type
+            if (roomType === 'classroom') {
+                addClassroomFurniture(map, startX, interiorStartY, endX, interiorEndY, position);
+            } else if (roomType === 'storage') {
+                addStorageFurniture(map, startX, interiorStartY, endX, interiorEndY);
+            } else if (roomType === 'bathroom') {
+                addBathroomFurniture(map, startX, interiorStartY, endX, interiorEndY);
+            }
+        }
+
+        function addClassroomFurniture(map, startX, startY, endX, endY, position) {
+            const width = endX - startX;
+            const height = endY - startY;
+
+            // Blackboard at the front (opposite to corridor)
+            const blackboardY = (position === 'upper') ? startY + 1 : endY - 2;
+            for (let x = startX + 2; x < endX - 2; x += 3) {
+                if (map[blackboardY][x] === FLOOR) {
+                    map[blackboardY][x] = BLACKBOARD;
+                }
+            }
+
+            // Desks in the middle area (2-3 rows)
+            const deskStartY = (position === 'upper') ? startY + 3 : startY + 2;
+            const deskEndY = (position === 'upper') ? endY - 3 : endY - 4;
+
+            for (let y = deskStartY; y < deskEndY; y += 2) {
+                for (let x = startX + 2; x < endX - 2; x += 2) {
+                    if (map[y][x] === FLOOR) {
+                        map[y][x] = DESK;
+                    }
+                }
+            }
+
+            // Lockers at the back (near corridor side)
+            const lockerY = (position === 'upper') ? endY - 2 : startY + 1;
+            for (let x = startX + 1; x < endX - 1; x += 2) {
+                // Avoid doors
+                if (map[lockerY][x] === FLOOR &&
+                    map[lockerY + 1] && map[lockerY + 1][x] !== DOOR &&
+                    map[lockerY - 1] && map[lockerY - 1][x] !== DOOR) {
+                    map[lockerY][x] = LOCKER;
+                }
+            }
+        }
+
+        function addStorageFurniture(map, startX, startY, endX, endY) {
+            // Storage room - filled with lockers
+            for (let y = startY + 1; y < endY - 1; y++) {
+                for (let x = startX + 1; x < endX - 1; x++) {
+                    // Leave walking path in middle
+                    if (x === startX + 1 || x === endX - 2 ||
+                        (y % 2 === 0 && x % 2 === 0)) {
+                        if (map[y][x] === FLOOR) {
+                            // Check not blocking doors
+                            const isNearDoor =
+                                (map[y-1] && map[y-1][x] === DOOR) ||
+                                (map[y+1] && map[y+1][x] === DOOR);
+                            if (!isNearDoor) {
+                                map[y][x] = LOCKER;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function addBathroomFurniture(map, startX, startY, endX, endY) {
+            // Bathroom - toilets along walls
+            for (let y = startY + 1; y < endY - 1; y += 2) {
+                // Left wall toilets
+                if (map[y][startX + 1] === FLOOR) {
+                    map[y][startX + 1] = TOILET;
+                }
+                // Right wall toilets
+                if (map[y][endX - 2] === FLOOR) {
+                    map[y][endX - 2] = TOILET;
+                }
+            }
+
+            // Add a locker for hiding
+            const lockerY = startY + 2;
+            const lockerX = Math.floor((startX + endX) / 2);
+            if (map[lockerY] && map[lockerY][lockerX] === FLOOR) {
+                map[lockerY][lockerX] = LOCKER;
+            }
+
+            // Some plants for decoration
+            if (map[startY + 1][Math.floor((startX + endX) / 2) + 1] === FLOOR) {
+                map[startY + 1][Math.floor((startX + endX) / 2) + 1] = PLANT;
+            }
+        }
+
+        function isNearWall(map, x, y) {
+            return map[y-1][x] === WALL || map[y+1][x] === WALL ||
+                   map[y][x-1] === WALL || map[y][x+1] === WALL;
+        }
+
+        // Get safe spawn positions (floor only, not hiding spots)
+        function getSafeSpawnPositions(map, count) {
+            const positions = [];
+            let attempts = 0;
+
+            while (positions.length < count && attempts < 1000) {
+                const x = Math.floor(Math.random() * (MAP_WIDTH - 4)) + 2;
+                const y = Math.floor(Math.random() * (MAP_HEIGHT - 4)) + 2;
+
+                // Must be on FLOOR only (not furniture/hiding spots)
+                if (map[y][x] === FLOOR) {
+                    // Check surrounding tiles - should have at least 2 adjacent floor tiles
+                    let adjacentFloors = 0;
+                    if (map[y-1][x] === FLOOR) adjacentFloors++;
+                    if (map[y+1][x] === FLOOR) adjacentFloors++;
+                    if (map[y][x-1] === FLOOR) adjacentFloors++;
+                    if (map[y][x+1] === FLOOR) adjacentFloors++;
+
+                    if (adjacentFloors >= 2) {
+                        // Check not too close to existing positions
+                        let tooClose = false;
+                        for (let pos of positions) {
+                            if (Math.abs(pos.x - x) < 2 && Math.abs(pos.y - y) < 2) {
+                                tooClose = true;
+                                break;
+                            }
+                        }
+                        if (!tooClose) {
+                            positions.push({x, y});
+                        }
+                    }
+                }
+                attempts++;
+            }
+            return positions;
+        }
+
+        // Weapon definitions with new stats
+        const WEAPONS = {
+            'baseball_bat': {
+                image: 'assets/baseball_bat.png',
+                damage: 5,
+                cooldown: 60, // 1 second at 60fps
+                swapTime: 60, // 1 second
+                range: 50,
+                name: '야구방망이',
+                price: 0,
+                shopOnly: false
+            },
+            'pick': {
+                image: 'assets/pick.png',
+                damage: 22,
+                cooldown: 120, // 2 seconds
+                swapTime: 60, // 1 second
+                range: 55,
+                name: '곡괭이',
+                price: 10,
+                shopOnly: true
+            },
+            'axe': {
+                image: 'assets/axe.png',
+                damage: 33,
+                cooldown: 240, // 4 seconds
+                swapTime: 120, // 2 seconds
+                range: 60,
+                name: '도끼',
+                price: 40,
+                shopOnly: true
+            },
+            'hammer2': {
+                image: 'assets/hammer2.png',
+                damage: 99,
+                cooldown: 240, // 4 seconds
+                swapTime: 240, // 4 seconds
+                range: 65,
+                name: '강철망치',
+                price: 70,
+                shopOnly: true
+            }
+        };
+
+        // Preload weapon images
+        const weaponImages = {};
+        for (let key in WEAPONS) {
+            weaponImages[key] = new Image();
+            weaponImages[key].src = WEAPONS[key].image;
+        }
+
+        // Food items
+        const FOODS = ['🍎', '🍗', '🥤', '🍫', '🍩'];
+        const FOOD_HEAL = { '🍎': 15, '🍗': 25, '🥤': 10, '🍫': 8, '🍩': 12 };
+
+        // Stage villain emojis
+        const VILLAIN_EMOJIS = ['🤮', '🤢', '👽', '😠', '🤪'];
+        const TRANSFORM_SEQUENCE = ['😛', '🤪', '😜', '🤪', '😜', '🤪', '😛', '🤪', '😜', '🤪', '😜', '🤪', '🤪', '🤪', '🤪', '🤪'];
+
+        const FRIEND_EMOJIS = ['🙂', '😐', '😲', '😤', '🥺', '😫', '😬', '😑'];
+
+        // School map (generated dynamically per stage)
+        let schoolMap = null;
+
+        // Game state
+        let gameState = 'start';
+        let surviveTime = 0;
+        let lastTime = 0;
+        let countdownTime = 5;
+        let countdownInterval = null;
+        let transformIndex = 0;
+        let transformInterval = null;
+
+        // Persistent state
+        let coins = 0;
+        let currentStage = 1;
+        let ownedWeapons = ['baseball_bat']; // Start with baseball bat
+        let hasCompletedStage = false;
+
+        // Entities
+        let player = null;
+        let villain = null;
+        let villainSourceFriend = null;
+        let friends = [];
+        let weapons = [];
+        let foodItems = [];
+        let attackEffects = [];
+        let attackAnimations = [];
+
+        // Key and escape door system
+        let keyItems = [];
+        let correctKeyIndex = 0;
+        let escapeDoor = null;
+
+        // Inventory - weapons (5 slots, slot 5 reserved)
+        let weaponInventory = [null, null, null, null, null];
+        let currentWeaponSlot = -1; // -1 means no weapon selected
+
+        // Key inventory (5 slots for 5 keys)
+        let keyInventory = [null, null, null, null, null];
+        let currentKeySlot = -1; // -1 means no key selected
+
+        // What is player holding? 'weapon', 'key', or null
+        let holdingType = null;
+        let isSwapping = false;
+        let swapTimer = 0;
+
+        // Input
+        const keys = {};
+
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            if (e.key === ' ' && (gameState === 'playing')) {
+                e.preventDefault();
+                playerAttack();
+            }
+            if (e.key.toLowerCase() === 'h' && (gameState === 'playing' || gameState === 'countdown')) {
+                tryHide();
+            }
+            if (e.key.toLowerCase() === 'e' && (gameState === 'playing' || gameState === 'countdown')) {
+                tryPickup();
+            }
+            // Weapon slot selection (1-4, 5 is reserved)
+            if (['1', '2', '3', '4'].includes(e.key) && (gameState === 'playing' || gameState === 'countdown')) {
+                selectWeaponSlot(parseInt(e.key) - 1);
+            }
+            // Key slot selection (6,7,8,9,0 maps to key slots 0-4)
+            if (['6', '7', '8', '9', '0'].includes(e.key) && (gameState === 'playing' || gameState === 'countdown')) {
+                const keySlotMap = {'6': 0, '7': 1, '8': 2, '9': 3, '0': 4};
+                selectKeySlot(keySlotMap[e.key]);
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        function createEntity(x, y, emoji, hp = 100) {
+            return {
+                x: x * TILE_SIZE + TILE_SIZE / 2,
+                y: y * TILE_SIZE + TILE_SIZE / 2,
+                size: 26,
+                speed: 3,
+                emoji: emoji,
+                hp: hp,
+                maxHp: hp,
+                weapon: null,
+                attackCooldown: 0,
+                isAlive: true,
+                direction: { x: 0, y: 1 },
+                stunTimer: 0,
+                isHiding: false,
+                hidingSpot: null
+            };
+        }
+
+        function createWeapon(x, y, type) {
+            return {
+                x: x * TILE_SIZE + TILE_SIZE / 2,
+                y: y * TILE_SIZE + TILE_SIZE / 2,
+                type: type,
+                isPickedUp: false
+            };
+        }
+
+        function createFood(x, y, type) {
+            return {
+                x: x * TILE_SIZE + TILE_SIZE / 2,
+                y: y * TILE_SIZE + TILE_SIZE / 2,
+                type: type,
+                isPickedUp: false
+            };
+        }
+
+        // Find random floor positions
+        function getFloorPositions(count) {
+            const positions = [];
+            let attempts = 0;
+            while (positions.length < count && attempts < 1000) {
+                const x = Math.floor(Math.random() * (MAP_WIDTH - 2)) + 1;
+                const y = Math.floor(Math.random() * (MAP_HEIGHT - 2)) + 1;
+                if (schoolMap[y][x] === FLOOR) {
+                    // Check not too close to existing positions
+                    let tooClose = false;
+                    for (let pos of positions) {
+                        if (Math.abs(pos.x - x) < 3 && Math.abs(pos.y - y) < 3) {
+                            tooClose = true;
+                            break;
+                        }
+                    }
+                    if (!tooClose) {
+                        positions.push({x, y});
+                    }
+                }
+                attempts++;
+            }
+            return positions;
+        }
+
+        function initGame(keepWeapons = false) {
+            // Generate new map for this stage
+            schoolMap = generateMap(currentStage);
+
+            // Get safe spawn positions (floor only, not furniture)
+            const spawnPositions = getSafeSpawnPositions(schoolMap, 10); // 1 player + 8 friends + 1 extra
+
+            // Create player at first safe position
+            const playerSpawn = spawnPositions[0] || {x: 3, y: 3};
+            player = createEntity(playerSpawn.x, playerSpawn.y, '😎', 100);
+
+            // Reset weapons if not keeping them (new game or restart)
+            if (!keepWeapons) {
+                weaponInventory = [null, null, null, null, null];
+                currentWeaponSlot = -1;
+                holdingType = null;
+            } else {
+                // Ensure all owned weapons (shop purchases) are in inventory
+                for (let ownedWeapon of ownedWeapons) {
+                    // Check if this owned weapon is already in inventory
+                    const inInventory = weaponInventory.includes(ownedWeapon);
+                    if (!inInventory) {
+                        // Find empty slot to add it
+                        for (let i = 0; i < 4; i++) {
+                            if (weaponInventory[i] === null) {
+                                weaponInventory[i] = ownedWeapon;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Restore player.weapon from inventory
+                if (holdingType === 'weapon' && currentWeaponSlot >= 0 && weaponInventory[currentWeaponSlot]) {
+                    player.weapon = weaponInventory[currentWeaponSlot];
+                }
+            }
+
+            // Create friends at safe spawn positions
+            friends = [];
+            for (let i = 0; i < 8; i++) {
+                const pos = spawnPositions[i + 1] || {x: 3 + (i % 3), y: 3 + Math.floor(i / 3)};
+                const friend = createEntity(pos.x, pos.y, FRIEND_EMOJIS[i], 100);
+                friend.state = 'idle';
+                friend.targetWeapon = null;
+                friend.wanderTarget = null;
+                friend.attackTarget = null;
+                friends.push(friend);
+            }
+
+            // Randomly select one friend to become the villain
+            villainSourceFriend = Math.floor(Math.random() * friends.length);
+
+            // Create weapons on FLOOR tiles only
+            weapons = [];
+            const weaponPositions = getFloorPositions(3);
+            for (let pos of weaponPositions) {
+                weapons.push(createWeapon(pos.x, pos.y, 'baseball_bat'));
+            }
+
+            // Create 5 keys on FLOOR tiles only
+            keyItems = [];
+            correctKeyIndex = Math.floor(Math.random() * 5);
+            const keyPositions = getFloorPositions(5);
+            const keyEmojis = ['🔑', '🗝️', '🔑', '🗝️', '🔑'];
+            for (let i = 0; i < 5; i++) {
+                if (keyPositions[i]) {
+                    keyItems.push({
+                        x: keyPositions[i].x * TILE_SIZE + TILE_SIZE / 2,
+                        y: keyPositions[i].y * TILE_SIZE + TILE_SIZE / 2,
+                        id: i,
+                        emoji: keyEmojis[i],
+                        isCorrect: i === correctKeyIndex,
+                        isPickedUp: false
+                    });
+                }
+            }
+
+            // Find a good escape door position (on a floor tile, preferably hallway area)
+            let doorPos = getFloorPositions(1)[0] || {x: 15, y: 9};
+            escapeDoor = {
+                x: doorPos.x * TILE_SIZE + TILE_SIZE / 2,
+                y: doorPos.y * TILE_SIZE + TILE_SIZE / 2,
+                isOpen: false
+            };
+
+            // Create food items on FLOOR tiles only
+            foodItems = [];
+            const foodPositions = getFloorPositions(10);
+            for (let pos of foodPositions) {
+                const randomFood = FOODS[Math.floor(Math.random() * FOODS.length)];
+                foodItems.push(createFood(pos.x, pos.y, randomFood));
+            }
+
+            // Villain spawns at the transforming friend's position
+            const transformingFriend = friends[villainSourceFriend];
+            villain = createEntity(
+                Math.floor(transformingFriend.x / TILE_SIZE),
+                Math.floor(transformingFriend.y / TILE_SIZE),
+                VILLAIN_EMOJIS[Math.min(currentStage - 1, VILLAIN_EMOJIS.length - 1)],
+                300 + (currentStage * 100)
+            );
+            villain.isActive = false;
+            villain.speed = 3.3; // 1.1x of player speed (3 * 1.1 = 3.3)
+            villain.attackDamage = 30;
+
+            // Reset key inventory only (weapons persist between stages)
+            keyInventory = [null, null, null, null, null];
+            currentKeySlot = -1;
+
+            // If we had a key selected, switch back to weapon or nothing
+            if (holdingType === 'key') {
+                if (currentWeaponSlot >= 0 && weaponInventory[currentWeaponSlot]) {
+                    holdingType = 'weapon';
+                    player.weapon = weaponInventory[currentWeaponSlot];
+                } else {
+                    holdingType = null;
+                    currentWeaponSlot = -1;
+                }
+            }
+
+            isSwapping = false;
+            attackEffects = [];
+            attackAnimations = [];
+
+            updateSlotsUI();
+        }
+
+        function startGame(keepWeapons = false) {
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('victoryScreen').classList.add('hidden');
+            document.getElementById('shopScreen').classList.add('hidden');
+
+            initGame(keepWeapons);
+
+            countdownTime = 5;
+            transformIndex = 0;
+            gameState = 'countdown';
+
+            document.getElementById('countdown').style.display = 'block';
+            document.getElementById('warningText').style.display = 'block';
+            document.getElementById('countdown').textContent = countdownTime;
+
+            // Start transformation animation on the friend in game
+            transformInterval = setInterval(() => {
+                transformIndex = (transformIndex + 1) % TRANSFORM_SEQUENCE.length;
+                // Make the transforming friend visible with changing emoji
+                if (friends[villainSourceFriend]) {
+                    friends[villainSourceFriend].emoji = TRANSFORM_SEQUENCE[transformIndex];
+                }
+            }, 150);
+
+            countdownInterval = setInterval(() => {
+                countdownTime--;
+                document.getElementById('countdown').textContent = countdownTime;
+
+                if (countdownTime <= 2) {
+                    document.getElementById('countdown').style.color = '#ff0000';
+                    document.getElementById('warningText').innerHTML = '⚠️ 빌런 등장 임박!!! ⚠️';
+                }
+
+                if (countdownTime <= 0) {
+                    clearInterval(countdownInterval);
+                    clearInterval(transformInterval);
+                    document.getElementById('countdown').style.display = 'none';
+                    document.getElementById('warningText').style.display = 'none';
+                    document.getElementById('countdown').style.color = '#ff4444';
+
+                    // Remove the friend that became villain
+                    friends[villainSourceFriend].isAlive = false;
+
+                    // Position villain where the friend was
+                    villain.x = friends[villainSourceFriend].x;
+                    villain.y = friends[villainSourceFriend].y;
+                    villain.isActive = true;
+
+                    gameState = 'playing';
+                }
+            }, 1000);
+
+            surviveTime = 0;
+            lastTime = Date.now();
+
+            document.getElementById('stageDisplay').textContent = `STAGE ${currentStage}`;
+            document.getElementById('coinDisplay').textContent = `💰 ${coins}`;
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver() {
+            gameState = 'gameover';
+            if (countdownInterval) clearInterval(countdownInterval);
+            if (transformInterval) clearInterval(transformInterval);
+            document.getElementById('countdown').style.display = 'none';
+            document.getElementById('warningText').style.display = 'none';
+            document.getElementById('gameOverText').textContent = `생존시간: ${surviveTime}초\nSTAGE ${currentStage}에서 패배`;
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+        }
+
+        function victory() {
+            gameState = 'victory';
+            if (countdownInterval) clearInterval(countdownInterval);
+            if (transformInterval) clearInterval(transformInterval);
+
+            // Award coins
+            coins += 20;
+            hasCompletedStage = true;
+
+            const aliveFriends = friends.filter(f => f.isAlive).length;
+            document.getElementById('victoryText').innerHTML =
+                `STAGE ${currentStage} 클리어!<br>생존시간: ${surviveTime}초<br>생존자: ${aliveFriends + 1}/9<br><br>💰 +20 코인 획득! (보유: ${coins}코인)`;
+            document.getElementById('victoryScreen').classList.remove('hidden');
+
+            // Show shop button after first stage clear
+            if (hasCompletedStage) {
+                document.getElementById('shopBtn').classList.remove('hidden');
+            }
+        }
+
+        function nextStage() {
+            currentStage++;
+            document.getElementById('victoryScreen').classList.add('hidden');
+            startGame(true); // Keep weapons when moving to next stage
+        }
+
+        function goToShop() {
+            document.getElementById('victoryScreen').classList.add('hidden');
+            showShop();
+        }
+
+        function showShop() {
+            document.getElementById('shopScreen').classList.remove('hidden');
+            document.getElementById('shopCoins').textContent = coins;
+
+            const shopItemsDiv = document.getElementById('shopItems');
+            shopItemsDiv.innerHTML = '';
+
+            const shopWeapons = ['pick', 'axe', 'hammer2'];
+
+            for (let weaponKey of shopWeapons) {
+                const weapon = WEAPONS[weaponKey];
+                const owned = ownedWeapons.includes(weaponKey);
+                const canAfford = coins >= weapon.price;
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'shop-item' + (owned ? ' owned' : '');
+                itemDiv.innerHTML = `
+                    <img src="${weapon.image}" alt="${weapon.name}">
+                    <h3>${weapon.name}</h3>
+                    <p>공격력: ${weapon.damage}</p>
+                    <p>쿨타임: ${weapon.cooldown / 60}초</p>
+                    <p>교체시간: ${weapon.swapTime / 60}초</p>
+                    <div class="price">${owned ? '✅ 보유중' : `💰 ${weapon.price} 코인`}</div>
+                    ${owned ? '' : `<button onclick="buyWeapon('${weaponKey}')" ${canAfford ? '' : 'disabled'}>${canAfford ? '구매' : '코인 부족'}</button>`}
+                `;
+                shopItemsDiv.appendChild(itemDiv);
+            }
+        }
+
+        function buyWeapon(weaponKey) {
+            const weapon = WEAPONS[weaponKey];
+            if (coins >= weapon.price && !ownedWeapons.includes(weaponKey)) {
+                coins -= weapon.price;
+                ownedWeapons.push(weaponKey);
+
+                // Add to inventory if there's an empty slot
+                let emptySlot = -1;
+                for (let i = 0; i < 4; i++) { // Slots 0-3, slot 4 is reserved
+                    if (weaponInventory[i] === null) {
+                        emptySlot = i;
+                        break;
+                    }
+                }
+
+                if (emptySlot !== -1) {
+                    weaponInventory[emptySlot] = weaponKey;
+                    // Auto-equip the purchased weapon
+                    currentWeaponSlot = emptySlot;
+                    holdingType = 'weapon';
+                    currentKeySlot = -1;
+                    updateSlotsUI();
+                }
+
+                showShop(); // Refresh shop
+            }
+        }
+
+        function closeShop() {
+            document.getElementById('shopScreen').classList.add('hidden');
+            document.getElementById('victoryScreen').classList.remove('hidden');
+        }
+
+        function selectWeaponSlot(slotIndex) {
+            if (slotIndex < 0 || slotIndex > 3) return; // Slot 4 (index 4) is reserved
+            if (weaponInventory[slotIndex] === null) return;
+            if (isSwapping) return;
+
+            // Switch to weapon holding
+            holdingType = 'weapon';
+            currentKeySlot = -1;
+
+            if (currentWeaponSlot !== slotIndex) {
+                currentWeaponSlot = slotIndex;
+                isSwapping = true;
+                const weaponType = weaponInventory[slotIndex];
+                swapTimer = WEAPONS[weaponType].swapTime;
+            }
+
+            updateSlotsUI();
+        }
+
+        function selectKeySlot(slotIndex) {
+            if (slotIndex < 0 || slotIndex > 4) return;
+            if (keyInventory[slotIndex] === null) return;
+            if (isSwapping) return;
+
+            // Switch to key holding
+            holdingType = 'key';
+            currentWeaponSlot = -1;
+            currentKeySlot = slotIndex;
+
+            updateSlotsUI();
+        }
+
+        function updateSlotsUI() {
+            // Update weapon slots
+            for (let i = 0; i < 5; i++) {
+                const slot = document.getElementById(`slot${i + 1}`);
+                if (!slot) continue;
+
+                const keyHint = slot.querySelector('.key-hint');
+                const isReserved = i === 4;
+
+                slot.className = 'inv-slot weapon-slot' + (isReserved ? ' reserved' : '');
+                slot.innerHTML = '';
+                if (keyHint) slot.appendChild(keyHint);
+                else {
+                    const newHint = document.createElement('span');
+                    newHint.className = 'key-hint';
+                    newHint.textContent = i + 1;
+                    slot.appendChild(newHint);
+                }
+
+                if (!isReserved && weaponInventory[i]) {
+                    const weapon = WEAPONS[weaponInventory[i]];
+                    const img = document.createElement('img');
+                    img.src = weapon.image;
+                    slot.appendChild(img);
+
+                    if (holdingType === 'weapon' && i === currentWeaponSlot) {
+                        slot.classList.add(isSwapping ? 'swapping' : 'active');
+
+                        if (isSwapping && swapTimer > 0) {
+                            const overlay = document.createElement('div');
+                            overlay.className = 'cooldown-overlay';
+                            overlay.textContent = (swapTimer / 60).toFixed(1) + 's';
+                            slot.appendChild(overlay);
+                        } else if (player && player.attackCooldown > 0) {
+                            const overlay = document.createElement('div');
+                            overlay.className = 'cooldown-overlay';
+                            overlay.textContent = (player.attackCooldown / 60).toFixed(1) + 's';
+                            slot.appendChild(overlay);
+                        }
+                    }
+                }
+            }
+
+            // Update key slots
+            for (let i = 0; i < 5; i++) {
+                const slot = document.getElementById(`keySlot${i}`);
+                if (!slot) continue;
+
+                const keyHintMap = ['6', '7', '8', '9', '0'];
+                slot.className = 'inv-slot key-slot';
+                const keyHint = slot.querySelector('.key-hint');
+                slot.innerHTML = '';
+                if (keyHint) slot.appendChild(keyHint);
+                else {
+                    const newHint = document.createElement('span');
+                    newHint.className = 'key-hint';
+                    newHint.textContent = keyHintMap[i];
+                    slot.appendChild(newHint);
+                }
+
+                if (keyInventory[i]) {
+                    const emoji = document.createElement('span');
+                    emoji.className = 'slot-emoji';
+                    emoji.textContent = keyInventory[i].emoji;
+                    slot.appendChild(emoji);
+
+                    if (holdingType === 'key' && i === currentKeySlot) {
+                        slot.classList.add('active');
+                    }
+                }
+            }
+
+            // Update holding indicator
+            const indicator = document.getElementById('holdingIndicator');
+            if (indicator) {
+                if (holdingType === 'weapon' && currentWeaponSlot >= 0 && weaponInventory[currentWeaponSlot]) {
+                    const weapon = WEAPONS[weaponInventory[currentWeaponSlot]];
+                    indicator.textContent = '🗡️ ' + weapon.name;
+                    indicator.className = 'weapon';
+                } else if (holdingType === 'key' && currentKeySlot >= 0 && keyInventory[currentKeySlot]) {
+                    indicator.textContent = '🔑 열쇠 ' + (currentKeySlot + 1);
+                    indicator.className = 'key';
+                } else {
+                    indicator.textContent = '손에 든 것 없음';
+                    indicator.className = '';
+                }
+            }
+        }
+
+        // Add click handlers for slots
+        for (let i = 0; i < 5; i++) {
+            const weaponSlot = document.getElementById(`slot${i + 1}`);
+            if (weaponSlot && i < 4) { // Skip slot 5 (reserved)
+                weaponSlot.addEventListener('click', () => {
+                    if (gameState === 'playing' || gameState === 'countdown') {
+                        selectWeaponSlot(i);
+                    }
+                });
+            }
+
+            const keySlot = document.getElementById(`keySlot${i}`);
+            if (keySlot) {
+                keySlot.addEventListener('click', () => {
+                    if (gameState === 'playing' || gameState === 'countdown') {
+                        selectKeySlot(i);
+                    }
+                });
+            }
+        }
+
+        function getTile(x, y) {
+            const tileX = Math.floor(x / TILE_SIZE);
+            const tileY = Math.floor(y / TILE_SIZE);
+            if (tileX < 0 || tileX >= MAP_WIDTH || tileY < 0 || tileY >= MAP_HEIGHT) return WALL;
+            return schoolMap[tileY][tileX];
+        }
+
+        function isWalkable(x, y, size) {
+            const halfSize = size / 2 - 4;
+            const points = [
+                { x: x - halfSize, y: y - halfSize },
+                { x: x + halfSize, y: y - halfSize },
+                { x: x - halfSize, y: y + halfSize },
+                { x: x + halfSize, y: y + halfSize }
+            ];
+
+            for (let point of points) {
+                const tile = getTile(point.x, point.y);
+                if (tile === WALL || tile === DESK || tile === LOCKER ||
+                    tile === BLACKBOARD || tile === TOILET || tile === PLANT || tile === WINDOW) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Smart movement with wall sliding - returns new position
+        function smartMove(entity, moveX, moveY) {
+            let newX = entity.x;
+            let newY = entity.y;
+
+            // Try direct movement first
+            if (isWalkable(entity.x + moveX, entity.y + moveY, entity.size)) {
+                return { x: entity.x + moveX, y: entity.y + moveY };
+            }
+
+            // Try X only
+            if (moveX !== 0 && isWalkable(entity.x + moveX, entity.y, entity.size)) {
+                newX = entity.x + moveX;
+            }
+            // Try Y only
+            if (moveY !== 0 && isWalkable(newX, entity.y + moveY, entity.size)) {
+                newY = entity.y + moveY;
+            }
+
+            // If still stuck, try perpendicular sliding
+            if (newX === entity.x && newY === entity.y) {
+                const slideAmount = Math.max(Math.abs(moveX), Math.abs(moveY));
+
+                // If blocked horizontally, try sliding up or down
+                if (moveX !== 0 && !isWalkable(entity.x + moveX, entity.y, entity.size)) {
+                    if (isWalkable(entity.x, entity.y - slideAmount, entity.size)) {
+                        newY = entity.y - slideAmount;
+                    } else if (isWalkable(entity.x, entity.y + slideAmount, entity.size)) {
+                        newY = entity.y + slideAmount;
+                    }
+                }
+                // If blocked vertically, try sliding left or right
+                if (moveY !== 0 && !isWalkable(entity.x, entity.y + moveY, entity.size)) {
+                    if (isWalkable(entity.x - slideAmount, entity.y, entity.size)) {
+                        newX = entity.x - slideAmount;
+                    } else if (isWalkable(entity.x + slideAmount, entity.y, entity.size)) {
+                        newX = entity.x + slideAmount;
+                    }
+                }
+            }
+
+            return { x: newX, y: newY };
+        }
+
+        function distance(a, b) {
+            return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+        }
+
+        function isNearHidingSpot(entity) {
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    const tileX = Math.floor(entity.x / TILE_SIZE) + dx;
+                    const tileY = Math.floor(entity.y / TILE_SIZE) + dy;
+                    if (tileX >= 0 && tileX < MAP_WIDTH && tileY >= 0 && tileY < MAP_HEIGHT) {
+                        const tile = schoolMap[tileY][tileX];
+                        if (tile === DESK || tile === LOCKER) {
+                            return { x: tileX * TILE_SIZE + TILE_SIZE/2, y: tileY * TILE_SIZE + TILE_SIZE/2 };
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        function hasLineOfSight(from, to) {
+            const dx = to.x - from.x;
+            const dy = to.y - from.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const steps = Math.ceil(dist / 10); // More precise check
+
+            for (let i = 1; i < steps; i++) {
+                const checkX = from.x + (dx * i / steps);
+                const checkY = from.y + (dy * i / steps);
+                const tile = getTile(checkX, checkY);
+                // Walls and windows block vision
+                if (tile === WALL || tile === WINDOW) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Check if target is within villain's field of view
+        function isInFieldOfView(villain, target, fovAngle = 120) {
+            const dx = target.x - villain.x;
+            const dy = target.y - villain.y;
+
+            // Get angle to target
+            const angleToTarget = Math.atan2(dy, dx);
+
+            // Get villain's facing angle
+            const facingAngle = Math.atan2(villain.direction.y, villain.direction.x);
+
+            // Calculate angle difference
+            let angleDiff = angleToTarget - facingAngle;
+
+            // Normalize to -PI to PI
+            while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+            while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+
+            // Check if within FOV (convert degrees to radians)
+            const halfFov = (fovAngle / 2) * (Math.PI / 180);
+            return Math.abs(angleDiff) <= halfFov;
+        }
+
+        // Check if villain can hear footsteps
+        function canHearFootsteps(villain, target, hearingRange = 100) {
+            const dist = distance(villain, target);
+            if (dist > hearingRange) return false;
+
+            // Only hear if target is moving (check if they have velocity or recent movement)
+            if (target.isHiding) return false;
+
+            // Check if target moved recently (for player, check keys; for friends, check if they're running)
+            if (target === player) {
+                return keys['w'] || keys['s'] || keys['a'] || keys['d'] ||
+                       keys['arrowup'] || keys['arrowdown'] || keys['arrowleft'] || keys['arrowright'];
+            } else {
+                // Friends make sound when fleeing (has target/running state)
+                return target.fleeTarget !== undefined || target.isRunning;
+            }
+        }
+
+        // Combined detection: can villain detect target?
+        function canVillainDetect(villain, target) {
+            if (!target.isAlive || target.isHiding) return false;
+
+            const dist = distance(villain, target);
+
+            // 1. Hearing check - close footsteps (5 tiles range)
+            if (canHearFootsteps(villain, target, TILE_SIZE * 5)) {
+                return { detected: true, method: 'sound' };
+            }
+
+            // 2. Vision check - FOV + LOS + range (12 tiles range)
+            const maxVisionRange = TILE_SIZE * 12;
+            if (dist <= maxVisionRange) {
+                if (isInFieldOfView(villain, target) && hasLineOfSight(villain, target)) {
+                    return { detected: true, method: 'vision' };
+                }
+            }
+
+            return { detected: false, method: null };
+        }
+
+        // Simple A* pathfinding for villain
+        function findPath(startX, startY, endX, endY) {
+            const startTileX = Math.floor(startX / TILE_SIZE);
+            const startTileY = Math.floor(startY / TILE_SIZE);
+            const endTileX = Math.floor(endX / TILE_SIZE);
+            const endTileY = Math.floor(endY / TILE_SIZE);
+
+            if (startTileX === endTileX && startTileY === endTileY) return null;
+
+            const openSet = [];
+            const closedSet = new Set();
+            const cameFrom = new Map();
+            const gScore = new Map();
+            const fScore = new Map();
+
+            const key = (x, y) => `${x},${y}`;
+            const heuristic = (x1, y1, x2, y2) => Math.abs(x1 - x2) + Math.abs(y1 - y2);
+
+            openSet.push({x: startTileX, y: startTileY});
+            gScore.set(key(startTileX, startTileY), 0);
+            fScore.set(key(startTileX, startTileY), heuristic(startTileX, startTileY, endTileX, endTileY));
+
+            const directions = [
+                {dx: 0, dy: -1}, {dx: 0, dy: 1}, {dx: -1, dy: 0}, {dx: 1, dy: 0},
+                {dx: -1, dy: -1}, {dx: 1, dy: -1}, {dx: -1, dy: 1}, {dx: 1, dy: 1}
+            ];
+
+            let iterations = 0;
+            const maxIterations = 500;
+
+            while (openSet.length > 0 && iterations < maxIterations) {
+                iterations++;
+
+                openSet.sort((a, b) => (fScore.get(key(a.x, a.y)) || Infinity) - (fScore.get(key(b.x, b.y)) || Infinity));
+                const current = openSet.shift();
+
+                if (current.x === endTileX && current.y === endTileY) {
+                    const path = [];
+                    let curr = key(current.x, current.y);
+                    while (cameFrom.has(curr)) {
+                        const [x, y] = curr.split(',').map(Number);
+                        path.unshift({x: x * TILE_SIZE + TILE_SIZE/2, y: y * TILE_SIZE + TILE_SIZE/2});
+                        curr = cameFrom.get(curr);
+                    }
+                    return path;
+                }
+
+                closedSet.add(key(current.x, current.y));
+
+                for (let dir of directions) {
+                    const nx = current.x + dir.dx;
+                    const ny = current.y + dir.dy;
+                    const nKey = key(nx, ny);
+
+                    if (nx < 0 || nx >= MAP_WIDTH || ny < 0 || ny >= MAP_HEIGHT) continue;
+                    if (closedSet.has(nKey)) continue;
+
+                    const tile = schoolMap[ny][nx];
+                    if (tile === WALL || tile === DESK || tile === LOCKER ||
+                        tile === BLACKBOARD || tile === TOILET || tile === PLANT) continue;
+
+                    if (dir.dx !== 0 && dir.dy !== 0) {
+                        const tile1 = schoolMap[current.y][nx];
+                        const tile2 = schoolMap[ny][current.x];
+                        if ((tile1 === WALL || tile1 === DESK || tile1 === LOCKER) ||
+                            (tile2 === WALL || tile2 === DESK || tile2 === LOCKER)) continue;
+                    }
+
+                    const tentativeG = (gScore.get(key(current.x, current.y)) || 0) +
+                                       (dir.dx !== 0 && dir.dy !== 0 ? 1.414 : 1);
+
+                    if (!openSet.find(n => n.x === nx && n.y === ny)) {
+                        openSet.push({x: nx, y: ny});
+                    } else if (tentativeG >= (gScore.get(nKey) || Infinity)) {
+                        continue;
+                    }
+
+                    cameFrom.set(nKey, key(current.x, current.y));
+                    gScore.set(nKey, tentativeG);
+                    fScore.set(nKey, tentativeG + heuristic(nx, ny, endTileX, endTileY));
+                }
+            }
+
+            return null;
+        }
+
+        function tryHide() {
+            if (player.isHiding) {
+                // Try pre-hide position first, then find adjacent walkable tile
+                let exited = false;
+                if (player.preHidePosition && isWalkable(player.preHidePosition.x, player.preHidePosition.y, player.size)) {
+                    player.x = player.preHidePosition.x;
+                    player.y = player.preHidePosition.y;
+                    exited = true;
+                }
+                if (!exited) {
+                    const exitOffsets = [
+                        {x: TILE_SIZE, y: 0}, {x: -TILE_SIZE, y: 0},
+                        {x: 0, y: TILE_SIZE}, {x: 0, y: -TILE_SIZE},
+                        {x: TILE_SIZE, y: TILE_SIZE}, {x: -TILE_SIZE, y: -TILE_SIZE},
+                        {x: TILE_SIZE, y: -TILE_SIZE}, {x: -TILE_SIZE, y: TILE_SIZE}
+                    ];
+                    for (let offset of exitOffsets) {
+                        const newX = player.x + offset.x;
+                        const newY = player.y + offset.y;
+                        if (isWalkable(newX, newY, player.size)) {
+                            player.x = newX;
+                            player.y = newY;
+                            break;
+                        }
+                    }
+                }
+                player.isHiding = false;
+                player.hidingSpot = null;
+                player.preHidePosition = null;
+            } else {
+                const spot = isNearHidingSpot(player);
+                if (spot) {
+                    player.preHidePosition = { x: player.x, y: player.y };
+                    player.isHiding = true;
+                    player.hidingSpot = spot;
+                }
+            }
+        }
+
+        function tryPickup() {
+            // Try to pick up weapon (E key)
+            for (let weapon of weapons) {
+                if (!weapon.isPickedUp && distance(player, weapon) < 40) {
+                    // Find empty weapon slot (slots 0-3, slot 4 is reserved)
+                    let emptySlot = -1;
+                    for (let i = 0; i < 4; i++) {
+                        if (weaponInventory[i] === null) {
+                            emptySlot = i;
+                            break;
+                        }
+                    }
+
+                    let pickedSlot = -1;
+                    if (emptySlot === -1) {
+                        // Weapon slots full (0-3), replace current slot or first slot
+                        let replaceSlot = (holdingType === 'weapon' && currentWeaponSlot >= 0 && currentWeaponSlot < 4)
+                            ? currentWeaponSlot : 0;
+                        const droppedWeapon = createWeapon(
+                            Math.floor(player.x / TILE_SIZE),
+                            Math.floor(player.y / TILE_SIZE),
+                            weaponInventory[replaceSlot]
+                        );
+                        droppedWeapon.x = player.x;
+                        droppedWeapon.y = player.y;
+                        weapons.push(droppedWeapon);
+                        weaponInventory[replaceSlot] = weapon.type;
+                        pickedSlot = replaceSlot;
+                    } else {
+                        weaponInventory[emptySlot] = weapon.type;
+                        pickedSlot = emptySlot;
+                    }
+
+                    // Always switch to the newly picked up weapon
+                    currentWeaponSlot = pickedSlot;
+                    holdingType = 'weapon';
+                    currentKeySlot = -1;
+
+                    weapon.isPickedUp = true;
+                    player.weapon = weaponInventory[currentWeaponSlot];
+                    updateSlotsUI();
+                    return;
+                }
+            }
+        }
+
+        function autoPickup() {
+            // Auto-pickup food
+            for (let food of foodItems) {
+                if (!food.isPickedUp && distance(player, food) < 35) {
+                    const healAmount = FOOD_HEAL[food.type];
+                    player.hp = Math.min(player.maxHp, player.hp + healAmount);
+                    food.isPickedUp = true;
+
+                    attackEffects.push({
+                        x: player.x,
+                        y: player.y - 30,
+                        timer: 30,
+                        emoji: food.type,
+                        text: `+${healAmount} HP`
+                    });
+                }
+            }
+
+            // Auto-pickup keys into key inventory
+            for (let key of keyItems) {
+                if (!key.isPickedUp && distance(player, key) < 35) {
+                    // Find empty key slot
+                    let emptySlot = -1;
+                    for (let i = 0; i < 5; i++) {
+                        if (keyInventory[i] === null) {
+                            emptySlot = i;
+                            break;
+                        }
+                    }
+
+                    if (emptySlot !== -1) {
+                        keyInventory[emptySlot] = { id: key.id, emoji: key.emoji, isCorrect: key.isCorrect };
+                        key.isPickedUp = true;
+
+                        // Always switch to the newly picked up key
+                        currentKeySlot = emptySlot;
+                        holdingType = 'key';
+                        currentWeaponSlot = -1;
+                        player.weapon = null;
+
+                        updateSlotsUI();
+                    }
+                    // If key inventory full, don't pick up
+                }
+            }
+
+            // Check if player is near escape door with a key equipped
+            if (escapeDoor && !escapeDoor.isOpen && holdingType === 'key' && currentKeySlot >= 0) {
+                if (distance(player, escapeDoor) < 50) {
+                    const heldKey = keyInventory[currentKeySlot];
+                    if (heldKey && heldKey.isCorrect) {
+                        // Correct key! Escape successful!
+                        escapeDoor.isOpen = true;
+                        victory();
+                    } else {
+                        // Wrong key - show feedback and destroy the key
+                        attackEffects.push({
+                            x: escapeDoor.x,
+                            y: escapeDoor.y - 20,
+                            timer: 40,
+                            emoji: '❌',
+                            text: '틀린 열쇠!'
+                        });
+                        // Remove the key completely (don't drop)
+                        const keyItemIndex = keyItems.findIndex(k => k.id === heldKey.id);
+                        if (keyItemIndex !== -1) {
+                            keyItems.splice(keyItemIndex, 1);
+                        }
+                        keyInventory[currentKeySlot] = null;
+
+                        // Try to find another key to hold
+                        let foundNextKey = false;
+                        for (let i = 0; i < 5; i++) {
+                            if (keyInventory[i] !== null) {
+                                currentKeySlot = i;
+                                foundNextKey = true;
+                                break;
+                            }
+                        }
+
+                        if (!foundNextKey) {
+                            currentKeySlot = -1;
+                            // Try to find a weapon to hold
+                            let foundWeapon = false;
+                            for (let i = 0; i < 4; i++) {
+                                if (weaponInventory[i] !== null) {
+                                    currentWeaponSlot = i;
+                                    holdingType = 'weapon';
+                                    player.weapon = weaponInventory[i];
+                                    foundWeapon = true;
+                                    break;
+                                }
+                            }
+                            if (!foundWeapon) {
+                                holdingType = null;
+                            }
+                        }
+                        updateSlotsUI();
+                    }
+                }
+            }
+        }
+
+        function playerAttack() {
+            // Can only attack if holding a weapon
+            if (holdingType !== 'weapon' || currentWeaponSlot < 0) return;
+            const activeWeapon = weaponInventory[currentWeaponSlot];
+            if (!activeWeapon || player.attackCooldown > 0 || !player.isAlive || player.isHiding || isSwapping) return;
+
+            const weaponData = WEAPONS[activeWeapon];
+            player.attackCooldown = weaponData.cooldown;
+
+            // Create swing animation
+            attackAnimations.push({
+                x: player.x,
+                y: player.y,
+                image: weaponImages[activeWeapon],
+                angle: -45,
+                targetAngle: 45,
+                timer: 12,
+                maxTimer: 12,
+                direction: player.direction,
+                offsetX: player.direction.x * 25,
+                offsetY: player.direction.y * 25
+            });
+
+            // Check hit on villain
+            if (villain.isActive && villain.isAlive) {
+                const attackX = player.x + player.direction.x * weaponData.range;
+                const attackY = player.y + player.direction.y * weaponData.range;
+
+                if (distance({x: attackX, y: attackY}, villain) < 50 || distance(player, villain) < weaponData.range) {
+                    villain.hp -= weaponData.damage;
+                    villain.stunTimer = 8;
+
+                    attackEffects.push({
+                        x: villain.x,
+                        y: villain.y - 20,
+                        timer: 20,
+                        emoji: '💥',
+                        text: `-${weaponData.damage}`
+                    });
+
+                    if (villain.hp <= 0) {
+                        villain.isAlive = false;
+                        victory();
+                    }
+                }
+            }
+
+            updateSlotsUI();
+        }
+
+        function friendAttack(friend) {
+            if (!friend.weapon || friend.attackCooldown > 0 || !friend.isAlive) return;
+
+            const weaponData = WEAPONS[friend.weapon];
+            friend.attackCooldown = weaponData.cooldown;
+
+            attackAnimations.push({
+                x: friend.x,
+                y: friend.y,
+                image: weaponImages[friend.weapon],
+                angle: -45,
+                targetAngle: 45,
+                timer: 12,
+                maxTimer: 12,
+                direction: friend.direction,
+                offsetX: friend.direction.x * 25,
+                offsetY: friend.direction.y * 25
+            });
+
+            if (villain.isActive && villain.isAlive && distance(friend, villain) < weaponData.range + 20) {
+                villain.hp -= weaponData.damage;
+                villain.stunTimer = 5;
+
+                attackEffects.push({
+                    x: villain.x,
+                    y: villain.y - 20,
+                    timer: 20,
+                    emoji: '💥',
+                    text: `-${weaponData.damage}`
+                });
+
+                if (villain.hp <= 0) {
+                    villain.isAlive = false;
+                    victory();
+                }
+            }
+        }
+
+        function updatePlayer() {
+            if (!player.isAlive) return;
+
+            // Handle weapon swap timer
+            if (isSwapping) {
+                swapTimer--;
+                if (swapTimer <= 0) {
+                    isSwapping = false;
+                    player.weapon = holdingType === 'weapon' && currentWeaponSlot >= 0 ? weaponInventory[currentWeaponSlot] : null;
+                }
+                updateSlotsUI();
+            }
+
+            if (player.isHiding) {
+                player.x = player.hidingSpot.x;
+                player.y = player.hidingSpot.y;
+
+                // HP regeneration while hiding (1 HP per 2 seconds = 120 frames)
+                if (!player.hideRegenTimer) player.hideRegenTimer = 0;
+                player.hideRegenTimer++;
+                if (player.hideRegenTimer >= 120) {
+                    player.hideRegenTimer = 0;
+                    if (player.hp < player.maxHp) {
+                        player.hp = Math.min(player.hp + 1, player.maxHp);
+                    }
+                }
+                return;
+            } else {
+                player.hideRegenTimer = 0;
+            }
+
+            let dx = 0, dy = 0;
+            if (keys['w'] || keys['arrowup']) dy = -1;
+            if (keys['s'] || keys['arrowdown']) dy = 1;
+            if (keys['a'] || keys['arrowleft']) dx = -1;
+            if (keys['d'] || keys['arrowright']) dx = 1;
+
+            if (dx !== 0 || dy !== 0) {
+                const len = Math.sqrt(dx * dx + dy * dy);
+                player.direction = { x: dx / len, y: dy / len };
+            }
+
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.707;
+                dy *= 0.707;
+            }
+
+            const newX = player.x + dx * player.speed;
+            const newY = player.y + dy * player.speed;
+
+            if (isWalkable(newX, player.y, player.size)) player.x = newX;
+            if (isWalkable(player.x, newY, player.size)) player.y = newY;
+
+            if (player.attackCooldown > 0) {
+                player.attackCooldown--;
+                updateSlotsUI();
+            }
+
+            // Auto-pickup food and keys
+            autoPickup();
+        }
+
+        function updateFriends() {
+            for (let i = 0; i < friends.length; i++) {
+                const friend = friends[i];
+                if (!friend.isAlive) continue;
+
+                // Reset running state each frame
+                friend.isRunning = false;
+
+                // Skip the friend that's transforming during countdown
+                if (gameState === 'countdown' && i === villainSourceFriend) {
+                    continue;
+                }
+
+                if (friend.attackCooldown > 0) friend.attackCooldown--;
+                if (friend.stunTimer > 0) {
+                    friend.stunTimer--;
+                    continue;
+                }
+
+                if (friend.isHiding) {
+                    if (!friend.hideTimer) friend.hideTimer = 0;
+                    friend.hideTimer--;
+                    if (friend.hideTimer <= 0) {
+                        friend.isHiding = false;
+                        // Find adjacent walkable position to exit hiding
+                        const exitOffsets = [
+                            {x: TILE_SIZE, y: 0}, {x: -TILE_SIZE, y: 0},
+                            {x: 0, y: TILE_SIZE}, {x: 0, y: -TILE_SIZE},
+                            {x: TILE_SIZE, y: TILE_SIZE}, {x: -TILE_SIZE, y: -TILE_SIZE},
+                            {x: TILE_SIZE, y: -TILE_SIZE}, {x: -TILE_SIZE, y: TILE_SIZE}
+                        ];
+                        for (let offset of exitOffsets) {
+                            const newX = friend.x + offset.x;
+                            const newY = friend.y + offset.y;
+                            if (isWalkable(newX, newY, friend.size)) {
+                                friend.x = newX;
+                                friend.y = newY;
+                                break;
+                            }
+                        }
+                        friend.hidingSpot = null;
+                    }
+                    continue;
+                }
+
+                const distToVillain = villain.isActive ? distance(friend, villain) : Infinity;
+                const canSeeVillain = villain.isActive && hasLineOfSight(friend, villain);
+
+                // During countdown, run away from the transforming friend
+                if (gameState === 'countdown') {
+                    const transformingFriend = friends[villainSourceFriend];
+                    const dx = friend.x - transformingFriend.x;
+                    const dy = friend.y - transformingFriend.y;
+                    const len = Math.sqrt(dx * dx + dy * dy);
+
+                    if (len > 20) {
+                        friend.isRunning = true; // Making footstep sounds
+                        const moveX = (dx / len) * friend.speed * 1.2;
+                        const moveY = (dy / len) * friend.speed * 1.2;
+                        const newPos = smartMove(friend, moveX, moveY);
+                        friend.x = newPos.x;
+                        friend.y = newPos.y;
+                    }
+
+                    // Also try to pick up weapons while running
+                    if (!friend.weapon) {
+                        for (let weapon of weapons) {
+                            if (!weapon.isPickedUp && distance(friend, weapon) < 35) {
+                                friend.weapon = weapon.type;
+                                weapon.isPickedUp = true;
+                                break;
+                            }
+                        }
+                    }
+                    continue;
+                }
+
+                if (!villain.isActive || distToVillain > TILE_SIZE * 7 || !canSeeVillain) {
+                    if (!friend.weapon) {
+                        let nearestWeapon = null;
+                        let nearestDist = Infinity;
+
+                        for (let weapon of weapons) {
+                            if (!weapon.isPickedUp) {
+                                const dist = distance(friend, weapon);
+                                if (dist < nearestDist) {
+                                    nearestDist = dist;
+                                    nearestWeapon = weapon;
+                                }
+                            }
+                        }
+
+                        if (nearestWeapon && nearestDist < TILE_SIZE * 10) {
+                            const dx = nearestWeapon.x - friend.x;
+                            const dy = nearestWeapon.y - friend.y;
+                            const len = Math.sqrt(dx * dx + dy * dy);
+
+                            if (len > 30) {
+                                const moveX = (dx / len) * friend.speed;
+                                const moveY = (dy / len) * friend.speed;
+                                const newPos = smartMove(friend, moveX, moveY);
+                                friend.x = newPos.x;
+                                friend.y = newPos.y;
+                            } else {
+                                friend.weapon = nearestWeapon.type;
+                                nearestWeapon.isPickedUp = true;
+                            }
+                        } else {
+                            if (!friend.wanderTarget || Math.random() < 0.02) {
+                                const randX = friend.x + (Math.random() - 0.5) * 200;
+                                const randY = friend.y + (Math.random() - 0.5) * 200;
+                                if (isWalkable(randX, randY, friend.size)) {
+                                    friend.wanderTarget = { x: randX, y: randY };
+                                }
+                            }
+
+                            if (friend.wanderTarget) {
+                                const dx = friend.wanderTarget.x - friend.x;
+                                const dy = friend.wanderTarget.y - friend.y;
+                                const len = Math.sqrt(dx * dx + dy * dy);
+
+                                if (len > 10) {
+                                    const moveX = (dx / len) * friend.speed * 0.5;
+                                    const moveY = (dy / len) * friend.speed * 0.5;
+                                    const newPos = smartMove(friend, moveX, moveY);
+                                    friend.x = newPos.x;
+                                    friend.y = newPos.y;
+                                } else {
+                                    friend.wanderTarget = null;
+                                }
+                            }
+                        }
+                    } else {
+                        if (!friend.wanderTarget || Math.random() < 0.01) {
+                            const randX = friend.x + (Math.random() - 0.5) * 150;
+                            const randY = friend.y + (Math.random() - 0.5) * 150;
+                            if (isWalkable(randX, randY, friend.size)) {
+                                friend.wanderTarget = { x: randX, y: randY };
+                            }
+                        }
+
+                        if (friend.wanderTarget) {
+                            const dx = friend.wanderTarget.x - friend.x;
+                            const dy = friend.wanderTarget.y - friend.y;
+                            const len = Math.sqrt(dx * dx + dy * dy);
+
+                            if (len > 10) {
+                                const moveX = (dx / len) * friend.speed * 0.4;
+                                const moveY = (dy / len) * friend.speed * 0.4;
+                                const newPos = smartMove(friend, moveX, moveY);
+                                friend.x = newPos.x;
+                                friend.y = newPos.y;
+                            } else {
+                                friend.wanderTarget = null;
+                            }
+                        }
+                    }
+                } else {
+                    if (friend.weapon) {
+                        const dx = villain.x - friend.x;
+                        const dy = villain.y - friend.y;
+                        const len = Math.sqrt(dx * dx + dy * dy);
+
+                        friend.direction = { x: dx / len, y: dy / len };
+
+                        if (distToVillain > TILE_SIZE * 1.5) {
+                            const moveX = (dx / len) * friend.speed;
+                            const moveY = (dy / len) * friend.speed;
+                            const newPos = smartMove(friend, moveX, moveY);
+                            friend.x = newPos.x;
+                            friend.y = newPos.y;
+                        } else {
+                            friendAttack(friend);
+                        }
+                    } else {
+                        if (distToVillain < TILE_SIZE * 3) {
+                            const hideSpot = isNearHidingSpot(friend);
+                            if (hideSpot && Math.random() < 0.3) {
+                                friend.preHidePosition = { x: friend.x, y: friend.y };
+                                friend.isHiding = true;
+                                friend.hidingSpot = hideSpot;
+                                friend.hideTimer = 120 + Math.random() * 180;
+                                friend.x = hideSpot.x;
+                                friend.y = hideSpot.y;
+                                continue;
+                            }
+                        }
+
+                        let nearestWeapon = null;
+                        let nearestDist = Infinity;
+
+                        for (let weapon of weapons) {
+                            if (!weapon.isPickedUp) {
+                                const dist = distance(friend, weapon);
+                                if (dist < nearestDist) {
+                                    nearestDist = dist;
+                                    nearestWeapon = weapon;
+                                }
+                            }
+                        }
+
+                        if (nearestWeapon && nearestDist < TILE_SIZE * 5) {
+                            const dx = nearestWeapon.x - friend.x;
+                            const dy = nearestWeapon.y - friend.y;
+                            const len = Math.sqrt(dx * dx + dy * dy);
+
+                            if (len > 30) {
+                                friend.isRunning = true; // Running to weapon
+                                const moveX = (dx / len) * friend.speed * 1.3;
+                                const moveY = (dy / len) * friend.speed * 1.3;
+                                const newPos = smartMove(friend, moveX, moveY);
+                                friend.x = newPos.x;
+                                friend.y = newPos.y;
+                            } else {
+                                friend.weapon = nearestWeapon.type;
+                                nearestWeapon.isPickedUp = true;
+                            }
+                        } else {
+                            // Fleeing from villain - makes footstep sounds
+                            friend.isRunning = true;
+                            const dx = friend.x - villain.x;
+                            const dy = friend.y - villain.y;
+                            const len = Math.sqrt(dx * dx + dy * dy);
+
+                            const moveX = (dx / len) * friend.speed * 1.5;
+                            const moveY = (dy / len) * friend.speed * 1.5;
+                            const newPos = smartMove(friend, moveX, moveY);
+                            friend.x = newPos.x;
+                            friend.y = newPos.y;
+                        }
+                    }
+                }
+            }
+        }
+
+        function updateVillain() {
+            if (!villain.isActive || !villain.isAlive) return;
+
+            if (villain.stunTimer > 0) {
+                villain.stunTimer--;
+                return;
+            }
+
+            if (!villain.attackCooldown) villain.attackCooldown = 0;
+            if (villain.attackCooldown > 0) villain.attackCooldown--;
+
+            if (!villain.pathCooldown) villain.pathCooldown = 0;
+            if (villain.pathCooldown > 0) villain.pathCooldown--;
+
+            const isEnraged = villain.hp < villain.maxHp * 0.4;
+            const currentSpeed = isEnraged ? villain.speed * 1.3 : villain.speed;
+
+            if (!villain.specialCooldown) villain.specialCooldown = 0;
+            if (villain.specialCooldown > 0) villain.specialCooldown--;
+
+            let targets = [player, ...friends].filter(t => t.isAlive && !t.isHiding);
+            let nearestTarget = null;
+            let nearestDist = Infinity;
+            let detectionMethod = null;
+
+            // Only consider targets the villain can actually detect
+            for (let target of targets) {
+                const detection = canVillainDetect(villain, target);
+                if (detection.detected) {
+                    const dist = distance(villain, target);
+                    if (dist < nearestDist) {
+                        nearestDist = dist;
+                        nearestTarget = target;
+                        detectionMethod = detection.method;
+                    }
+                }
+            }
+
+            // Clear path if current target changed or died
+            if (villain.lastTarget !== nearestTarget) {
+                villain.path = null;
+                villain.pathCooldown = 0;
+                villain.lastTarget = nearestTarget;
+            }
+
+            // Store detection method for possible visual feedback
+            villain.detectionMethod = detectionMethod;
+
+            if (!nearestTarget) {
+                // No detected targets - wander around, prefer hallway area
+                if (!villain.wanderTarget || !villain.path || villain.path.length === 0 || Math.random() < 0.02) {
+                    let attempts = 0;
+                    do {
+                        // 70% chance to target hallway area (y around 12-14, x spread across)
+                        let randX, randY;
+                        if (Math.random() < 0.7) {
+                            // Target hallway (corridor at y = 12-14)
+                            randX = Math.floor(Math.random() * (MAP_WIDTH - 4) + 2) * TILE_SIZE + TILE_SIZE/2;
+                            randY = (Math.floor(Math.random() * 3) + 12) * TILE_SIZE + TILE_SIZE/2;
+                        } else {
+                            // Random location
+                            randX = Math.floor(Math.random() * MAP_WIDTH) * TILE_SIZE + TILE_SIZE/2;
+                            randY = Math.floor(Math.random() * MAP_HEIGHT) * TILE_SIZE + TILE_SIZE/2;
+                        }
+                        if (isWalkable(randX, randY, villain.size)) {
+                            villain.wanderTarget = { x: randX, y: randY };
+                            villain.path = findPath(villain.x, villain.y, randX, randY);
+                            if (villain.path && villain.path.length > 0) break;
+                        }
+                        attempts++;
+                    } while (attempts < 20);
+                }
+
+                if (villain.path && villain.path.length > 0) {
+                    const nextPoint = villain.path[0];
+                    const dx = nextPoint.x - villain.x;
+                    const dy = nextPoint.y - villain.y;
+                    const len = Math.sqrt(dx * dx + dy * dy);
+
+                    if (len < 15) {
+                        villain.path.shift();
+                    } else {
+                        // Wander at 60% speed
+                        const moveX = (dx / len) * currentSpeed * 0.6;
+                        const moveY = (dy / len) * currentSpeed * 0.6;
+                        const newPos = smartMove(villain, moveX, moveY);
+                        villain.x = newPos.x;
+                        villain.y = newPos.y;
+                        // Update direction while wandering
+                        if (len > 0) {
+                            villain.direction = { x: dx / len, y: dy / len };
+                        }
+                    }
+                }
+                return;
+            }
+
+            const canSeeTarget = hasLineOfSight(villain, nearestTarget) && isInFieldOfView(villain, nearestTarget);
+
+            if (villain.pathCooldown === 0 || !villain.path || villain.path.length === 0) {
+                villain.path = findPath(villain.x, villain.y, nearestTarget.x, nearestTarget.y);
+                villain.pathCooldown = 30;
+            }
+
+            if (nearestDist > 25) {
+                let moveX = 0, moveY = 0;
+
+                // Direct chase if can see target in FOV
+                if (canSeeTarget && nearestDist < TILE_SIZE * 10) {
+                    const dx = nearestTarget.x - villain.x;
+                    const dy = nearestTarget.y - villain.y;
+                    const len = Math.sqrt(dx * dx + dy * dy);
+                    moveX = (dx / len) * currentSpeed;
+                    moveY = (dy / len) * currentSpeed;
+                } else if (villain.path && villain.path.length > 0) {
+                    const nextPoint = villain.path[0];
+                    const dx = nextPoint.x - villain.x;
+                    const dy = nextPoint.y - villain.y;
+                    const len = Math.sqrt(dx * dx + dy * dy);
+
+                    if (len < 15) {
+                        villain.path.shift();
+                    } else {
+                        moveX = (dx / len) * currentSpeed;
+                        moveY = (dy / len) * currentSpeed;
+                    }
+                }
+
+                const newPos = smartMove(villain, moveX, moveY);
+                villain.x = newPos.x;
+                villain.y = newPos.y;
+
+                // Update facing direction when moving
+                if (moveX !== 0 || moveY !== 0) {
+                    const len = Math.sqrt(moveX * moveX + moveY * moveY);
+                    villain.direction = { x: moveX / len, y: moveY / len };
+                }
+            }
+
+            if (isEnraged && villain.specialCooldown === 0 && nearestDist < TILE_SIZE * 3) {
+                villain.specialCooldown = 90;
+
+                attackEffects.push({
+                    x: villain.x,
+                    y: villain.y,
+                    timer: 25,
+                    emoji: '💢',
+                    isAoE: true
+                });
+
+                let allTargets = [player, ...friends].filter(t => t.isAlive && !t.isHiding);
+                for (let target of allTargets) {
+                    if (distance(villain, target) < TILE_SIZE * 2.5 && hasLineOfSight(villain, target)) {
+                        if (target === player) {
+                            player.hp -= villain.attackDamage;
+                            player.stunTimer = 25;
+                            if (player.hp <= 0) {
+                                player.isAlive = false;
+                                gameOver();
+                                return;
+                            }
+                        } else {
+                            target.hp -= villain.attackDamage + 5;
+                            target.stunTimer = 30;
+                            if (target.hp <= 0) {
+                                target.isAlive = false;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (nearestDist < TILE_SIZE * 1.3 && villain.attackCooldown === 0) {
+                villain.attackCooldown = isEnraged ? 20 : 30;
+
+                attackEffects.push({
+                    x: nearestTarget.x,
+                    y: nearestTarget.y - 10,
+                    timer: 15,
+                    emoji: '👊'
+                });
+
+                if (nearestTarget === player) {
+                    player.hp -= villain.attackDamage;
+                    player.stunTimer = 15;
+
+                    attackEffects.push({
+                        x: player.x,
+                        y: player.y - 25,
+                        timer: 20,
+                        emoji: '💥',
+                        text: `-${villain.attackDamage}`
+                    });
+
+                    if (player.hp <= 0) {
+                        player.isAlive = false;
+                        gameOver();
+                    }
+                } else {
+                    nearestTarget.hp -= villain.attackDamage;
+                    nearestTarget.stunTimer = 20;
+
+                    attackEffects.push({
+                        x: nearestTarget.x,
+                        y: nearestTarget.y - 25,
+                        timer: 20,
+                        emoji: '💥',
+                        text: `-${villain.attackDamage}`
+                    });
+
+                    if (nearestTarget.hp <= 0) {
+                        nearestTarget.isAlive = false;
+                    }
+                }
+            }
+        }
+
+        function updateAttackEffects() {
+            attackEffects = attackEffects.filter(effect => {
+                effect.timer--;
+                return effect.timer > 0;
+            });
+
+            attackAnimations = attackAnimations.filter(anim => {
+                anim.timer--;
+                const progress = 1 - (anim.timer / anim.maxTimer);
+                anim.angle = -45 + (90 * progress);
+                return anim.timer > 0;
+            });
+        }
+
+        function drawMap() {
+            const cameraX = Math.max(0, Math.min(player.x - canvas.width / 2, MAP_WIDTH * TILE_SIZE - canvas.width));
+            const cameraY = Math.max(0, Math.min(player.y - canvas.height / 2, MAP_HEIGHT * TILE_SIZE - canvas.height));
+
+            ctx.save();
+            ctx.translate(-cameraX, -cameraY);
+
+            for (let y = 0; y < MAP_HEIGHT; y++) {
+                for (let x = 0; x < MAP_WIDTH; x++) {
+                    const tile = schoolMap[y][x];
+                    const px = x * TILE_SIZE;
+                    const py = y * TILE_SIZE;
+
+                    ctx.fillStyle = '#d4c4a8';
+                    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    ctx.strokeStyle = '#c4b498';
+                    ctx.strokeRect(px, py, TILE_SIZE, TILE_SIZE);
+
+                    switch(tile) {
+                        case WALL:
+                            ctx.fillStyle = '#5d4e37';
+                            ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                            ctx.fillStyle = '#4d3e27';
+                            ctx.fillRect(px + 3, py + 3, TILE_SIZE - 6, TILE_SIZE - 6);
+                            break;
+                        case DESK:
+                            ctx.fillStyle = '#8b7355';
+                            ctx.fillRect(px + 5, py + 5, TILE_SIZE - 10, TILE_SIZE - 10);
+                            ctx.fillStyle = '#6b5335';
+                            ctx.fillRect(px + 8, py + 8, TILE_SIZE - 16, TILE_SIZE - 16);
+                            break;
+                        case LOCKER:
+                            ctx.fillStyle = '#4a6fa5';
+                            ctx.fillRect(px + 2, py + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+                            ctx.fillStyle = '#3a5f95';
+                            ctx.fillRect(px + 5, py + 5, (TILE_SIZE - 10)/2 - 2, TILE_SIZE - 10);
+                            ctx.fillRect(px + TILE_SIZE/2 + 2, py + 5, (TILE_SIZE - 10)/2 - 2, TILE_SIZE - 10);
+                            break;
+                        case DOOR:
+                            ctx.fillStyle = '#c4a574';
+                            ctx.fillRect(px + 3, py, TILE_SIZE - 6, TILE_SIZE);
+                            ctx.fillStyle = '#b49564';
+                            ctx.fillRect(px + TILE_SIZE - 12, py + TILE_SIZE/2 - 3, 4, 6);
+                            break;
+                        case BLACKBOARD:
+                            ctx.fillStyle = '#2d5a3d';
+                            ctx.fillRect(px + 2, py + 5, TILE_SIZE - 4, TILE_SIZE - 10);
+                            ctx.strokeStyle = '#8b7355';
+                            ctx.lineWidth = 3;
+                            ctx.strokeRect(px + 2, py + 5, TILE_SIZE - 4, TILE_SIZE - 10);
+                            ctx.lineWidth = 1;
+                            break;
+                        case TOILET:
+                            ctx.fillStyle = '#e8e8e8';
+                            ctx.fillRect(px + TILE_SIZE*0.2, py + TILE_SIZE*0.15, TILE_SIZE*0.6, TILE_SIZE*0.7);
+                            ctx.fillStyle = '#ccc';
+                            ctx.fillRect(px + TILE_SIZE*0.3, py + TILE_SIZE*0.1, TILE_SIZE*0.4, TILE_SIZE*0.2);
+                            break;
+                        case PLANT:
+                            // Pot
+                            ctx.fillStyle = '#8b4513';
+                            ctx.fillRect(px + TILE_SIZE*0.3, py + TILE_SIZE*0.6, TILE_SIZE*0.4, TILE_SIZE*0.35);
+                            // Leaves
+                            ctx.fillStyle = '#228b22';
+                            ctx.beginPath();
+                            ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE*0.4, TILE_SIZE*0.35, 0, Math.PI * 2);
+                            ctx.fill();
+                            break;
+                        case WINDOW:
+                            // Window frame
+                            ctx.fillStyle = '#5d4e37';
+                            ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                            // Glass panes (light blue)
+                            ctx.fillStyle = '#87CEEB';
+                            ctx.fillRect(px + 3, py + 3, TILE_SIZE/2 - 4, TILE_SIZE - 6);
+                            ctx.fillRect(px + TILE_SIZE/2 + 1, py + 3, TILE_SIZE/2 - 4, TILE_SIZE - 6);
+                            // Window divider
+                            ctx.fillStyle = '#4d3e27';
+                            ctx.fillRect(px + TILE_SIZE/2 - 1, py, 2, TILE_SIZE);
+                            ctx.fillRect(px, py + TILE_SIZE/2 - 1, TILE_SIZE, 2);
+                            break;
+                    }
+                }
+            }
+
+            // Draw weapons on ground
+            for (let weapon of weapons) {
+                if (!weapon.isPickedUp) {
+                    ctx.shadowColor = '#ffff00';
+                    ctx.shadowBlur = 10;
+                    const img = weaponImages[weapon.type];
+                    if (img.complete) {
+                        ctx.drawImage(img, weapon.x - 18, weapon.y - 18, 36, 36);
+                    }
+                    ctx.shadowBlur = 0;
+                }
+            }
+
+            // Draw food on ground
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            for (let food of foodItems) {
+                if (!food.isPickedUp) {
+                    ctx.shadowColor = '#00ff00';
+                    ctx.shadowBlur = 8;
+                    ctx.fillText(food.type, food.x, food.y);
+                    ctx.shadowBlur = 0;
+                }
+            }
+
+            // Draw keys on ground
+            ctx.font = '28px Arial';
+            for (let key of keyItems) {
+                if (!key.isPickedUp) {
+                    ctx.shadowColor = '#ffd700';
+                    ctx.shadowBlur = 12;
+                    ctx.fillText(key.emoji, key.x, key.y);
+                    ctx.shadowBlur = 0;
+                }
+            }
+
+            // Draw escape door
+            if (escapeDoor) {
+                ctx.font = '36px Arial';
+                if (escapeDoor.isOpen) {
+                    ctx.shadowColor = '#00ff00';
+                    ctx.shadowBlur = 20;
+                    ctx.fillText('🚪', escapeDoor.x, escapeDoor.y);
+                } else {
+                    ctx.shadowColor = '#ff6600';
+                    ctx.shadowBlur = 15;
+                    ctx.fillText('🚪', escapeDoor.x, escapeDoor.y);
+                    // Draw lock icon
+                    ctx.font = '16px Arial';
+                    ctx.fillText('🔒', escapeDoor.x + 15, escapeDoor.y - 15);
+                }
+                ctx.shadowBlur = 0;
+            }
+
+            // Draw friends
+            ctx.font = '26px Arial';
+            for (let i = 0; i < friends.length; i++) {
+                const friend = friends[i];
+
+                // Skip rendering the friend that becomes villain
+                if (gameState === 'countdown' && i === villainSourceFriend) {
+                    // Draw transforming friend with special effect
+                    ctx.shadowColor = '#ff0000';
+                    ctx.shadowBlur = 20;
+                    ctx.fillText(friend.emoji, friend.x, friend.y);
+                    ctx.shadowBlur = 0;
+                    continue;
+                }
+
+                if (!friend.isAlive) {
+                    ctx.globalAlpha = 0.3;
+                    ctx.fillText('💀', friend.x, friend.y);
+                    ctx.globalAlpha = 1;
+                    continue;
+                }
+
+                if (friend.isHiding) {
+                    ctx.globalAlpha = 0.4;
+                    ctx.fillText(friend.emoji, friend.x, friend.y);
+                    ctx.globalAlpha = 1;
+                    continue;
+                }
+
+                ctx.fillText(friend.emoji, friend.x, friend.y);
+
+                if (friend.weapon) {
+                    const img = weaponImages[friend.weapon];
+                    if (img && img.complete) {
+                        ctx.drawImage(img, friend.x + 10, friend.y - 20, 20, 20);
+                    }
+                }
+
+                if (friend.hp < friend.maxHp) {
+                    drawHPBar(friend.x, friend.y - 25, friend.hp, friend.maxHp, 30);
+                }
+            }
+
+            // Draw hiding indicator for player
+            if (!player.isHiding && player.isAlive) {
+                const spot = isNearHidingSpot(player);
+                if (spot) {
+                    ctx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([5, 5]);
+                    ctx.strokeRect(
+                        Math.floor(spot.x / TILE_SIZE) * TILE_SIZE,
+                        Math.floor(spot.y / TILE_SIZE) * TILE_SIZE,
+                        TILE_SIZE, TILE_SIZE
+                    );
+                    ctx.setLineDash([]);
+                    ctx.lineWidth = 1;
+                }
+            }
+
+            // Draw player
+            if (player.isAlive) {
+                ctx.font = '28px Arial';
+
+                if (player.isHiding) {
+                    ctx.globalAlpha = 0.4;
+                    ctx.fillText(player.emoji, player.x, player.y);
+                    ctx.globalAlpha = 1;
+
+                    ctx.font = '12px Arial';
+                    ctx.fillStyle = '#4ade80';
+                    ctx.fillText('🫣 숨는중...', player.x, player.y - 25);
+                } else {
+                    ctx.fillText(player.emoji, player.x, player.y);
+
+                    // Draw held item (weapon or key) - fixed position, no shaking
+                    if (holdingType === 'weapon' && currentWeaponSlot >= 0) {
+                        const activeWeapon = weaponInventory[currentWeaponSlot];
+                        if (activeWeapon && !isSwapping) {
+                            const img = weaponImages[activeWeapon];
+                            if (img && img.complete) {
+                                ctx.drawImage(img, player.x + 12, player.y - 22, 24, 24);
+                            }
+                        }
+                    } else if (holdingType === 'key' && currentKeySlot >= 0) {
+                        const heldKey = keyInventory[currentKeySlot];
+                        if (heldKey) {
+                            ctx.font = '16px Arial';
+                            ctx.fillText(heldKey.emoji, player.x + 16, player.y - 8);
+                        }
+                    }
+
+                    if (player.hp < player.maxHp) {
+                        drawHPBar(player.x, player.y - 28, player.hp, player.maxHp, 40);
+                    }
+                }
+            }
+
+            // Draw villain
+            if (villain.isActive && villain.isAlive) {
+                const isEnraged = villain.hp < villain.maxHp * 0.4;
+                const shake = isEnraged ? (Math.random() - 0.5) * 8 : (Math.random() - 0.5) * 4;
+
+                if (isEnraged) {
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.4)';
+                    ctx.beginPath();
+                    ctx.arc(villain.x, villain.y, 50, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.strokeStyle = '#ff0000';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(villain.x, villain.y, 45 + Math.sin(Date.now() / 100) * 5, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.lineWidth = 1;
+                }
+
+                ctx.shadowColor = isEnraged ? '#ff0000' : 'red';
+                ctx.shadowBlur = isEnraged ? 35 : 20;
+                ctx.font = isEnraged ? '38px Arial' : '32px Arial';
+                ctx.fillText(villain.emoji, villain.x + shake, villain.y + shake);
+                ctx.shadowBlur = 0;
+
+                if (!isEnraged) {
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
+                    ctx.beginPath();
+                    ctx.arc(villain.x, villain.y, 35, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                if (villain.hp < villain.maxHp) {
+                    drawHPBar(villain.x, villain.y - 35, villain.hp, villain.maxHp, 50, '#ff4444');
+
+                    if (isEnraged) {
+                        ctx.font = '12px Arial';
+                        ctx.fillStyle = '#ff4444';
+                        ctx.fillText('💢 RAGE MODE', villain.x, villain.y - 45);
+                    }
+                }
+            }
+
+            // Debug: Draw target marker on villain's target
+            if (villain.isActive && villain.isAlive && villain.lastTarget) {
+                const target = villain.lastTarget;
+                if (target.isAlive && !target.isHiding) {
+                    ctx.strokeStyle = '#ff0000';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(target.x, target.y, 25, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(target.x - 30, target.y);
+                    ctx.lineTo(target.x + 30, target.y);
+                    ctx.moveTo(target.x, target.y - 30);
+                    ctx.lineTo(target.x, target.y + 30);
+                    ctx.stroke();
+                    ctx.lineWidth = 1;
+                    ctx.font = '10px Arial';
+                    ctx.fillStyle = '#ff0000';
+                    ctx.fillText('🎯 TARGET', target.x, target.y - 35);
+                }
+            }
+
+            // Draw off-screen villain indicator (needs to be in screen coordinates)
+            if (villain.isActive && villain.isAlive) {
+                // Calculate villain's screen position
+                const villainScreenX = villain.x - cameraX;
+                const villainScreenY = villain.y - cameraY;
+                const margin = 50;
+
+                const isOffScreen = villainScreenX < -20 || villainScreenX > canvas.width + 20 ||
+                                   villainScreenY < -20 || villainScreenY > canvas.height + 20;
+
+                if (isOffScreen) {
+                    // Reset transform to draw in screen coordinates
+                    ctx.save();
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+                    // Calculate indicator position on screen edge
+                    const centerX = canvas.width / 2;
+                    const centerY = canvas.height / 2;
+                    const dx = villainScreenX - centerX;
+                    const dy = villainScreenY - centerY;
+                    const angle = Math.atan2(dy, dx);
+
+                    // Clamp to screen edge
+                    let indicatorX, indicatorY;
+                    const maxX = canvas.width - margin;
+                    const maxY = canvas.height - margin;
+
+                    // Find intersection with screen edge
+                    if (dx === 0) {
+                        indicatorX = centerX;
+                        indicatorY = dy > 0 ? maxY : margin;
+                    } else {
+                        const slope = dy / dx;
+                        if (Math.abs(dx) > Math.abs(dy)) {
+                            indicatorX = dx > 0 ? maxX : margin;
+                            indicatorY = centerY + slope * (indicatorX - centerX);
+                            indicatorY = Math.max(margin, Math.min(maxY, indicatorY));
+                        } else {
+                            indicatorY = dy > 0 ? maxY : margin;
+                            indicatorX = centerX + (indicatorY - centerY) / slope;
+                            indicatorX = Math.max(margin, Math.min(maxX, indicatorX));
+                        }
+                    }
+
+                    // Draw arrow pointing to villain
+                    ctx.save();
+                    ctx.translate(indicatorX, indicatorY);
+                    ctx.rotate(angle);
+
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.9)';
+                    ctx.beginPath();
+                    ctx.moveTo(20, 0);
+                    ctx.lineTo(-12, -12);
+                    ctx.lineTo(-6, 0);
+                    ctx.lineTo(-12, 12);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Arrow outline
+                    ctx.strokeStyle = '#800000';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    ctx.restore();
+
+                    // Draw distance text
+                    const dist = Math.floor(distance(player, villain) / TILE_SIZE);
+                    ctx.font = 'bold 14px Arial';
+                    ctx.fillStyle = '#ff0000';
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 3;
+                    ctx.strokeText(`👹 ${dist}칸`, indicatorX - 25, indicatorY - 20);
+                    ctx.fillText(`👹 ${dist}칸`, indicatorX - 25, indicatorY - 20);
+
+                    ctx.restore();
+                }
+            }
+
+            // Draw attack effects
+            ctx.font = '24px Arial';
+            for (let effect of attackEffects) {
+                ctx.globalAlpha = effect.timer / 20;
+
+                if (effect.isAoE) {
+                    ctx.strokeStyle = `rgba(255, 0, 0, ${effect.timer / 25})`;
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.arc(effect.x, effect.y, 80 * (1 - effect.timer / 25) + 20, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.lineWidth = 1;
+                }
+
+                ctx.fillText(effect.emoji, effect.x, effect.y);
+                if (effect.text) {
+                    ctx.font = '14px Arial';
+                    ctx.fillStyle = effect.text.includes('+') ? '#4ade80' : '#ff4444';
+                    ctx.fillText(effect.text, effect.x, effect.y - 15);
+                    ctx.font = '24px Arial';
+                }
+                ctx.globalAlpha = 1;
+            }
+
+            // Draw weapon swing animations
+            for (let anim of attackAnimations) {
+                ctx.save();
+                ctx.translate(anim.x + anim.offsetX, anim.y + anim.offsetY);
+                ctx.rotate(anim.angle * Math.PI / 180);
+                ctx.globalAlpha = anim.timer / anim.maxTimer;
+                if (anim.image && anim.image.complete) {
+                    ctx.drawImage(anim.image, -15, -15, 30, 30);
+                }
+                ctx.restore();
+            }
+            ctx.globalAlpha = 1;
+
+            ctx.restore();
+        }
+
+        function drawHPBar(x, y, hp, maxHp, width, color = '#4ade80') {
+            const height = 6;
+            const ratio = Math.max(0, hp / maxHp);
+
+            ctx.fillStyle = '#333';
+            ctx.fillRect(x - width/2, y, width, height);
+
+            ctx.fillStyle = ratio > 0.5 ? color : ratio > 0.25 ? '#f59e0b' : '#ef4444';
+            ctx.fillRect(x - width/2, y, width * ratio, height);
+
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x - width/2, y, width, height);
+        }
+
+        function drawMinimap() {
+            const scale = minimapCanvas.width / (MAP_WIDTH * TILE_SIZE);
+
+            // Calculate current viewport in world coordinates
+            const cameraX = Math.max(0, Math.min(player.x - canvas.width / 2, MAP_WIDTH * TILE_SIZE - canvas.width));
+            const cameraY = Math.max(0, Math.min(player.y - canvas.height / 2, MAP_HEIGHT * TILE_SIZE - canvas.height));
+            const viewportLeft = cameraX;
+            const viewportTop = cameraY;
+            const viewportRight = cameraX + canvas.width;
+            const viewportBottom = cameraY + canvas.height;
+
+            // Clear minimap
+            minimapCtx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+            minimapCtx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+
+            // Draw map tiles (darkened for areas outside viewport)
+            for (let y = 0; y < MAP_HEIGHT; y++) {
+                for (let x = 0; x < MAP_WIDTH; x++) {
+                    const tile = schoolMap[y][x];
+                    const worldX = x * TILE_SIZE;
+                    const worldY = y * TILE_SIZE;
+                    const px = x * TILE_SIZE * scale;
+                    const py = y * TILE_SIZE * scale;
+                    const size = TILE_SIZE * scale;
+
+                    // Check if this tile is in the viewport
+                    const inViewport = worldX + TILE_SIZE > viewportLeft && worldX < viewportRight &&
+                                      worldY + TILE_SIZE > viewportTop && worldY < viewportBottom;
+
+                    // Base colors
+                    let baseColor;
+                    if (tile === WALL) {
+                        baseColor = inViewport ? '#5d4e37' : '#2d2418';
+                    } else if (tile === WINDOW) {
+                        baseColor = inViewport ? '#87CEEB' : '#3a5a6a';
+                    } else if (tile === DESK || tile === LOCKER) {
+                        baseColor = inViewport ? '#666' : '#333';
+                    } else {
+                        baseColor = inViewport ? '#4a4a5a' : '#1a1a2a';
+                    }
+
+                    minimapCtx.fillStyle = baseColor;
+                    minimapCtx.fillRect(px, py, size, size);
+                }
+            }
+
+            // Draw viewport rectangle
+            const vpX = viewportLeft * scale;
+            const vpY = viewportTop * scale;
+            const vpW = canvas.width * scale;
+            const vpH = canvas.height * scale;
+
+            minimapCtx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            minimapCtx.lineWidth = 2;
+            minimapCtx.strokeRect(vpX, vpY, vpW, vpH);
+
+            // Draw friends
+            for (let friend of friends) {
+                if (friend.isAlive) {
+                    minimapCtx.fillStyle = '#00aaff';
+                    minimapCtx.beginPath();
+                    minimapCtx.arc(friend.x * scale, friend.y * scale, 3, 0, Math.PI * 2);
+                    minimapCtx.fill();
+                }
+            }
+
+            // Draw villain (pulsing effect when active)
+            if (villain.isActive && villain.isAlive) {
+                const pulse = Math.sin(Date.now() / 150) * 0.3 + 0.7;
+                minimapCtx.fillStyle = `rgba(255, 0, 0, ${pulse})`;
+                minimapCtx.beginPath();
+                minimapCtx.arc(villain.x * scale, villain.y * scale, 5, 0, Math.PI * 2);
+                minimapCtx.fill();
+
+                // Red outline
+                minimapCtx.strokeStyle = '#ff0000';
+                minimapCtx.lineWidth = 1;
+                minimapCtx.stroke();
+            }
+
+            // Draw player
+            if (player.isAlive) {
+                minimapCtx.fillStyle = '#00ff00';
+                minimapCtx.beginPath();
+                minimapCtx.arc(player.x * scale, player.y * scale, 4, 0, Math.PI * 2);
+                minimapCtx.fill();
+
+                // White outline
+                minimapCtx.strokeStyle = '#fff';
+                minimapCtx.lineWidth = 1;
+                minimapCtx.stroke();
+            }
+
+            // Draw escape door on minimap
+            if (escapeDoor) {
+                minimapCtx.fillStyle = escapeDoor.isOpen ? '#00ff00' : '#ff6600';
+                minimapCtx.beginPath();
+                minimapCtx.arc(escapeDoor.x * scale, escapeDoor.y * scale, 4, 0, Math.PI * 2);
+                minimapCtx.fill();
+            }
+
+            // Draw keys on minimap
+            for (let key of keyItems) {
+                if (!key.isPickedUp) {
+                    minimapCtx.fillStyle = '#ffd700';
+                    minimapCtx.beginPath();
+                    minimapCtx.arc(key.x * scale, key.y * scale, 2, 0, Math.PI * 2);
+                    minimapCtx.fill();
+                }
+            }
+
+            // Minimap border
+            minimapCtx.strokeStyle = '#6a6a8a';
+            minimapCtx.lineWidth = 2;
+            minimapCtx.strokeRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+        }
+
+        function updateUI() {
+            document.getElementById('surviveTime').textContent = surviveTime;
+            document.getElementById('playerHP').textContent = `${Math.max(0, player.hp)}/100`;
+
+            // Update holding indicator
+            const holdingIndicator = document.getElementById('holdingIndicator');
+            if (holdingType === 'weapon' && currentWeaponSlot >= 0) {
+                const activeWeapon = weaponInventory[currentWeaponSlot];
+                if (activeWeapon) {
+                    holdingIndicator.textContent = WEAPONS[activeWeapon].name + (isSwapping ? ' (교체중...)' : '');
+                    holdingIndicator.className = 'weapon';
+                }
+            } else if (holdingType === 'key' && currentKeySlot >= 0) {
+                const heldKey = keyInventory[currentKeySlot];
+                if (heldKey) {
+                    holdingIndicator.textContent = heldKey.emoji + ` 열쇠 ${currentKeySlot + 1}`;
+                    holdingIndicator.className = 'key';
+                }
+            } else {
+                holdingIndicator.textContent = '손에 든 것 없음';
+                holdingIndicator.className = '';
+            }
+
+            document.getElementById('hidingStatus').textContent = player.isHiding ? '🫣 숨는중!' : '활동중';
+            document.getElementById('hidingStatus').style.color = player.isHiding ? '#4ade80' : '#fff';
+
+            const aliveFriends = friends.filter(f => f.isAlive).length;
+            document.getElementById('survivors').textContent = `${aliveFriends + (player.isAlive ? 1 : 0)}/9`;
+
+            document.getElementById('villainHP').textContent =
+                villain.isActive ? `${Math.max(0, villain.hp)}/${villain.maxHp}${villain.hp < villain.maxHp * 0.4 ? ' 🔥RAGE!' : ''}` : '출현 대기중...';
+
+            document.getElementById('coinDisplay').textContent = `💰 ${coins}`;
+
+            // Update slots UI
+            updateSlotsUI();
+        }
+
+        function gameLoop() {
+            if (gameState !== 'playing' && gameState !== 'countdown') return;
+
+            const now = Date.now();
+            if (gameState === 'playing' && now - lastTime >= 1000) {
+                surviveTime++;
+                lastTime = now;
+            }
+
+            updatePlayer();
+            updateFriends();
+
+            if (gameState === 'playing') {
+                updateVillain();
+            }
+
+            updateAttackEffects();
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            drawMap();
+            drawMinimap();
+            updateUI();
+
+            requestAnimationFrame(gameLoop);
+        }
+    </script>
+</body>
+</html>
