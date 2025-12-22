@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Arcade Portal</title>
+    <meta
+      name="description"
+      content="A curated portal for mini single-page games."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #1a1435;
+        --muted: #5b4f7a;
+        --peach: #fbe2c4;
+        --sunset: #ffb29f;
+        --berry: #7b4ee5;
+        --mint: #3bb8a9;
+        --card: rgba(255, 255, 255, 0.86);
+        --shadow: 0 30px 60px rgba(31, 23, 64, 0.18);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Chakra Petch", "Trebuchet MS", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(1200px 800px at 10% -10%, #ffffff 0%, #f7f2ff 45%, transparent 65%),
+          radial-gradient(900px 700px at 100% 10%, #ffe7cf 0%, #fff4ea 55%, transparent 75%),
+          linear-gradient(135deg, #fbe2c4 0%, #f0f4ff 55%, #e9f8f5 100%);
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: -20% -10% auto -10%;
+        height: 70vh;
+        background:
+          radial-gradient(closest-side at 30% 40%, rgba(123, 78, 229, 0.22), transparent 65%),
+          radial-gradient(closest-side at 70% 40%, rgba(59, 184, 169, 0.24), transparent 68%);
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      .portal {
+        width: min(1100px, 92vw);
+        margin: 0 auto;
+        padding: 64px 0 80px;
+        display: grid;
+        gap: 48px;
+      }
+
+      header {
+        display: grid;
+        gap: 18px;
+      }
+
+      .eyebrow {
+        font-size: 0.95rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--berry);
+      }
+
+      h1 {
+        margin: 0;
+        font-family: "Fraunces", "Times New Roman", serif;
+        font-weight: 700;
+        font-size: clamp(2.6rem, 6vw, 4.8rem);
+        line-height: 1.05;
+      }
+
+      .hero-copy {
+        font-size: clamp(1.05rem, 2.3vw, 1.4rem);
+        color: var(--muted);
+        max-width: 45ch;
+      }
+
+      .hero-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: center;
+      }
+
+      .pill {
+        padding: 8px 16px;
+        border-radius: 999px;
+        background: rgba(123, 78, 229, 0.1);
+        color: var(--berry);
+        font-size: 0.9rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+      }
+
+      .grid {
+        display: grid;
+        gap: 24px;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+
+      .game-card {
+        position: relative;
+        padding: 24px;
+        border-radius: 24px;
+        text-decoration: none;
+        color: inherit;
+        background: var(--card);
+        box-shadow: var(--shadow);
+        border: 1px solid rgba(123, 78, 229, 0.12);
+        display: grid;
+        gap: 14px;
+        min-height: 220px;
+        transform: translateY(16px);
+        opacity: 0;
+        animation: riseIn 700ms ease forwards;
+        animation-delay: calc(var(--i) * 120ms);
+      }
+
+      .game-card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(135deg, rgba(123, 78, 229, 0.18), rgba(59, 184, 169, 0.18));
+        opacity: 0;
+        transition: opacity 200ms ease;
+        z-index: 0;
+      }
+
+      .game-card:hover::after,
+      .game-card:focus-visible::after {
+        opacity: 1;
+      }
+
+      .game-card > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      .game-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+      }
+
+      .game-desc {
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .launch {
+        margin-top: auto;
+        align-self: start;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        color: var(--berry);
+      }
+
+      .launch span {
+        display: inline-block;
+        transition: transform 200ms ease;
+      }
+
+      .game-card:hover .launch span,
+      .game-card:focus-visible .launch span {
+        transform: translateX(6px);
+      }
+
+      .spotlight {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+        padding: 28px;
+        border-radius: 28px;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.72));
+        border: 1px solid rgba(31, 23, 64, 0.08);
+      }
+
+      .spotlight h2 {
+        margin: 0;
+        font-size: 1.4rem;
+      }
+
+      footer {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 24px;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      @keyframes riseIn {
+        from {
+          transform: translateY(26px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .portal {
+          padding: 48px 0 64px;
+        }
+
+        .hero-meta {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .game-card {
+          min-height: 200px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .game-card {
+          animation: none;
+          opacity: 1;
+          transform: none;
+        }
+
+        .launch span {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="portal">
+      <header>
+        <span class="eyebrow">Geniuskey Arcade</span>
+        <h1>Pick a portal, drop into a mini-game.</h1>
+        <p class="hero-copy">
+          Each folder hosts a single-page game. Choose a vibe and jump right in
+          without extra setup.
+        </p>
+        <div class="hero-meta">
+          <span class="pill">2 games live</span>
+          <span class="pill">Instant play</span>
+        </div>
+      </header>
+
+      <section class="grid" aria-label="Game list">
+        <a class="game-card" style="--i: 1" href="rio-school/">
+          <div class="game-title">Rio Horror School</div>
+          <div class="game-desc">
+            Navigate a creepy campus, dodge surprises, and escape the halls.
+          </div>
+          <div class="launch">Enter the school <span>→</span></div>
+        </a>
+        <a class="game-card" style="--i: 2" href="tank-survival/">
+          <div class="game-title">Tank Survival</div>
+          <div class="game-desc">
+            Hold the line, power up, and outlast waves in a fast survival run.
+          </div>
+          <div class="launch">Start the battle <span>→</span></div>
+        </a>
+      </section>
+
+      <section class="spotlight">
+        <h2>Tip</h2>
+        <p class="hero-copy">
+          Add a new folder with its own <code>index.html</code> and it can be
+          linked here in seconds.
+        </p>
+      </section>
+
+      <footer>
+        <span>Arcade portal for single-page mini games.</span>
+        <span>Built for fast launches and quick switches.</span>
+      </footer>
+    </main>
+  </body>
+</html>
