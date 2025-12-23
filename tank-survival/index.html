@@ -124,6 +124,111 @@
             color: #666;
             font-size: 14px;
         }
+
+        /* Mobile Controls */
+        #mobileControls {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 15px;
+            pointer-events: none;
+            z-index: 200;
+        }
+
+        .joystick-container {
+            position: absolute;
+            bottom: 20px;
+            width: 120px;
+            height: 120px;
+            pointer-events: auto;
+        }
+
+        #moveJoystick {
+            left: 20px;
+        }
+
+        #aimJoystick {
+            right: 20px;
+        }
+
+        .joystick-base {
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            border: 3px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .joystick-stick {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: none;
+        }
+
+        #fireBtn {
+            position: absolute;
+            bottom: 160px;
+            right: 35px;
+            width: 80px;
+            height: 80px;
+            background: rgba(239, 68, 68, 0.7);
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #fireBtn:active {
+            background: rgba(239, 68, 68, 1);
+            transform: scale(0.95);
+        }
+
+        .joystick-label {
+            position: absolute;
+            bottom: -25px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+        }
+
+        /* Responsive */
+        @media (max-width: 920px) {
+            #ui {
+                gap: 10px;
+                padding: 8px 15px;
+                font-size: 12px;
+            }
+            #ui .label {
+                display: none;
+            }
+            #controls {
+                display: none;
+            }
+        }
+
+        @media (pointer: coarse) {
+            #mobileControls {
+                display: block;
+            }
+            #controls {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -143,6 +248,23 @@
             <button id="startBtn">START GAME</button>
         </div>
         <div id="controls">WASD: Move Tank | Arrow Keys: Aim Turret | SPACE: Shoot</div>
+    </div>
+
+    <!-- Mobile Controls -->
+    <div id="mobileControls">
+        <div id="moveJoystick" class="joystick-container">
+            <div class="joystick-base">
+                <div class="joystick-stick" id="moveStick"></div>
+            </div>
+            <div class="joystick-label">MOVE</div>
+        </div>
+        <div id="aimJoystick" class="joystick-container">
+            <div class="joystick-base">
+                <div class="joystick-stick" id="aimStick"></div>
+            </div>
+            <div class="joystick-label">AIM</div>
+        </div>
+        <div id="fireBtn">FIRE</div>
     </div>
 
     <script>
@@ -321,6 +443,45 @@
         // Input
         const keys = {};
 
+        // Mobile controls state
+        const mobileInput = {
+            moveX: 0,
+            moveY: 0,
+            aimX: 0,
+            aimY: 0,
+            firing: false
+        };
+        let isMobile = false;
+
+        // Canvas scaling
+        let canvasScale = 1;
+        const baseWidth = 900;
+        const baseHeight = 600;
+
+        function resizeCanvas() {
+            const maxWidth = window.innerWidth - 20;
+            const maxHeight = window.innerHeight - 100;
+
+            let newWidth = baseWidth;
+            let newHeight = baseHeight;
+
+            if (maxWidth < baseWidth || maxHeight < baseHeight) {
+                const scaleX = maxWidth / baseWidth;
+                const scaleY = maxHeight / baseHeight;
+                canvasScale = Math.min(scaleX, scaleY, 1);
+                newWidth = Math.floor(baseWidth * canvasScale);
+                newHeight = Math.floor(baseHeight * canvasScale);
+            } else {
+                canvasScale = 1;
+            }
+
+            canvas.style.width = newWidth + 'px';
+            canvas.style.height = newHeight + 'px';
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
         // Player
         const player = {
             x: 450,
@@ -383,6 +544,91 @@
         });
         document.addEventListener('keyup', (e) => keys[e.code] = false);
         document.getElementById('startBtn').addEventListener('click', startGame);
+
+        // Mobile joystick controls
+        function setupJoystick(containerId, stickId, onMove) {
+            const container = document.getElementById(containerId);
+            const stick = document.getElementById(stickId);
+            if (!container || !stick) return;
+
+            let active = false;
+            let centerX, centerY;
+            const maxDist = 35;
+
+            function handleStart(e) {
+                e.preventDefault();
+                isMobile = true;
+                active = true;
+                const rect = container.getBoundingClientRect();
+                centerX = rect.left + rect.width / 2;
+                centerY = rect.top + rect.height / 2;
+                handleMove(e);
+            }
+
+            function handleMove(e) {
+                if (!active) return;
+                e.preventDefault();
+
+                const touch = e.touches ? e.touches[0] : e;
+                let dx = touch.clientX - centerX;
+                let dy = touch.clientY - centerY;
+
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > maxDist) {
+                    dx = (dx / dist) * maxDist;
+                    dy = (dy / dist) * maxDist;
+                }
+
+                stick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+                onMove(dx / maxDist, dy / maxDist);
+            }
+
+            function handleEnd(e) {
+                e.preventDefault();
+                active = false;
+                stick.style.transform = 'translate(-50%, -50%)';
+                onMove(0, 0);
+            }
+
+            container.addEventListener('touchstart', handleStart, { passive: false });
+            container.addEventListener('touchmove', handleMove, { passive: false });
+            container.addEventListener('touchend', handleEnd, { passive: false });
+            container.addEventListener('touchcancel', handleEnd, { passive: false });
+        }
+
+        // Setup move joystick
+        setupJoystick('moveJoystick', 'moveStick', (x, y) => {
+            mobileInput.moveX = x;
+            mobileInput.moveY = y;
+        });
+
+        // Setup aim joystick
+        setupJoystick('aimJoystick', 'aimStick', (x, y) => {
+            mobileInput.aimX = x;
+            mobileInput.aimY = y;
+        });
+
+        // Fire button
+        const fireBtn = document.getElementById('fireBtn');
+        if (fireBtn) {
+            fireBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                isMobile = true;
+                mobileInput.firing = true;
+            }, { passive: false });
+            fireBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                mobileInput.firing = false;
+            }, { passive: false });
+            fireBtn.addEventListener('touchcancel', (e) => {
+                mobileInput.firing = false;
+            });
+        }
+
+        // Prevent scrolling on mobile
+        document.addEventListener('touchmove', (e) => {
+            if (gameRunning) e.preventDefault();
+        }, { passive: false });
 
         function startGame() {
             initAudio();
@@ -511,12 +757,20 @@
         }
 
         function update() {
-            // Player tank movement (WASD)
+            // Player tank movement (WASD + Mobile)
             let dx = 0, dy = 0;
+
+            // Keyboard input
             if (keys['KeyW']) dy = -1;
             if (keys['KeyS']) dy = 1;
             if (keys['KeyA']) dx = -1;
             if (keys['KeyD']) dx = 1;
+
+            // Mobile joystick input
+            if (Math.abs(mobileInput.moveX) > 0.1 || Math.abs(mobileInput.moveY) > 0.1) {
+                dx = mobileInput.moveX;
+                dy = mobileInput.moveY;
+            }
 
             if (dx !== 0 || dy !== 0) {
                 const len = Math.sqrt(dx * dx + dy * dy);
@@ -527,14 +781,24 @@
                 player.bodyAngle = Math.atan2(dy, dx);
             }
 
-            // Turret aiming (Arrow Keys) - set target angle based on direction
+            // Turret aiming (Arrow Keys + Mobile)
             const turretKeyPressed = keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight'];
+            const mobileAiming = Math.abs(mobileInput.aimX) > 0.2 || Math.abs(mobileInput.aimY) > 0.2;
 
-            if (keys['ArrowUp']) player.targetTurretAngle = -Math.PI / 2;      // Up
-            else if (keys['ArrowDown']) player.targetTurretAngle = Math.PI / 2;     // Down
-            else if (keys['ArrowLeft']) player.targetTurretAngle = Math.PI;         // Left
-            else if (keys['ArrowRight']) player.targetTurretAngle = 0;              // Right
-            else player.targetTurretAngle = player.turretAngle;  // Stop at current position when no key pressed
+            if (mobileAiming) {
+                // Mobile: set target angle based on joystick direction
+                player.targetTurretAngle = Math.atan2(mobileInput.aimY, mobileInput.aimX);
+            } else if (keys['ArrowUp']) {
+                player.targetTurretAngle = -Math.PI / 2;      // Up
+            } else if (keys['ArrowDown']) {
+                player.targetTurretAngle = Math.PI / 2;     // Down
+            } else if (keys['ArrowLeft']) {
+                player.targetTurretAngle = Math.PI;         // Left
+            } else if (keys['ArrowRight']) {
+                player.targetTurretAngle = 0;              // Right
+            } else {
+                player.targetTurretAngle = player.turretAngle;  // Stop at current position
+            }
 
             // Rotate turret towards target angle (shortest path)
             let angleDiff = player.targetTurretAngle - player.turretAngle;
@@ -553,8 +817,9 @@
             player.x = Math.max(player.width/2, Math.min(canvas.width - player.width/2, player.x));
             player.y = Math.max(player.height/2, Math.min(canvas.height - player.height/2, player.y));
 
-            // Shooting (uses turret angle)
-            if (keys['Space'] && player.shootCooldown <= 0) {
+            // Shooting (Keyboard + Mobile)
+            const shooting = keys['Space'] || mobileInput.firing;
+            if (shooting && player.shootCooldown <= 0) {
                 bullets.push({
                     x: player.x + Math.cos(player.turretAngle) * 25,
                     y: player.y + Math.sin(player.turretAngle) * 25,
