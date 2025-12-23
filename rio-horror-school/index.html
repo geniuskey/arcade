@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>😎리오의 공포학교</title>
     <style>
         * {
@@ -385,6 +385,249 @@
         .shop-item.owned {
             border-color: #4ade80;
         }
+
+        /* Desktop/Mobile visibility */
+        .mobile-only {
+            display: none;
+        }
+
+        .desktop-only {
+            display: inline;
+        }
+
+        /* Mobile Controls */
+        #mobileControls {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            pointer-events: none;
+            z-index: 200;
+        }
+
+        #joystickContainer {
+            position: absolute;
+            left: 30px;
+            bottom: 30px;
+            width: 120px;
+            height: 120px;
+            pointer-events: auto;
+        }
+
+        #joystickBase {
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 3px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            position: relative;
+        }
+
+        #joystickKnob {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        #actionButtons {
+            position: absolute;
+            right: 20px;
+            bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        .action-row {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .action-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .action-btn:active {
+            transform: scale(0.9);
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .action-btn.attack {
+            background: rgba(231, 76, 60, 0.6);
+            border-color: #e74c3c;
+            width: 70px;
+            height: 70px;
+            font-size: 28px;
+        }
+
+        .action-btn.pickup {
+            background: rgba(46, 204, 113, 0.6);
+            border-color: #2ecc71;
+        }
+
+        .action-btn.hide {
+            background: rgba(52, 152, 219, 0.6);
+            border-color: #3498db;
+        }
+
+        /* Mobile responsive adjustments */
+        @media (max-width: 1000px) {
+            body {
+                overflow: auto;
+                align-items: flex-start;
+                padding: 5px;
+            }
+
+            #gameContainer {
+                transform-origin: top center;
+            }
+
+            #mobileControls {
+                display: block;
+            }
+
+            .mobile-only {
+                display: inline;
+            }
+
+            .desktop-only {
+                display: none;
+            }
+
+            #bottomBar {
+                width: 100%;
+                max-width: 968px;
+                height: auto;
+                min-height: 120px;
+                flex-wrap: wrap;
+                padding: 5px;
+                gap: 5px;
+            }
+
+            #helpText {
+                display: none;
+            }
+
+            #minimapContainer {
+                margin-left: 0;
+            }
+
+            #minimap {
+                width: 120px;
+                height: 54px;
+            }
+
+            #ui {
+                font-size: 10px;
+                min-width: 120px;
+            }
+
+            .inv-slot {
+                width: 40px;
+                height: 40px;
+            }
+
+            .inv-slot img {
+                width: 28px;
+                height: 28px;
+            }
+
+            .inv-slot .slot-emoji {
+                font-size: 20px;
+            }
+
+            #holdingIndicator {
+                font-size: 10px;
+                padding: 3px 6px;
+            }
+
+            #startScreen p, #gameOverScreen p, #victoryScreen p {
+                font-size: 14px;
+                padding: 0 15px;
+            }
+
+            #startScreen h1, #gameOverScreen h1, #victoryScreen h1, #shopScreen h1 {
+                font-size: 32px;
+            }
+
+            button {
+                padding: 12px 30px;
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            #gameCanvas {
+                width: 100vw;
+                height: auto;
+            }
+
+            #slotsContainer .slot-label {
+                display: none;
+            }
+
+            .inv-slot {
+                width: 36px;
+                height: 36px;
+            }
+
+            #joystickContainer {
+                left: 15px;
+                bottom: 20px;
+                width: 100px;
+                height: 100px;
+            }
+
+            #joystickBase {
+                width: 100px;
+                height: 100px;
+            }
+
+            #joystickKnob {
+                width: 40px;
+                height: 40px;
+            }
+
+            #actionButtons {
+                right: 10px;
+                bottom: 20px;
+            }
+
+            .action-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+
+            .action-btn.attack {
+                width: 60px;
+                height: 60px;
+                font-size: 24px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -454,12 +697,15 @@
                 갑자기 한 친구 🤪가 미쳐버렸어요!<br><br>
                 <strong>과연, 😎 리오는 어떻게 이 상황을 극복할까요?</strong><br><br>
                 📌 5초 안에 무기를 줍거나 다른 교실로 도망가세요!<br>
-                ⚔️ SPACE로 공격, E로 무기 줍기<br>
-                🫣 H로 책상/사물함에 숨기<br>
+                <span class="desktop-only">⚔️ SPACE로 공격, E로 무기 줍기<br>
+                🫣 H로 책상/사물함에 숨기<br></span>
+                <span class="mobile-only">⚔️ 버튼으로 공격/줍기/숨기<br>
+                🕹️ 조이스틱으로 이동<br></span>
                 👀 빌런은 벽 너머를 볼 수 없어요!<br>
                 🚪 탈출구를 열 열쇠 5개 중 1개만 맞아요!<br>
                 🍎 음식과 열쇠는 자동으로 획득!<br><br>
-                <span style="color: #ffcc00">1234 키로 무기 선택 | 스테이지 클리어 시 20코인 획득</span>
+                <span class="desktop-only" style="color: #ffcc00">1234 키로 무기 선택 | 스테이지 클리어 시 20코인 획득</span>
+                <span class="mobile-only" style="color: #ffcc00">슬롯 터치로 무기/열쇠 선택 | 스테이지 클리어 시 20코인</span>
             </p>
             <button onclick="startGame()">게임 시작</button>
         </div>
@@ -484,6 +730,24 @@
             <p>💰 보유 코인: <span id="shopCoins">0</span></p>
             <div class="shop-items" id="shopItems"></div>
             <button onclick="closeShop()">닫기</button>
+        </div>
+    </div>
+
+    <!-- Mobile Controls -->
+    <div id="mobileControls">
+        <div id="joystickContainer">
+            <div id="joystickBase">
+                <div id="joystickKnob"></div>
+            </div>
+        </div>
+        <div id="actionButtons">
+            <div class="action-row">
+                <button class="action-btn attack" id="btnAttack">⚔️</button>
+            </div>
+            <div class="action-row">
+                <button class="action-btn hide" id="btnHide">🫣</button>
+                <button class="action-btn pickup" id="btnPickup">✋</button>
+            </div>
         </div>
     </div>
 
@@ -938,6 +1202,158 @@
         document.addEventListener('keyup', (e) => {
             keys[e.key.toLowerCase()] = false;
         });
+
+        // Mobile Touch Controls
+        const joystickBase = document.getElementById('joystickBase');
+        const joystickKnob = document.getElementById('joystickKnob');
+        const btnAttack = document.getElementById('btnAttack');
+        const btnHide = document.getElementById('btnHide');
+        const btnPickup = document.getElementById('btnPickup');
+
+        let joystickActive = false;
+        let joystickTouchId = null;
+        let joystickCenter = { x: 0, y: 0 };
+        const joystickMaxDistance = 35;
+
+        // Touch input state (mirrors keyboard keys)
+        const touchInput = { x: 0, y: 0 };
+
+        function getJoystickCenter() {
+            const rect = joystickBase.getBoundingClientRect();
+            return {
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2
+            };
+        }
+
+        function handleJoystickStart(e) {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            joystickActive = true;
+            joystickTouchId = touch.identifier;
+            joystickCenter = getJoystickCenter();
+            handleJoystickMove(e);
+        }
+
+        function handleJoystickMove(e) {
+            if (!joystickActive) return;
+            e.preventDefault();
+
+            let touch = null;
+            for (let t of e.changedTouches) {
+                if (t.identifier === joystickTouchId) {
+                    touch = t;
+                    break;
+                }
+            }
+            if (!touch) return;
+
+            const dx = touch.clientX - joystickCenter.x;
+            const dy = touch.clientY - joystickCenter.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const clampedDistance = Math.min(distance, joystickMaxDistance);
+
+            let knobX = 0, knobY = 0;
+            if (distance > 0) {
+                knobX = (dx / distance) * clampedDistance;
+                knobY = (dy / distance) * clampedDistance;
+            }
+
+            joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+
+            // Update touch input (normalize to -1 to 1)
+            const deadzone = 0.15;
+            touchInput.x = clampedDistance > joystickMaxDistance * deadzone ? knobX / joystickMaxDistance : 0;
+            touchInput.y = clampedDistance > joystickMaxDistance * deadzone ? knobY / joystickMaxDistance : 0;
+
+            // Update keys object for movement
+            keys['w'] = touchInput.y < -0.3;
+            keys['s'] = touchInput.y > 0.3;
+            keys['a'] = touchInput.x < -0.3;
+            keys['d'] = touchInput.x > 0.3;
+        }
+
+        function handleJoystickEnd(e) {
+            let found = false;
+            for (let t of e.changedTouches) {
+                if (t.identifier === joystickTouchId) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) return;
+
+            joystickActive = false;
+            joystickTouchId = null;
+            joystickKnob.style.transform = 'translate(-50%, -50%)';
+            touchInput.x = 0;
+            touchInput.y = 0;
+            keys['w'] = false;
+            keys['s'] = false;
+            keys['a'] = false;
+            keys['d'] = false;
+        }
+
+        if (joystickBase) {
+            joystickBase.addEventListener('touchstart', handleJoystickStart, { passive: false });
+            joystickBase.addEventListener('touchmove', handleJoystickMove, { passive: false });
+            joystickBase.addEventListener('touchend', handleJoystickEnd);
+            joystickBase.addEventListener('touchcancel', handleJoystickEnd);
+        }
+
+        // Action button handlers
+        if (btnAttack) {
+            btnAttack.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameState === 'playing') {
+                    playerAttack();
+                }
+            }, { passive: false });
+        }
+
+        if (btnHide) {
+            btnHide.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameState === 'playing' || gameState === 'countdown') {
+                    tryHide();
+                }
+            }, { passive: false });
+        }
+
+        if (btnPickup) {
+            btnPickup.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameState === 'playing' || gameState === 'countdown') {
+                    tryPickup();
+                }
+            }, { passive: false });
+        }
+
+        // Make inventory slots touch-friendly
+        document.querySelectorAll('.weapon-slot').forEach((slot, index) => {
+            if (index < 4) { // Slots 0-3 (1-4 keys)
+                slot.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (gameState === 'playing' || gameState === 'countdown') {
+                        selectWeaponSlot(index);
+                    }
+                }, { passive: false });
+            }
+        });
+
+        document.querySelectorAll('.key-slot').forEach((slot, index) => {
+            slot.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameState === 'playing' || gameState === 'countdown') {
+                    selectKeySlot(index);
+                }
+            }, { passive: false });
+        });
+
+        // Prevent default touch behaviors on game area
+        document.getElementById('gameContainer').addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        }, { passive: false });
 
         function createEntity(x, y, emoji, hp = 100) {
             return {

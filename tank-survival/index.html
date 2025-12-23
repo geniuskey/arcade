@@ -151,6 +151,147 @@
         const overlay = document.getElementById('overlay');
         const bossWarning = document.getElementById('bossWarning');
 
+        // Audio Context
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playShoot() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.1);
+
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function playEnemyShoot() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            // Different sound from player - lower pitched "thump"
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(150 + Math.random() * 50, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.1);
+
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function playExplosion(big = false) {
+            if (!audioCtx) return;
+
+            const duration = big ? 0.5 : 0.2;
+            const volume = big ? 0.4 : 0.2;
+
+            // Noise generator
+            const bufferSize = audioCtx.sampleRate * duration;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, big ? 1.5 : 2);
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(big ? 800 : 1000, audioCtx.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + duration);
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            noise.start(audioCtx.currentTime);
+        }
+
+        function playHit() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.05);
+
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.05);
+        }
+
+        function playPowerup() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+            osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.2);
+
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.2);
+        }
+
+        function playCelebration() {
+            if (!audioCtx) return;
+            // Victory fanfare - ascending notes
+            const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
+            notes.forEach((freq, i) => {
+                setTimeout(() => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.start(audioCtx.currentTime);
+                    osc.stop(audioCtx.currentTime + 0.3);
+                }, i * 100);
+            });
+        }
+
         // Game state
         let gameRunning = false;
         let score = 0;
@@ -158,6 +299,24 @@
         let enemiesRemaining = 0;
         let bossMode = false;
         let boss = null;
+
+        // Stage announcement
+        let stageAnnounce = {
+            active: false,
+            timer: 0,
+            duration: 120,
+            stage: 1
+        };
+
+        // Boss defeat celebration
+        let celebration = {
+            active: false,
+            timer: 0,
+            duration: 150,
+            messages: ['AWESOME!', 'INCREDIBLE!', 'AMAZING!', 'FANTASTIC!', 'UNSTOPPABLE!', 'LEGENDARY!'],
+            message: '',
+            confetti: []
+        };
 
         // Input
         const keys = {};
@@ -168,11 +327,13 @@
             y: 500,
             width: 40,
             height: 40,
-            speed: 2,
+            speed: 1.6,
             hp: 100,
             maxHp: 100,
             bodyAngle: -Math.PI / 2,
             turretAngle: -Math.PI / 2,
+            targetTurretAngle: -Math.PI / 2,
+            turretSpeed: 0.06,
             shootCooldown: 0,
             invincible: 0
         };
@@ -184,12 +345,12 @@
         let particles = [];
         let powerups = [];
 
-        // Enemy types (speeds reduced by 50%)
+        // Enemy types (speeds at 80%)
         const enemyTypes = {
             tank: {
                 width: 35,
                 height: 35,
-                speed: 0.75,
+                speed: 0.6,
                 hp: 3,
                 color: '#ef4444',
                 shootRate: 120,
@@ -198,7 +359,7 @@
             helicopter: {
                 width: 30,
                 height: 30,
-                speed: 1.5,
+                speed: 1.2,
                 hp: 1,
                 color: '#8b5cf6',
                 shootRate: 90,
@@ -207,7 +368,7 @@
             robot: {
                 width: 32,
                 height: 32,
-                speed: 1,
+                speed: 0.8,
                 hp: 2,
                 color: '#f97316',
                 shootRate: 100,
@@ -224,6 +385,7 @@
         document.getElementById('startBtn').addEventListener('click', startGame);
 
         function startGame() {
+            initAudio();
             gameRunning = true;
             score = 0;
             stage = 1;
@@ -232,15 +394,48 @@
             player.x = 450;
             player.y = 500;
             player.hp = 100;
+            player.bodyAngle = -Math.PI / 2;
+            player.turretAngle = -Math.PI / 2;
+            player.targetTurretAngle = -Math.PI / 2;
             player.invincible = 0;
             bullets = [];
             enemyBullets = [];
             enemies = [];
             particles = [];
             powerups = [];
+            celebration.active = false;
+            celebration.confetti = [];
             overlay.style.display = 'none';
+            showStageAnnounce(1);
             spawnStageEnemies();
             gameLoop();
+        }
+
+        function showStageAnnounce(stageNum) {
+            stageAnnounce.active = true;
+            stageAnnounce.timer = 0;
+            stageAnnounce.stage = stageNum;
+        }
+
+        function triggerCelebration() {
+            celebration.active = true;
+            celebration.timer = 0;
+            celebration.message = celebration.messages[Math.floor(Math.random() * celebration.messages.length)];
+            celebration.confetti = [];
+
+            // Create confetti particles
+            for (let i = 0; i < 100; i++) {
+                celebration.confetti.push({
+                    x: canvas.width / 2 + (Math.random() - 0.5) * 200,
+                    y: canvas.height / 2,
+                    dx: (Math.random() - 0.5) * 15,
+                    dy: -Math.random() * 10 - 5,
+                    color: ['#fbbf24', '#ef4444', '#22c55e', '#3b82f6', '#a855f7', '#ec4899'][Math.floor(Math.random() * 6)],
+                    size: 4 + Math.random() * 6,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 0.3
+                });
+            }
         }
 
         function spawnStageEnemies() {
@@ -273,7 +468,7 @@
                 x, y,
                 width: template.width,
                 height: template.height,
-                speed: template.speed + stage * 0.2,
+                speed: template.speed + stage * 0.1,
                 hp: template.hp + Math.floor(stage / 3),
                 maxHp: template.hp + Math.floor(stage / 3),
                 color: template.color,
@@ -296,26 +491,32 @@
                     y: -100,
                     width: 80,
                     height: 80,
-                    speed: 1 + stage * 0.3,
+                    speed: 0.4 + stage * 0.12,
                     hp: 20 + stage * 10,
                     maxHp: 20 + stage * 10,
                     color: '#dc2626',
                     shootCooldown: 0,
-                    shootRate: 40,
+                    shootRate: 50,
                     pattern: 0,
                     patternTimer: 0,
-                    angle: Math.PI / 2
+                    angle: Math.PI / 2,
+                    gatlingCooldown: 0,
+                    gatlingRate: 15,
+                    attackMode: 'cannon',
+                    modeTimer: 0,
+                    modeDuration: 180,
+                    gatlingShakeX: 0
                 };
             }, 2000);
         }
 
         function update() {
-            // Player movement
+            // Player tank movement (WASD)
             let dx = 0, dy = 0;
-            if (keys['KeyW'] || keys['ArrowUp']) dy = -1;
-            if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
-            if (keys['KeyA'] || keys['ArrowLeft']) dx = -1;
-            if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
+            if (keys['KeyW']) dy = -1;
+            if (keys['KeyS']) dy = 1;
+            if (keys['KeyA']) dx = -1;
+            if (keys['KeyD']) dx = 1;
 
             if (dx !== 0 || dy !== 0) {
                 const len = Math.sqrt(dx * dx + dy * dy);
@@ -323,22 +524,45 @@
                 dy /= len;
                 player.x += dx * player.speed;
                 player.y += dy * player.speed;
-                player.angle = Math.atan2(dy, dx);
+                player.bodyAngle = Math.atan2(dy, dx);
             }
+
+            // Turret aiming (Arrow Keys) - set target angle based on direction
+            const turretKeyPressed = keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight'];
+
+            if (keys['ArrowUp']) player.targetTurretAngle = -Math.PI / 2;      // Up
+            else if (keys['ArrowDown']) player.targetTurretAngle = Math.PI / 2;     // Down
+            else if (keys['ArrowLeft']) player.targetTurretAngle = Math.PI;         // Left
+            else if (keys['ArrowRight']) player.targetTurretAngle = 0;              // Right
+            else player.targetTurretAngle = player.turretAngle;  // Stop at current position when no key pressed
+
+            // Rotate turret towards target angle (shortest path)
+            let angleDiff = player.targetTurretAngle - player.turretAngle;
+            // Normalize to [-PI, PI]
+            while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+            while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+            if (Math.abs(angleDiff) > 0.01) {
+                player.turretAngle += Math.sign(angleDiff) * Math.min(player.turretSpeed, Math.abs(angleDiff));
+            }
+            // Normalize turret angle
+            while (player.turretAngle > Math.PI) player.turretAngle -= Math.PI * 2;
+            while (player.turretAngle < -Math.PI) player.turretAngle += Math.PI * 2;
 
             // Keep player in bounds
             player.x = Math.max(player.width/2, Math.min(canvas.width - player.width/2, player.x));
             player.y = Math.max(player.height/2, Math.min(canvas.height - player.height/2, player.y));
 
-            // Shooting
+            // Shooting (uses turret angle)
             if (keys['Space'] && player.shootCooldown <= 0) {
                 bullets.push({
-                    x: player.x + Math.cos(player.angle) * 25,
-                    y: player.y + Math.sin(player.angle) * 25,
-                    dx: Math.cos(player.angle) * 10,
-                    dy: Math.sin(player.angle) * 10,
+                    x: player.x + Math.cos(player.turretAngle) * 25,
+                    y: player.y + Math.sin(player.turretAngle) * 25,
+                    dx: Math.cos(player.turretAngle) * 4,
+                    dy: Math.sin(player.turretAngle) * 4,
                     radius: 5
                 });
+                playShoot();
                 player.shootCooldown = 15;
             }
             player.shootCooldown--;
@@ -385,12 +609,13 @@
                     enemyBullets.push({
                         x: enemy.x,
                         y: enemy.y,
-                        dx: Math.cos(angle) * 5,
-                        dy: Math.sin(angle) * 5,
+                        dx: Math.cos(angle) * 1.25,
+                        dy: Math.sin(angle) * 1.25,
                         radius: 4,
                         color: enemy.color,
                         damage: 10
                     });
+                    if (Math.random() < 0.6) playEnemyShoot();
                     enemy.shootCooldown = enemy.shootRate;
                 }
 
@@ -412,11 +637,13 @@
                     if (distance(bullet, enemy) < enemy.width / 2 + bullet.radius) {
                         enemy.hp--;
                         createParticles(bullet.x, bullet.y, enemy.color, 3);
+                        playHit();
                         bullets.splice(bi, 1);
 
                         if (enemy.hp <= 0) {
                             score += enemy.score;
                             createParticles(enemy.x, enemy.y, enemy.color, 10);
+                            playExplosion();
                             enemies.splice(ei, 1);
                             enemiesRemaining--;
 
@@ -443,52 +670,104 @@
             if (boss) {
                 // Move boss
                 if (boss.y < 100) {
-                    boss.y += 2;
+                    boss.y += 1;
                 } else {
-                    boss.patternTimer++;
-
-                    // Change pattern every 3 seconds
-                    if (boss.patternTimer > 180) {
-                        boss.pattern = (boss.pattern + 1) % 3;
-                        boss.patternTimer = 0;
+                    // Mode switching timer
+                    boss.modeTimer++;
+                    if (boss.modeTimer >= boss.modeDuration) {
+                        boss.modeTimer = 0;
+                        boss.attackMode = boss.attackMode === 'cannon' ? 'gatling' : 'cannon';
+                        boss.gatlingShakeX = 0;
                     }
 
-                    switch(boss.pattern) {
-                        case 0: // Chase
-                            const angle = Math.atan2(player.y - boss.y, player.x - boss.x);
-                            boss.x += Math.cos(angle) * boss.speed;
-                            boss.y += Math.sin(angle) * boss.speed * 0.5;
-                            boss.angle = angle;
-                            break;
-                        case 1: // Strafe
-                            boss.x += Math.sin(boss.patternTimer * 0.05) * 3;
-                            boss.angle = Math.PI / 2;
-                            break;
-                        case 2: // Circle
-                            boss.x = canvas.width/2 + Math.cos(boss.patternTimer * 0.03) * 200;
-                            boss.y = 150 + Math.sin(boss.patternTimer * 0.03) * 50;
-                            boss.angle = Math.atan2(player.y - boss.y, player.x - boss.x);
-                            break;
-                    }
+                    if (boss.attackMode === 'cannon') {
+                        // Normal movement patterns
+                        boss.patternTimer++;
 
-                    // Boss shooting
-                    boss.shootCooldown--;
-                    if (boss.shootCooldown <= 0) {
-                        const angleToPlayer = Math.atan2(player.y - boss.y, player.x - boss.x);
-
-                        // Spread shot
-                        for (let i = -2; i <= 2; i++) {
-                            enemyBullets.push({
-                                x: boss.x,
-                                y: boss.y,
-                                dx: Math.cos(angleToPlayer + i * 0.2) * 6,
-                                dy: Math.sin(angleToPlayer + i * 0.2) * 6,
-                                radius: 6,
-                                color: '#fbbf24',
-                                damage: 15
-                            });
+                        if (boss.patternTimer > 180) {
+                            boss.pattern = (boss.pattern + 1) % 3;
+                            boss.patternTimer = 0;
                         }
-                        boss.shootCooldown = boss.shootRate;
+
+                        switch(boss.pattern) {
+                            case 0: // Chase
+                                const angle = Math.atan2(player.y - boss.y, player.x - boss.x);
+                                boss.x += Math.cos(angle) * boss.speed;
+                                boss.y += Math.sin(angle) * boss.speed * 0.5;
+                                boss.angle = angle;
+                                break;
+                            case 1: // Strafe
+                                boss.x += Math.sin(boss.patternTimer * 0.025) * 1.5;
+                                boss.angle = Math.PI / 2;
+                                break;
+                            case 2: // Circle
+                                boss.x = canvas.width/2 + Math.cos(boss.patternTimer * 0.015) * 200;
+                                boss.y = 150 + Math.sin(boss.patternTimer * 0.015) * 50;
+                                boss.angle = Math.atan2(player.y - boss.y, player.x - boss.x);
+                                break;
+                        }
+
+                        // Boss main cannon shooting
+                        boss.shootCooldown--;
+                        if (boss.shootCooldown <= 0) {
+                            const angleToPlayer = Math.atan2(player.y - boss.y, player.x - boss.x);
+
+                            // Spread shot from main cannon
+                            for (let i = -2; i <= 2; i++) {
+                                enemyBullets.push({
+                                    x: boss.x,
+                                    y: boss.y,
+                                    dx: Math.cos(angleToPlayer + i * 0.2) * 1.5,
+                                    dy: Math.sin(angleToPlayer + i * 0.2) * 1.5,
+                                    radius: 6,
+                                    color: '#fbbf24',
+                                    damage: 15
+                                });
+                            }
+                            boss.shootCooldown = boss.shootRate;
+                        }
+                    } else {
+                        // Gatling mode: stop and shake while firing
+                        boss.angle = Math.PI / 2; // Face down
+                        boss.gatlingShakeX = Math.sin(boss.modeTimer * 0.3) * 8;
+
+                        // Gatling guns fire (slower, fewer bullets)
+                        boss.gatlingCooldown--;
+                        if (boss.gatlingCooldown <= 0) {
+                            const angleToPlayer = Math.atan2(player.y - boss.y, player.x - boss.x);
+                            const bulletSpeed = 1.2;
+
+                            // Alternate between left and right gun each shot
+                            if (Math.random() > 0.5) {
+                                // Left gatling gun
+                                const leftGunX = boss.x - 45 + boss.gatlingShakeX;
+                                const leftGunY = boss.y;
+                                enemyBullets.push({
+                                    x: leftGunX,
+                                    y: leftGunY,
+                                    dx: Math.cos(angleToPlayer) * bulletSpeed + (Math.random() - 0.5) * 0.4,
+                                    dy: Math.sin(angleToPlayer) * bulletSpeed + (Math.random() - 0.5) * 0.4,
+                                    radius: 3,
+                                    color: '#f97316',
+                                    damage: 5
+                                });
+                            } else {
+                                // Right gatling gun
+                                const rightGunX = boss.x + 45 + boss.gatlingShakeX;
+                                const rightGunY = boss.y;
+                                enemyBullets.push({
+                                    x: rightGunX,
+                                    y: rightGunY,
+                                    dx: Math.cos(angleToPlayer) * bulletSpeed + (Math.random() - 0.5) * 0.4,
+                                    dy: Math.sin(angleToPlayer) * bulletSpeed + (Math.random() - 0.5) * 0.4,
+                                    radius: 3,
+                                    color: '#f97316',
+                                    damage: 5
+                                });
+                            }
+
+                            boss.gatlingCooldown = boss.gatlingRate;
+                        }
                     }
                 }
 
@@ -497,14 +776,30 @@
 
                 // Bullet-boss collision
                 bullets.forEach((bullet, bi) => {
+                    if (!boss) return;
                     if (distance(bullet, boss) < boss.width / 2 + bullet.radius) {
                         boss.hp--;
                         createParticles(bullet.x, bullet.y, '#fbbf24', 3);
+                        playHit();
                         bullets.splice(bi, 1);
 
                         if (boss.hp <= 0) {
                             score += 1000 * stage;
-                            createParticles(boss.x, boss.y, '#fbbf24', 30);
+                            // Big explosion effect
+                            playExplosion(true);
+                            playCelebration();
+                            for (let j = 0; j < 5; j++) {
+                                setTimeout(() => {
+                                    createParticles(
+                                        boss ? boss.x : canvas.width/2 + (Math.random()-0.5)*80,
+                                        boss ? boss.y : 100 + (Math.random()-0.5)*80,
+                                        ['#fbbf24', '#ef4444', '#f97316'][Math.floor(Math.random()*3)],
+                                        20
+                                    );
+                                    if (j < 3) playExplosion();
+                                }, j * 100);
+                            }
+                            triggerCelebration();
                             boss = null;
                             bossMode = false;
                             nextStage();
@@ -531,6 +826,7 @@
                         player.hp = Math.min(player.maxHp, player.hp + 25);
                     }
                     createParticles(p.x, p.y, '#4ade80', 5);
+                    playPowerup();
                     return false;
                 }
                 return true;
@@ -552,16 +848,42 @@
             document.getElementById('stage').textContent = stage;
             document.getElementById('score').textContent = score;
             document.getElementById('enemies').textContent = bossMode ? 'BOSS!' : enemiesRemaining;
+
+            // Update stage announcement
+            if (stageAnnounce.active) {
+                stageAnnounce.timer++;
+                if (stageAnnounce.timer >= stageAnnounce.duration) {
+                    stageAnnounce.active = false;
+                }
+            }
+
+            // Update celebration
+            if (celebration.active) {
+                celebration.timer++;
+                celebration.confetti.forEach(c => {
+                    c.x += c.dx;
+                    c.y += c.dy;
+                    c.dy += 0.3; // gravity
+                    c.rotation += c.rotationSpeed;
+                    c.dx *= 0.99;
+                });
+                if (celebration.timer >= celebration.duration) {
+                    celebration.active = false;
+                }
+            }
         }
 
         function nextStage() {
             stage++;
             player.hp = Math.min(player.maxHp, player.hp + 30);
 
-            // Show stage complete briefly
+            // Show next stage announcement after celebration
             setTimeout(() => {
-                if (gameRunning) spawnStageEnemies();
-            }, 2000);
+                if (gameRunning) {
+                    showStageAnnounce(stage);
+                    spawnStageEnemies();
+                }
+            }, 2500);
         }
 
         function gameOver() {
@@ -636,27 +958,52 @@
             });
             ctx.globalAlpha = 1;
 
-            // Player tank
+            // Player tank - Body
             ctx.save();
             ctx.translate(player.x, player.y);
-            ctx.rotate(player.angle);
 
-            // Tank body
             if (player.invincible > 0 && Math.floor(player.invincible / 5) % 2) {
                 ctx.globalAlpha = 0.5;
             }
+
+            // Draw body (rotates with movement direction)
+            ctx.save();
+            ctx.rotate(player.bodyAngle);
             ctx.fillStyle = '#22c55e';
             ctx.fillRect(-player.width/2, -player.height/2, player.width, player.height);
+            // Tank tracks
+            ctx.fillStyle = '#166534';
+            ctx.fillRect(-player.width/2, -player.height/2, 8, player.height);
+            ctx.fillRect(player.width/2 - 8, -player.height/2, 8, player.height);
+            ctx.restore();
 
-            // Tank turret
+            // Draw turret (rotates independently with arrow keys)
+            ctx.save();
+            ctx.rotate(player.turretAngle);
             ctx.fillStyle = '#15803d';
-            ctx.fillRect(0, -5, 25, 10);
+            ctx.fillRect(0, -5, 28, 10);
             ctx.beginPath();
-            ctx.arc(0, 0, 12, 0, Math.PI * 2);
+            ctx.arc(0, 0, 14, 0, Math.PI * 2);
             ctx.fill();
+            // Turret highlight
+            ctx.fillStyle = '#166534';
+            ctx.beginPath();
+            ctx.arc(0, 0, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
 
             ctx.restore();
             ctx.globalAlpha = 1;
+
+            // Player HP bar (below tank)
+            const playerHpPercent = player.hp / player.maxHp;
+            ctx.fillStyle = '#333';
+            ctx.fillRect(player.x - 25, player.y + player.height/2 + 5, 50, 8);
+            ctx.fillStyle = playerHpPercent > 0.5 ? '#4ade80' : playerHpPercent > 0.25 ? '#fbbf24' : '#ef4444';
+            ctx.fillRect(player.x - 25, player.y + player.height/2 + 5, 50 * playerHpPercent, 8);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(player.x - 25, player.y + player.height/2 + 5, 50, 8);
 
             // Player bullets
             ctx.fillStyle = '#fbbf24';
@@ -721,8 +1068,56 @@
 
             // Boss
             if (boss) {
+                const shakeX = boss.gatlingShakeX || 0;
+
+                // Draw gatling guns only in gatling mode
+                if (boss.attackMode === 'gatling') {
+                    ctx.save();
+                    ctx.translate(boss.x + shakeX, boss.y);
+
+                    // Left gatling gun
+                    ctx.fillStyle = '#444';
+                    ctx.fillRect(-55, -12, 20, 24);
+                    ctx.fillStyle = '#666';
+                    ctx.fillRect(-52, -8, 6, 16);
+                    ctx.fillRect(-44, -8, 6, 16);
+                    // Gatling barrels with muzzle flash effect
+                    ctx.fillStyle = '#333';
+                    for (let i = 0; i < 3; i++) {
+                        ctx.fillRect(-50 + i * 5, 12, 3, 15);
+                    }
+                    // Muzzle flash
+                    if (Math.random() > 0.5) {
+                        ctx.fillStyle = '#fbbf24';
+                        ctx.beginPath();
+                        ctx.arc(-45, 30, 5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    // Right gatling gun
+                    ctx.fillStyle = '#444';
+                    ctx.fillRect(35, -12, 20, 24);
+                    ctx.fillStyle = '#666';
+                    ctx.fillRect(38, -8, 6, 16);
+                    ctx.fillRect(46, -8, 6, 16);
+                    // Gatling barrels
+                    ctx.fillStyle = '#333';
+                    for (let i = 0; i < 3; i++) {
+                        ctx.fillRect(37 + i * 5, 12, 3, 15);
+                    }
+                    // Muzzle flash
+                    if (Math.random() > 0.5) {
+                        ctx.fillStyle = '#fbbf24';
+                        ctx.beginPath();
+                        ctx.arc(45, 30, 5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    ctx.restore();
+                }
+
                 ctx.save();
-                ctx.translate(boss.x, boss.y);
+                ctx.translate(boss.x + shakeX, boss.y);
                 ctx.rotate(boss.angle);
 
                 // Boss body
@@ -767,6 +1162,99 @@
                 ctx.font = 'bold 24px Arial';
                 ctx.textAlign = 'center';
                 ctx.fillText('GET READY!', canvas.width/2, canvas.height/2);
+            }
+
+            // Stage announcement
+            if (stageAnnounce.active) {
+                const progress = stageAnnounce.timer / stageAnnounce.duration;
+                let alpha = 1;
+                let scale = 1;
+
+                // Fade in
+                if (progress < 0.2) {
+                    alpha = progress / 0.2;
+                    scale = 0.5 + (progress / 0.2) * 0.5;
+                }
+                // Fade out
+                else if (progress > 0.7) {
+                    alpha = 1 - ((progress - 0.7) / 0.3);
+                }
+
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                ctx.scale(scale, scale);
+
+                // Glow effect
+                ctx.shadowColor = '#60a5fa';
+                ctx.shadowBlur = 30;
+
+                // Stage text
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 72px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`STAGE ${stageAnnounce.stage}`, 0, 0);
+
+                // Decorative lines
+                ctx.strokeStyle = '#60a5fa';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(-200, 50);
+                ctx.lineTo(-50, 50);
+                ctx.moveTo(50, 50);
+                ctx.lineTo(200, 50);
+                ctx.stroke();
+
+                ctx.restore();
+            }
+
+            // Celebration effect
+            if (celebration.active) {
+                const progress = celebration.timer / celebration.duration;
+
+                // Draw confetti
+                celebration.confetti.forEach(c => {
+                    ctx.save();
+                    ctx.translate(c.x, c.y);
+                    ctx.rotate(c.rotation);
+                    ctx.fillStyle = c.color;
+                    ctx.globalAlpha = Math.max(0, 1 - progress);
+                    ctx.fillRect(-c.size/2, -c.size/2, c.size, c.size * 0.6);
+                    ctx.restore();
+                });
+
+                // Draw celebration message
+                if (progress < 0.8) {
+                    const msgProgress = Math.min(1, progress / 0.3);
+                    const scale = 0.5 + msgProgress * 0.5 + Math.sin(celebration.timer * 0.2) * 0.05;
+                    const alpha = progress < 0.6 ? 1 : 1 - ((progress - 0.6) / 0.2);
+
+                    ctx.save();
+                    ctx.globalAlpha = alpha;
+                    ctx.translate(canvas.width / 2, canvas.height / 2 - 50);
+                    ctx.scale(scale, scale);
+
+                    // Rainbow glow effect
+                    const hue = (celebration.timer * 5) % 360;
+                    ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
+                    ctx.shadowBlur = 40;
+
+                    // Message text
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold 64px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(celebration.message, 0, 0);
+
+                    // Bonus score text
+                    ctx.font = 'bold 28px Arial';
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.shadowColor = '#fbbf24';
+                    ctx.fillText(`+${1000 * (stage - 1)} BONUS!`, 0, 50);
+
+                    ctx.restore();
+                }
             }
         }
 
