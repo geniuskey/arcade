@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Offroad Racing</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #222;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+            color: white;
+            touch-action: none;
+        }
+        canvas {
+            display: block;
+            image-rendering: pixelated;
+        }
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+            text-shadow: 2px 2px black;
+        }
+        .stat {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        #joystick-container {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: none;
+            touch-action: none;
+        }
+        #joystick-knob {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            top: 30px;
+            left: 30px;
+            pointer-events: none;
+        }
+        #boost-button {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 0, 0, 0.5);
+            border-radius: 50%;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            user-select: none;
+            touch-action: none;
+        }
+        @media (pointer: coarse) {
+            #joystick-container, #boost-button {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <div class="stat">SPEED: <span id="speed-val">0</span></div>
+        <div class="stat">BOOST: <span id="boost-val">READY</span></div>
+        <div class="stat">LAP: <span id="lap-val">1</span> / 3</div>
+        <div style="font-size: 14px; margin-top: 10px; color: #ccc;">WASD / ARROWS to Drive<br>SPACE to Fart-Boost!</div>
+    </div>
+    <div id="countdown" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 120px; font-weight: bold; color: white; text-shadow: 4px 4px 0 #000; pointer-events: none;"></div>
+    <div id="joystick-container">
+        <div id="joystick-knob"></div>
+    </div>
+    <div id="boost-button">BOOST</div>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const speedVal = document.getElementById('speed-val');
+        const boostVal = document.getElementById('boost-val');
+
+        // Race State
+        let gameState = 'countdown'; // countdown, racing, finished
+        let countdownValue = 3;
+        let countdownTimer = 0;
+        let lastTime = Date.now();
+
+        // Car settings
+        const car = {
+            id: 'player',
+            x: 550,
+            y: 750,
+            angle: 0,
+            speed: 0,
+            maxSpeed: 3.8,
+            accel: 0.1,
+            decel: 0.05,
+            friction: 0.97,
+            steerAngle: 0,
+            maxSteer: 0.5,
+            steerSpeed: 0.08,
+            wheelBase: 35,
+            width: 45,
+            height: 22,
+            boosting: false,
+            boostAmount: 100,
+            lap: 0,
+            checkpoint: 0,
+            color: '#e74c3c',
+            name: 'PLAYER'
+        };
+
+        const aiCars = [
+            {
+                id: 'ai1',
+                x: 550,
+                y: 700,
+                angle: 0,
+                speed: 0,
+                maxSpeed: 3.5,
+                accel: 0.08,
+                decel: 0.05,
+                friction: 0.97,
+                steerAngle: 0,
+                maxSteer: 0.5,
+                steerSpeed: 0.06,
+                wheelBase: 35,
+                width: 45,
+                height: 22,
+                lap: 0,
+                checkpoint: 0,
+                targetPoint: 1,
+                color: '#3498db',
+                name: 'AI 1'
+            },
+            {
+                id: 'ai2',
+                x: 550,
+                y: 800,
+                angle: 0,
+                speed: 0,
+                maxSpeed: 3.3,
+                accel: 0.07,
+                decel: 0.05,
+                friction: 0.97,
+                steerAngle: 0,
+                maxSteer: 0.5,
+                steerSpeed: 0.05,
+                wheelBase: 35,
+                width: 45,
+                height: 22,
+                lap: 0,
+                checkpoint: 0,
+                targetPoint: 1,
+                color: '#f1c40f',
+                name: 'AI 2'
+            }
+        ];
+
+        const allCars = [car, ...aiCars];
+
+        const keys = {};
+        const particles = [];
+        const trackPoints = [
+            {x: 600, y: 750}, {x: 1200, y: 750}, {x: 1500, y: 450}, 
+            {x: 1500, y: 150}, {x: 1200, y: -150}, {x: 600, y: -150},
+            {x: 300, y: 150}, {x: 300, y: 600}, {x: 0, y: 900},
+            {x: 0, y: 1350}, {x: 450, y: 1650}, {x: 1050, y: 1650},
+            {x: 1500, y: 1350}, {x: 1500, y: 1050}, {x: 1200, y: 900},
+            {x: 900, y: 1050}, {x: 600, y: 750}
+        ];
+
+        const mounds = [];
+        for(let i=0; i<30; i++) {
+            mounds.push({
+                x: Math.random() * 2250 - 375,
+                y: Math.random() * 2250 - 375,
+                size: Math.random() * 60 + 30
+            });
+        }
+
+        // Mobile Controls
+        let joystickActive = false;
+        let joystickPos = { x: 0, y: 0 };
+        const joystickContainer = document.getElementById('joystick-container');
+        const joystickKnob = document.getElementById('joystick-knob');
+        const boostButton = document.getElementById('boost-button');
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        window.addEventListener('keydown', e => keys[e.code] = true);
+        window.addEventListener('keyup', e => keys[e.code] = false);
+
+        // Joystick Logic
+        joystickContainer.addEventListener('touchstart', handleJoystickStart);
+        window.addEventListener('touchmove', handleJoystickMove, { passive: false });
+        window.addEventListener('touchend', handleJoystickEnd);
+
+        boostButton.addEventListener('touchstart', (e) => { e.preventDefault(); keys['Space'] = true; });
+        boostButton.addEventListener('touchend', (e) => { e.preventDefault(); keys['Space'] = false; });
+
+        function handleJoystickStart(e) {
+            e.preventDefault();
+            joystickActive = true;
+        }
+
+        function handleJoystickMove(e) {
+            if (!joystickActive) return;
+            e.preventDefault();
+            const touch = Array.from(e.touches).find(t => t.target === joystickContainer || joystickContainer.contains(t.target));
+            if (!touch) return;
+
+            const rect = joystickContainer.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            let dx = touch.clientX - centerX;
+            let dy = touch.clientY - centerY;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            const maxDist = rect.width / 2;
+
+            if (dist > maxDist) {
+                dx *= maxDist / dist;
+                dy *= maxDist / dist;
+            }
+
+            joystickPos.x = dx / maxDist;
+            joystickPos.y = dy / maxDist;
+            joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+        }
+
+        function handleJoystickEnd() {
+            joystickActive = false;
+            joystickPos = { x: 0, y: 0 };
+            joystickKnob.style.transform = `translate(0px, 0px)`;
+        }
+
+        function drawTrack() {
+            // Background Dirt
+            ctx.fillStyle = '#8b5a2b';
+            ctx.fillRect(-2000, -2000, 5000, 5000);
+
+            // Mounds
+            ctx.fillStyle = '#7a4a1b';
+            mounds.forEach(m => {
+                ctx.beginPath();
+                ctx.arc(m.x, m.y, m.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Track Path
+            ctx.strokeStyle = '#5d3a1a';
+            ctx.lineWidth = 150;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            ctx.moveTo(trackPoints[0].x, trackPoints[0].y);
+            for(let i=1; i<trackPoints.length; i++) {
+                ctx.lineTo(trackPoints[i].x, trackPoints[i].y);
+            }
+            ctx.stroke();
+
+            // Curbs (Red/White)
+            ctx.setLineDash([45, 45]);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 165;
+            ctx.stroke();
+            ctx.strokeStyle = '#f00';
+            ctx.lineDashOffset = 45;
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Inner Track
+            ctx.strokeStyle = '#6d4a2a';
+            ctx.lineWidth = 135;
+            ctx.stroke();
+
+            // Finish Line
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 15;
+            ctx.setLineDash([15, 15]);
+            ctx.beginPath();
+            ctx.moveTo(600, 675);
+            ctx.lineTo(600, 825);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function createSmoke(x, y, isNitro) {
+            particles.push({
+                x, y,
+                vx: (Math.random() - 0.5) * 2,
+                vy: (Math.random() - 0.5) * 2,
+                life: 1.0,
+                size: Math.random() * (isNitro ? 15 : 5) + 5,
+                color: isNitro ? `rgba(${100 + Math.random()*50}, ${80 + Math.random()*40}, 20, 0.7)` : 'rgba(100, 100, 100, 0.3)'
+            });
+        }
+
+        const lapVal = document.getElementById('lap-val');
+        const countdownEl = document.getElementById('countdown');
+
+        function update() {
+            const now = Date.now();
+            const dt = now - lastTime;
+            lastTime = now;
+
+            if (gameState === 'countdown') {
+                countdownTimer += dt;
+                if (countdownTimer > 1000) {
+                    countdownTimer = 0;
+                    countdownValue--;
+                    if (countdownValue <= 0) {
+                        gameState = 'racing';
+                        countdownEl.innerText = 'GO!';
+                        setTimeout(() => countdownEl.innerText = '', 1000);
+                    } else {
+                        countdownEl.innerText = countdownValue;
+                    }
+                }
+                countdownEl.innerText = countdownValue > 0 ? countdownValue : 'GO!';
+            }
+
+            allCars.forEach(c => {
+                if (gameState === 'countdown' && c.id === 'player') {
+                    // Just friction for player during countdown
+                    c.speed *= c.friction;
+                } else if (gameState === 'racing' || (gameState === 'countdown' && c.id !== 'player')) {
+                    if (c.id === 'player') {
+                        updatePlayer(c);
+                    } else {
+                        updateAI(c);
+                    }
+                }
+
+                // Apply Bicycle Model Physics
+                const frontWheelX = c.x + Math.cos(c.angle) * (c.wheelBase / 2);
+                const frontWheelY = c.y + Math.sin(c.angle) * (c.wheelBase / 2);
+                const backWheelX = c.x - Math.cos(c.angle) * (c.wheelBase / 2);
+                const backWheelY = c.y - Math.sin(c.angle) * (c.wheelBase / 2);
+
+                const backMoveX = backWheelX + Math.cos(c.angle) * c.speed;
+                const backMoveY = backWheelY + Math.sin(c.angle) * c.speed;
+                const frontMoveX = frontWheelX + Math.cos(c.angle + c.steerAngle) * c.speed;
+                const frontMoveY = frontWheelY + Math.sin(c.angle + c.steerAngle) * c.speed;
+
+                const newX = (frontMoveX + backMoveX) / 2;
+                const newY = (frontMoveY + backMoveY) / 2;
+                const newAngle = Math.atan2(frontMoveY - backMoveY, frontMoveX - backMoveX);
+
+                let onTrack = false;
+                for(let i=0; i<trackPoints.length - 1; i++) {
+                    if (distToSegment({x: c.x, y: c.y}, trackPoints[i], trackPoints[i+1]) < 65) {
+                        onTrack = true;
+                        break;
+                    }
+                }
+                if (!onTrack) c.speed *= 0.96;
+
+                const weight = onTrack ? 0.8 : 0.4;
+                c.x += (newX - c.x) * weight;
+                c.y += (newY - c.y) * weight;
+                
+                const angleDiff = newAngle - c.angle;
+                const shortestAngle = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
+                c.angle += shortestAngle * 0.8;
+
+                // Lap / Checkpoint Logic
+                checkLaps(c);
+            });
+
+            // Particle update
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.02;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+
+            // UI
+            speedVal.innerText = Math.round(Math.abs(car.speed) * 10);
+            boostVal.innerText = car.boosting ? 'BOOSTING!' : Math.round(car.boostAmount) + '%';
+            lapVal.innerText = Math.min(car.lap + 1, 3);
+        }
+
+        function updatePlayer(c) {
+            let targetSteer = 0;
+            if (keys['ArrowLeft'] || keys['KeyA'] || joystickPos.x < -0.3) targetSteer = -c.maxSteer;
+            if (keys['ArrowRight'] || keys['KeyD'] || joystickPos.x > 0.3) targetSteer = c.maxSteer;
+            c.steerAngle += (targetSteer - c.steerAngle) * c.steerSpeed;
+
+            let move = 0;
+            if (keys['ArrowUp'] || keys['KeyW'] || joystickPos.y < -0.3) move = 1;
+            if (keys['ArrowDown'] || keys['KeyS'] || joystickPos.y > 0.3) move = -1;
+
+            if (move > 0) c.speed += c.accel;
+            else if (move < 0) c.speed -= c.accel;
+            else c.speed *= c.friction;
+
+            c.boosting = keys['Space'] && c.boostAmount > 0;
+            if (c.boosting) {
+                c.speed += c.accel * 1.5;
+                c.boostAmount -= 0.5;
+                if (Math.random() > 0.5) {
+                    const rx = c.x - Math.cos(c.angle) * 25;
+                    const ry = c.y - Math.sin(c.angle) * 25;
+                    createSmoke(rx, ry, true);
+                }
+            } else if (c.boostAmount < 100) {
+                c.boostAmount += 0.1;
+            }
+
+            const currentMaxSpeed = c.boosting ? c.maxSpeed * 1.6 : c.maxSpeed;
+            if (c.speed > currentMaxSpeed) c.speed = currentMaxSpeed;
+            if (c.speed < -c.maxSpeed / 2) c.speed = -c.maxSpeed / 2;
+        }
+
+        function updateAI(c) {
+            const target = trackPoints[c.targetPoint];
+            const dx = target.x - c.x;
+            const dy = target.y - c.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            
+            if (dist < 100) {
+                c.targetPoint = (c.targetPoint + 1) % trackPoints.length;
+            }
+
+            const targetAngle = Math.atan2(dy, dx);
+            const angleDiff = targetAngle - c.angle;
+            const shortestAngle = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
+
+            let targetSteer = 0;
+            if (shortestAngle > 0.1) targetSteer = c.maxSteer;
+            else if (shortestAngle < -0.1) targetSteer = -c.maxSteer;
+            
+            c.steerAngle += (targetSteer - c.steerAngle) * c.steerSpeed;
+            
+            // AI always tries to go max speed
+            if (c.speed < c.maxSpeed) c.speed += c.accel;
+            c.speed *= c.friction;
+        }
+
+        function checkLaps(c) {
+            // Checkpoints are indices of trackPoints
+            const distToNext = Math.sqrt((c.x - trackPoints[c.checkpoint].x)**2 + (c.y - trackPoints[c.checkpoint].y)**2);
+            if (distToNext < 150) {
+                c.checkpoint = (c.checkpoint + 1) % trackPoints.length;
+                if (c.checkpoint === 1) { // Crossed finish line
+                    c.lap++;
+                    if (c.lap >= 3 && c.id === 'player' && gameState !== 'finished') {
+                        gameState = 'finished';
+                        countdownEl.innerText = 'FINISH!';
+                    }
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(canvas.width/2 - car.x, canvas.height/2 - car.y);
+
+            drawTrack();
+
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+
+            allCars.forEach(c => drawCar(c));
+
+            ctx.restore();
+            update();
+            requestAnimationFrame(draw);
+        }
+
+        function drawCar(c) {
+            ctx.save();
+            ctx.translate(c.x, c.y);
+            ctx.rotate(c.angle);
+
+            // Car Body
+            ctx.fillStyle = c.color;
+            ctx.fillRect(-c.width/2, -c.height/2, c.width, c.height);
+            
+            // Hood
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.fillRect(0, -c.height/2, c.width/2, c.height);
+            
+            // Windshield
+            ctx.fillStyle = '#34495e';
+            ctx.fillRect(-3, -c.height/2 + 3, 7, c.height - 6);
+
+            // Wheels
+            ctx.fillStyle = '#000';
+            ctx.fillRect(-c.width/2 + 3, -c.height/2 - 3, 12, 6);
+            ctx.fillRect(-c.width/2 + 3, c.height/2 - 3, 12, 6);
+
+            ctx.save();
+            ctx.translate(c.width/2 - 9, -c.height/2);
+            ctx.rotate(c.steerAngle);
+            ctx.fillRect(-6, -3, 12, 6);
+            ctx.restore();
+
+            ctx.save();
+            ctx.translate(c.width/2 - 9, c.height/2);
+            ctx.rotate(c.steerAngle);
+            ctx.fillRect(-6, -3, 12, 6);
+            ctx.restore();
+
+            ctx.restore();
+
+            // Name Tag
+            ctx.save();
+            ctx.translate(c.x, c.y - 30);
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(c.name, 0, 0);
+            ctx.restore();
+        }
+
+        draw();
+    </script>
+</body>
+</html>
