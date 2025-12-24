@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Galaxy Jump - Arcade</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-purple: #bc13fe;
+            --bg-dark: #020010;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: white;
+            touch-action: none;
+        }
+
+        #top-bar {
+            width: 100%;
+            max-width: 450px;
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            z-index: 15;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--neon-blue);
+        }
+
+        .stat-value {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 450px;
+            height: 80vh;
+            background: rgba(255, 255, 255, 0.02);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #screens {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .screen {
+            background: rgba(2, 0, 16, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 85%;
+            pointer-events: auto;
+        }
+
+        .difficulty-selector {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin: 10px 0;
+        }
+
+        .diff-btn {
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .diff-btn.active {
+            background: var(--neon-purple);
+            border-color: var(--neon-purple);
+            box-shadow: 0 0 10px var(--neon-purple);
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        h2 {
+            font-size: 32px;
+            background: linear-gradient(to right, var(--neon-blue), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            background: var(--neon-blue);
+            color: var(--bg-dark);
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        #mobile-controls {
+            width: 100%;
+            max-width: 450px;
+            display: flex;
+            padding: 20px;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .touch-zone {
+            flex: 1;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: var(--neon-blue);
+        }
+
+        @media (min-width: 769px) {
+            #mobile-controls { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div id="top-bar">
+        <div class="stat-item">
+            <span class="stat-label">Altitude</span>
+            <span id="score" class="stat-value">0m</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Difficulty</span>
+            <span id="current-diff-display" class="stat-value" style="font-size: 12px; color: var(--neon-purple);">NORMAL</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Best</span>
+            <span id="best-score" class="stat-value">0m</span>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="screens">
+            <div id="start-screen" class="screen active">
+                <h2>GALAXY JUMP</h2>
+                <div class="difficulty-selector">
+                    <button class="diff-btn" onclick="setDifficulty('easy')">EASY</button>
+                    <button class="diff-btn active" onclick="setDifficulty('normal')">NORMAL</button>
+                    <button class="diff-btn" onclick="setDifficulty('hard')">HARD</button>
+                </div>
+                <button class="btn" onclick="startGame()">LAUNCH</button>
+            </div>
+
+            <div id="game-over-screen" class="screen">
+                <h2>DESCENT COMPLETE</h2>
+                <div style="margin: 10px 0;">
+                    <div class="stat-label">Max Altitude</div>
+                    <div id="final-score" class="stat-value">0m</div>
+                </div>
+                <button class="btn" onclick="startGame()">RELAUNCH</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mobile-controls">
+        <div class="touch-zone" onpointerdown="keys.left = true" onpointerup="keys.left = false">←</div>
+        <div class="touch-zone" onpointerdown="keys.right = true" onpointerup="keys.right = false">→</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const bestScoreEl = document.getElementById('best-score');
+        const finalScoreEl = document.getElementById('final-score');
+
+        // Game Constants
+        const PLATFORM_WIDTH = 70;
+        const PLATFORM_HEIGHT = 12;
+        const PLAYER_SIZE = 30;
+
+        const DIFFICULTIES = {
+            easy: { gravity: 0.28, jump: -10.5, acc: 0.7, label: 'EASY' },
+            normal: { gravity: 0.35, jump: -12.0, acc: 1.0, label: 'NORMAL' },
+            hard: { gravity: 0.42, jump: -13.5, acc: 1.2, label: 'HARD' }
+        };
+
+        // Game State
+        let currentDifficulty = 'normal';
+        let player = {
+            x: 200,
+            y: 0,
+            vx: 0,
+            vy: 0,
+            width: PLAYER_SIZE,
+            height: PLAYER_SIZE
+        };
+
+        let platforms = [];
+        let score = 0;
+        let cameraY = 0;
+        let gameActive = false;
+        let keys = { left: false, right: false };
+        let lastTime = performance.now();
+
+        function setDifficulty(diff) {
+            currentDifficulty = diff;
+            document.querySelectorAll('.diff-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.innerText.toLowerCase() === diff);
+            });
+            document.getElementById('current-diff-display').innerText = DIFFICULTIES[diff].label;
+            updateBestScoreDisplay();
+        }
+
+        function updateBestScoreDisplay() {
+            const best = localStorage.getItem(`jump_best_${currentDifficulty}`) || 0;
+            bestScoreEl.innerText = best + 'm';
+        }
+
+        function initGame() {
+            const config = DIFFICULTIES[currentDifficulty];
+            player.x = canvas.width / 2 - PLAYER_SIZE / 2;
+            player.y = canvas.height - 100;
+            player.vx = 0;
+            player.vy = config.jump;
+            
+            platforms = [];
+            // Initial platforms
+            for (let i = 0; i < 7; i++) {
+                platforms.push({
+                    x: Math.random() * (canvas.width - PLATFORM_WIDTH),
+                    y: canvas.height - (i * 120) - 50
+                });
+            }
+            // First platform under player
+            platforms[0].x = player.x - 20;
+            platforms[0].y = player.y + 50;
+
+            score = 0;
+            cameraY = 0;
+            scoreEl.innerText = '0m';
+            updateBestScoreDisplay();
+            lastTime = performance.now();
+        }
+
+        function resize() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            if (!gameActive) initGame();
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        function startGame() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            initGame();
+            gameActive = true;
+        }
+
+        function gameOver() {
+            gameActive = false;
+            finalScoreEl.innerText = score + 'm';
+            const bestKey = `jump_best_${currentDifficulty}`;
+            const best = parseInt(localStorage.getItem(bestKey) || 0);
+            if (score > best) {
+                localStorage.setItem(bestKey, score);
+                bestScoreEl.innerText = score + 'm';
+            }
+            document.getElementById('game-over-screen').classList.add('active');
+        }
+
+        function update(timestamp) {
+            const deltaTime = timestamp - lastTime;
+            lastTime = timestamp;
+            const f = Math.min(deltaTime / (1000 / 60), 3); // Normalize to 60fps
+
+            const config = DIFFICULTIES[currentDifficulty];
+
+            if (gameActive) {
+                // Player Physics
+                if (keys.left) player.vx -= config.acc * f;
+                if (keys.right) player.vx += config.acc * f;
+                player.vx *= Math.pow(0.88, f);
+                player.x += player.vx * f;
+                
+                player.vy += config.gravity * f;
+                player.y += player.vy * f;
+
+                // Screen Wrap
+                if (player.x + player.width < 0) player.x = canvas.width;
+                if (player.x > canvas.width) player.x = -player.width;
+
+                // Camera follow
+                if (player.y < cameraY + canvas.height * 0.4) {
+                    const diff = (cameraY + canvas.height * 0.4) - player.y;
+                    cameraY -= diff;
+                    score = Math.max(score, Math.floor(-cameraY / 10));
+                    scoreEl.innerText = score + 'm';
+                }
+
+                // Platform Collision
+                if (player.vy > 0) {
+                    platforms.forEach(p => {
+                        if (player.x + player.width > p.x && 
+                            player.x < p.x + PLATFORM_WIDTH &&
+                            player.y + player.height > p.y &&
+                            player.y + player.height < p.y + PLATFORM_HEIGHT + (player.vy * f)) {
+                            player.vy = config.jump;
+                            player.y = p.y - player.height;
+                        }
+                    });
+                }
+
+                // Generate new platforms
+                platforms = platforms.filter(p => p.y < cameraY + canvas.height + 100);
+                while (platforms.length < 10) {
+                    const lastP = platforms[platforms.length - 1];
+                    platforms.push({
+                        x: Math.random() * (canvas.width - PLATFORM_WIDTH),
+                        y: lastP.y - (Math.random() * 50 + 80)
+                    });
+                }
+
+                if (player.y > cameraY + canvas.height) {
+                    gameOver();
+                }
+            }
+
+            draw();
+            requestAnimationFrame(update);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            ctx.translate(0, -cameraY);
+
+            // Draw Platforms
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = varToHex('--neon-purple');
+            ctx.fillStyle = '#bc13fe';
+            platforms.forEach(p => {
+                ctx.fillRect(p.x, p.y, PLATFORM_WIDTH, PLATFORM_HEIGHT);
+            });
+
+            // Draw Player
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = varToHex('--neon-blue');
+            ctx.fillStyle = '#00f3ff';
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            
+            ctx.restore();
+        }
+
+        function varToHex(varName) {
+            const style = getComputedStyle(document.documentElement);
+            return style.getPropertyValue(varName).trim();
+        }
+
+        // Controls
+        window.addEventListener('keydown', e => {
+            if (!gameActive && document.querySelector('.screen.active')) {
+                startGame();
+                return;
+            }
+            if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') keys.left = true;
+            if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') keys.right = true;
+        });
+        window.addEventListener('keyup', e => {
+            if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') keys.right = false;
+        });
+
+        updateBestScoreDisplay();
+        requestAnimationFrame(update);
+        draw();
+
+        requestAnimationFrame(update);
+        draw();
+    </script>
+</body>
+</html>

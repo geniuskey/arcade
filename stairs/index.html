@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Infinite Stairs - Arcade</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #a0d8ef;
+            --ui-color: #ff9d00;
+            --ui-border: #804f00;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #222;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            touch-action: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 450px;
+            height: 100%;
+            background-color: var(--bg-color);
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+        }
+
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .energy-bar-container {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 30px;
+            background: #444;
+            border: 4px solid #fff;
+            border-radius: 15px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+        }
+
+        #energy-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #ff5f6d, #ffc371);
+        }
+
+        #timer-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            color: #fff;
+            font-weight: 800;
+            font-size: 18px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            z-index: 2;
+        }
+
+        #score-display {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 48px;
+            color: #fff;
+            text-shadow: 3px 3px 0 #000;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 40px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            padding: 0 20px;
+            pointer-events: auto;
+        }
+
+        .btn {
+            width: 120px;
+            height: 120px;
+            background: var(--ui-color);
+            border: 6px solid var(--ui-border);
+            border-bottom-width: 12px;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.05s, border-bottom-width 0.05s;
+            color: #fff;
+        }
+
+        .btn:active {
+            transform: translateY(6px);
+            border-bottom-width: 6px;
+        }
+
+        .btn-icon {
+            font-size: 40px;
+            margin-bottom: 4px;
+        }
+
+        .btn-label {
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        #game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            pointer-events: auto;
+            padding: 20px;
+        }
+
+        #game-over h2 {
+            color: #fff;
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        #game-over p {
+            color: #fff;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+
+        .leaderboard {
+            width: 100%;
+            max-width: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 30px;
+            color: #fff;
+        }
+
+        .leaderboard h3 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 18px;
+            color: var(--ui-color);
+            text-transform: uppercase;
+        }
+
+        .rank-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .rank-item:last-child {
+            border-bottom: none;
+        }
+
+        .rank-num {
+            color: var(--ui-color);
+            font-weight: 800;
+            width: 30px;
+        }
+
+        .rank-score {
+            font-weight: 700;
+        }
+
+        .retry-btn {
+            padding: 15px 40px;
+            background: #ff9d00;
+            color: #fff;
+            font-size: 20px;
+            font-weight: 800;
+            border-radius: 30px;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 5px 0 #804f00;
+        }
+
+        .retry-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #804f00;
+        }
+
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+            pointer-events: auto;
+        }
+
+        .start-btn {
+            padding: 20px 50px;
+            background: #ff9d00;
+            color: #fff;
+            font-size: 32px;
+            font-weight: 800;
+            border-radius: 40px;
+            cursor: pointer;
+            border: 6px solid #804f00;
+            box-shadow: 0 10px 0 #804f00;
+        }
+
+        .start-btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 5px 0 #804f00;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+                <div id="ui">
+                    <div class="energy-bar-container">
+                        <div id="timer-text">30.00s</div>
+                        <div id="energy-fill"></div>
+                    </div>
+                    <div id="score-display">0</div>            
+            <div class="controls">
+                <div class="btn" id="btn-turn">
+                    <div class="btn-icon">🔄</div>
+                    <div class="btn-label">TURN</div>
+                </div>
+                <div class="btn" id="btn-climb">
+                    <div class="btn-icon">🔼</div>
+                    <div class="btn-label">CLIMB</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="start-screen">
+            <button class="start-btn">START</button>
+        </div>
+
+        <div id="game-over">
+            <h2>GAME OVER</h2>
+            <p>Score: <span id="final-score">0</span></p>
+            
+            <div class="leaderboard">
+                <h3>Best Rankings</h3>
+                <div id="rank-list">
+                    <!-- Ranks will be injected here -->
+                </div>
+            </div>
+
+            <button class="retry-btn">RETRY</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const energyFill = document.getElementById('energy-fill');
+        const scoreDisplay = document.getElementById('score-display');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const gameOverScreen = document.getElementById('game-over');
+        const startScreen = document.getElementById('start-screen');
+
+        // Constants
+        const STAIR_WIDTH = 80;
+        const STAIR_HEIGHT = 40;
+        const CHAR_WIDTH = 60;
+        const CHAR_HEIGHT = 80;
+        const MAX_ENERGY = 30; // 30 seconds
+        const ENERGY_RECOVERY = 0.2; // 0.2s recovery per step
+
+        // Game State
+        let score = 0;
+        let energy = MAX_ENERGY;
+        let stairs = [];
+        let charPos = { x: 0, y: 0 };
+        let charDir = 1; // 1: right, -1: left
+        let gameActive = false;
+        let cameraY = 0;
+        let targetCameraY = 0;
+        let lastTime = 0;
+
+        function initGame() {
+            score = 0;
+            energy = MAX_ENERGY;
+            charPos = { x: 0, y: 0 };
+            charDir = 1;
+            stairs = [{ x: 0, y: 0 }];
+            cameraY = 0;
+            targetCameraY = 0;
+            lastTime = performance.now();
+            for (let i = 0; i < 20; i++) {
+                generateStair();
+            }
+            updateUI();
+        }
+
+        function generateStair() {
+            const lastStair = stairs[stairs.length - 1];
+            const dir = Math.random() > 0.5 ? 1 : -1;
+            stairs.push({
+                x: lastStair.x + dir,
+                y: lastStair.y + 1
+            });
+        }
+
+        function handleClimb() {
+            if (!gameActive) return;
+            const nextStair = stairs[score + 1];
+            const expectedX = stairs[score].x + charDir;
+            
+            if (nextStair.x === expectedX) {
+                climbSuccess();
+            } else {
+                gameOver();
+            }
+        }
+
+        function handleTurn() {
+            if (!gameActive) return;
+            charDir *= -1;
+            const nextStair = stairs[score + 1];
+            const expectedX = stairs[score].x + charDir;
+            
+            if (nextStair.x === expectedX) {
+                climbSuccess();
+            } else {
+                gameOver();
+            }
+        }
+
+        function climbSuccess() {
+            score++;
+            energy = Math.min(MAX_ENERGY, energy + ENERGY_RECOVERY);
+            charPos = { x: stairs[score].x, y: stairs[score].y };
+            targetCameraY = charPos.y * STAIR_HEIGHT;
+            
+            if (stairs.length < score + 20) {
+                generateStair();
+            }
+            updateUI();
+        }
+
+        function gameOver() {
+            gameActive = false;
+            finalScoreDisplay.innerText = score;
+            saveScore(score);
+            displayRankings();
+            gameOverScreen.style.display = 'flex';
+        }
+
+        function saveScore(newScore) {
+            let scores = JSON.parse(localStorage.getItem('stairs_scores') || '[]');
+            scores.push(newScore);
+            scores.sort((a, b) => b - a);
+            scores = scores.slice(0, 5); // Keep top 5
+            localStorage.setItem('stairs_scores', JSON.stringify(scores));
+        }
+
+        function displayRankings() {
+            const rankList = document.getElementById('rank-list');
+            const scores = JSON.parse(localStorage.getItem('stairs_scores') || '[]');
+            
+            rankList.innerHTML = scores.map((s, i) => `
+                <div class="rank-item">
+                    <span class="rank-num">${i + 1}</span>
+                    <span class="rank-score">${s} Steps</span>
+                </div>
+            `).join('');
+
+            if (scores.length === 0) {
+                rankList.innerHTML = '<div style="text-align:center; opacity:0.5;">No records yet</div>';
+            }
+        }
+
+        function updateUI() {
+            scoreDisplay.innerText = score;
+            const percentage = (energy / MAX_ENERGY) * 100;
+            energyFill.style.width = percentage + '%';
+            document.getElementById('timer-text').innerText = energy.toFixed(2) + 's';
+        }
+
+        function resize() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Input
+        document.getElementById('btn-climb').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleClimb();
+        });
+        document.getElementById('btn-turn').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleTurn();
+        });
+        
+        // Mouse/Click for desktop testing
+        document.getElementById('btn-climb').addEventListener('mousedown', (e) => {
+            handleClimb();
+        });
+        document.getElementById('btn-turn').addEventListener('mousedown', (e) => {
+            handleTurn();
+        });
+
+        function startGame() {
+            startScreen.style.display = 'none';
+            initGame();
+            gameActive = true;
+        }
+
+        document.querySelector('.start-btn').addEventListener('click', () => {
+            startGame();
+        });
+
+        document.querySelector('.retry-btn').addEventListener('click', () => {
+            gameOverScreen.style.display = 'none';
+            startGame();
+        });
+
+        // Keyboard controls
+        window.addEventListener('keydown', (e) => {
+            if (startScreen.style.display !== 'none') {
+                startGame();
+                return;
+            }
+            if (e.key === 'ArrowUp' || e.key === ' ') handleClimb();
+            if (e.key === 'ArrowDown') handleTurn();
+        });
+
+        function draw(timestamp) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const deltaTime = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+
+            // Smoothing camera
+            cameraY += (targetCameraY - cameraY) * 0.2;
+            
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height * 0.7 - (targetCameraY - cameraY); // Fixed base position
+
+            ctx.save();
+            ctx.translate(centerX, canvas.height * 0.7 + cameraY);
+
+            // Draw Background elements (simple buildings or clouds)
+            drawBackground(ctx, cameraY);
+
+            // Draw Stairs
+            stairs.forEach((stair, index) => {
+                const screenX = stair.x * (STAIR_WIDTH / 2);
+                const screenY = -stair.y * STAIR_HEIGHT;
+                
+                // Only draw visible stairs
+                if (screenY + cameraY > -canvas.height && screenY + cameraY < 200) {
+                    drawStair(ctx, screenX, screenY, index >= score);
+                }
+            });
+
+            // Draw Character
+            const charScreenX = charPos.x * (STAIR_WIDTH / 2);
+            const charScreenY = -charPos.y * STAIR_HEIGHT;
+            drawCharacter(ctx, charScreenX, charScreenY, charDir);
+
+            ctx.restore();
+
+            if (gameActive) {
+                energy -= deltaTime;
+                if (energy <= 0) {
+                    energy = 0;
+                    gameOver();
+                }
+                updateUI();
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        function drawStair(ctx, x, y, active) {
+            ctx.fillStyle = active ? '#fff' : '#ccc';
+            // Main stair block
+            ctx.fillRect(x - STAIR_WIDTH / 2, y, STAIR_WIDTH, STAIR_HEIGHT / 2);
+            // Side/Shadow
+            ctx.fillStyle = active ? '#ddd' : '#aaa';
+            ctx.fillRect(x - STAIR_WIDTH / 2, y + STAIR_HEIGHT / 2, STAIR_WIDTH, 4);
+            
+            // Texture/Detail
+            ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x - STAIR_WIDTH / 2, y, STAIR_WIDTH, STAIR_HEIGHT / 2);
+        }
+
+        function drawCharacter(ctx, x, y, dir) {
+            ctx.save();
+            ctx.translate(x, y - 5); // Offset slightly above stair
+            
+            if (dir === -1) ctx.scale(-1, 1);
+
+            // Simple "Pixel Art" Character
+            // Body
+            ctx.fillStyle = '#333'; // Suit
+            ctx.fillRect(-15, -50, 30, 45);
+            
+            // Head
+            ctx.fillStyle = '#ffdbac'; // Skin
+            ctx.fillRect(-12, -70, 24, 20);
+            
+            // Hair
+            ctx.fillStyle = '#4b3621';
+            ctx.fillRect(-12, -75, 24, 8);
+            
+            // Eyes
+            ctx.fillStyle = '#000';
+            ctx.fillRect(4, -65, 4, 4);
+            
+            // Feet
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(-10, -5, 10, 6);
+            ctx.fillRect(5, -5, 10, 6);
+
+            ctx.restore();
+        }
+
+        function drawBackground(ctx, camY) {
+            // Draw some distant buildings
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            for (let i = -5; i < 5; i++) {
+                const bx = i * 150;
+                const bh = 300 + Math.sin(i) * 100;
+                ctx.fillRect(bx - 40, -camY - 500, 80, bh + camY + 1000);
+            }
+        }
+
+        initGame();
+        draw();
+    </script>
+</body>
+</html>

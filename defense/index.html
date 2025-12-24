@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Meteor Defense - Arcade</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff00ff;
+            --neon-orange: #ff9d00;
+            --bg-dark: #020010;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: white;
+            touch-action: none;
+        }
+
+        #top-bar {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            z-index: 15;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--neon-blue);
+        }
+
+        .stat-value {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            height: 70vh;
+            background: rgba(255, 255, 255, 0.02);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #screens {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .screen {
+            background: rgba(2, 0, 16, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 85%;
+            pointer-events: auto;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        h2 {
+            font-size: 32px;
+            background: linear-gradient(to right, var(--neon-blue), var(--neon-orange));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .difficulty-selector {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin: 10px 0;
+        }
+
+        .diff-btn {
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .diff-btn.active {
+            background: var(--neon-orange);
+            border-color: var(--neon-orange);
+            box-shadow: 0 0 10px var(--neon-orange);
+        }
+
+        .btn {
+            padding: 15px 40px;
+            background: var(--neon-blue);
+            color: var(--bg-dark);
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        #mobile-controls {
+            width: 100%;
+            max-width: 600px;
+            height: 100px;
+            display: flex;
+            padding: 0 20px;
+            align-items: center;
+            position: relative;
+        }
+
+        .control-area {
+            width: 100%;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+        }
+
+        @media (min-width: 769px) {
+            #mobile-controls { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div id="top-bar">
+        <div class="stat-item">
+            <span class="stat-label">Defense</span>
+            <span id="score" class="stat-value">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Difficulty</span>
+            <span id="current-diff-display" class="stat-value" style="font-size: 12px; color: var(--neon-orange);">NORMAL</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Best</span>
+            <span id="best-score" class="stat-value">0</span>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="screens">
+            <div id="start-screen" class="screen active">
+                <h2>METEOR DEFENSE</h2>
+                <div class="difficulty-selector">
+                    <button class="diff-btn" onclick="setDifficulty('easy')">EASY</button>
+                    <button class="diff-btn active" onclick="setDifficulty('normal')">NORMAL</button>
+                    <button class="diff-btn" onclick="setDifficulty('hard')">HARD</button>
+                </div>
+                <button class="btn" onclick="startGame()">ENGAGE</button>
+            </div>
+
+            <div id="game-over-screen" class="screen">
+                <h2>BASE DESTROYED</h2>
+                <p>The meteors have breached our defense.</p>
+                <div style="margin: 10px 0;">
+                    <div class="stat-label">Final Score</div>
+                    <div id="final-score" class="stat-value">0</div>
+                </div>
+                <button class="btn" onclick="startGame()">REDEPLOY</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mobile-controls">
+        <div class="control-area">Slide here to move paddle</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const bestScoreEl = document.getElementById('best-score');
+        const finalScoreEl = document.getElementById('final-score');
+
+        // Game Constants
+        const PADDLE_WIDTH = 100;
+        const PADDLE_HEIGHT = 15;
+        const BALL_RADIUS = 8;
+        const BRICK_ROWS = 5;
+        const BRICK_COLS = 7;
+        const BRICK_HEIGHT = 25;
+        const BRICK_PADDING = 10;
+        const BRICK_OFFSET_TOP = 40;
+
+        const DIFFICULTIES = {
+            easy: { ballSpeed: 4, paddleSpeed: 8, label: 'EASY' },
+            normal: { ballSpeed: 6, paddleSpeed: 10, label: 'NORMAL' },
+            hard: { ballSpeed: 8, paddleSpeed: 12, label: 'HARD' }
+        };
+
+        // Game State
+        let currentDifficulty = 'normal';
+        let score = 0;
+        let gameActive = false;
+        let lastTime = performance.now();
+
+        let paddle = { x: 0, y: 0, width: PADDLE_WIDTH };
+        let ball = { x: 0, y: 0, dx: 0, dy: 0 };
+        let bricks = [];
+        let particles = [];
+
+        function setDifficulty(diff) {
+            currentDifficulty = diff;
+            document.querySelectorAll('.diff-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.innerText.toLowerCase() === diff);
+            });
+            document.getElementById('current-diff-display').innerText = DIFFICULTIES[diff].label;
+            updateBestScoreDisplay();
+        }
+
+        function updateBestScoreDisplay() {
+            const best = localStorage.getItem(`defense_best_${currentDifficulty}`) || 0;
+            bestScoreEl.innerText = best;
+        }
+
+        function initBricks() {
+            bricks = [];
+            const brickWidth = (canvas.width - (BRICK_COLS + 1) * BRICK_PADDING) / BRICK_COLS;
+            for (let c = 0; c < BRICK_COLS; c++) {
+                bricks[c] = [];
+                for (let r = 0; r < BRICK_ROWS; r++) {
+                    bricks[c][r] = { 
+                        x: c * (brickWidth + BRICK_PADDING) + BRICK_PADDING, 
+                        y: r * (BRICK_HEIGHT + BRICK_PADDING) + BRICK_OFFSET_TOP,
+                        status: 1,
+                        width: brickWidth,
+                        color: `hsl(${200 + r * 20}, 80%, 60%)`
+                    };
+                }
+            }
+        }
+
+        function initGame() {
+            const config = DIFFICULTIES[currentDifficulty];
+            paddle.width = PADDLE_WIDTH;
+            paddle.x = (canvas.width - paddle.width) / 2;
+            paddle.y = canvas.height - 30;
+
+            ball.x = canvas.width / 2;
+            ball.y = paddle.y - BALL_RADIUS;
+            ball.dx = config.ballSpeed * (Math.random() > 0.5 ? 1 : -1);
+            ball.dy = -config.ballSpeed;
+
+            score = 0;
+            scoreEl.innerText = '0';
+            updateBestScoreDisplay();
+            initBricks();
+            particles = [];
+            lastTime = performance.now();
+        }
+
+        function resize() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            if (!gameActive) initGame();
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        function startGame() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            initGame();
+            gameActive = true;
+        }
+
+        function gameOver() {
+            gameActive = false;
+            finalScoreEl.innerText = score;
+            const bestKey = `defense_best_${currentDifficulty}`;
+            const best = parseInt(localStorage.getItem(bestKey) || 0);
+            if (score > best) {
+                localStorage.setItem(bestKey, score);
+                bestScoreEl.innerText = score;
+            }
+            document.getElementById('game-over-screen').classList.add('active');
+        }
+
+        function createParticles(x, y, color) {
+            for (let i = 0; i < 8; i++) {
+                particles.push({
+                    x, y,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6,
+                    size: Math.random() * 4 + 2,
+                    life: 1.0,
+                    color
+                });
+            }
+        }
+
+        function update(timestamp) {
+            const deltaTime = timestamp - lastTime;
+            lastTime = timestamp;
+            const f = Math.min(deltaTime / (1000 / 60), 3);
+
+            if (gameActive) {
+                // Move ball
+                ball.x += ball.dx * f;
+                ball.y += ball.dy * f;
+
+                // Wall collisions
+                if (ball.x + BALL_RADIUS > canvas.width || ball.x - BALL_RADIUS < 0) {
+                    ball.dx = -ball.dx;
+                }
+                if (ball.y - BALL_RADIUS < 0) {
+                    ball.dy = -ball.dy;
+                }
+
+                // Paddle collision
+                if (ball.y + BALL_RADIUS > paddle.y && 
+                    ball.x > paddle.x && 
+                    ball.x < paddle.x + paddle.width) {
+                    ball.dy = -Math.abs(ball.dy);
+                    // Add some spin based on where it hit the paddle
+                    const hitPos = (ball.x - (paddle.x + paddle.width / 2)) / (paddle.width / 2);
+                    ball.dx = hitPos * DIFFICULTIES[currentDifficulty].ballSpeed * 1.5;
+                }
+
+                // Brick collisions
+                let bricksLeft = 0;
+                for (let c = 0; c < BRICK_COLS; c++) {
+                    for (let r = 0; r < BRICK_ROWS; r++) {
+                        const b = bricks[c][r];
+                        if (b.status === 1) {
+                            bricksLeft++;
+                            if (ball.x > b.x && ball.x < b.x + b.width && 
+                                ball.y > b.y && ball.y < b.y + BRICK_HEIGHT) {
+                                ball.dy = -ball.dy;
+                                b.status = 0;
+                                score += 10;
+                                scoreEl.innerText = score;
+                                createParticles(b.x + b.width / 2, b.y + BRICK_HEIGHT / 2, b.color);
+                            }
+                        }
+                    }
+                }
+
+                if (bricksLeft === 0) {
+                    initBricks(); // Reset level
+                    ball.dy *= 1.1; // Speed up
+                    ball.dx *= 1.1;
+                }
+
+                // Game over
+                if (ball.y + BALL_RADIUS > canvas.height) {
+                    gameOver();
+                }
+
+                // Update particles
+                particles = particles.filter(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= 0.02;
+                    return p.life > 0;
+                });
+            }
+
+            draw();
+            requestAnimationFrame(update);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Bricks
+            bricks.forEach(col => col.forEach(b => {
+                if (b.status === 1) {
+                    ctx.fillStyle = b.color;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = b.color;
+                    ctx.fillRect(b.x, b.y, b.width, BRICK_HEIGHT);
+                    ctx.shadowBlur = 0;
+                }
+            }));
+
+            // Paddle
+            ctx.fillStyle = '#00f3ff';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#00f3ff';
+            ctx.fillRect(paddle.x, paddle.y, paddle.width, PADDLE_HEIGHT);
+
+            // Ball
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Particles
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            });
+            ctx.globalAlpha = 1.0;
+        }
+
+        // Controls
+        window.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            paddle.x = Math.max(0, Math.min(canvas.width - paddle.width, mouseX - paddle.width / 2));
+        });
+
+        // Mobile touch control
+        const controlArea = document.querySelector('.control-area');
+        window.addEventListener('touchmove', e => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touchX = e.touches[0].clientX - rect.left;
+            paddle.x = Math.max(0, Math.min(canvas.width - paddle.width, touchX - paddle.width / 2));
+        }, { passive: false });
+
+        window.addEventListener('keydown', e => {
+            if (!gameActive && document.querySelector('.screen.active')) {
+                startGame();
+            }
+        });
+
+        updateBestScoreDisplay();
+        requestAnimationFrame(update);
+    </script>
+</body>
+</html>

@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Black Hole Eater - Arcade</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-purple: #bc13fe;
+            --bg-dark: #010108;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: white;
+            touch-action: none;
+        }
+
+        #top-bar {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            z-index: 15;
+            position: fixed;
+            top: 0;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--neon-blue);
+        }
+
+        .stat-value {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            cursor: none;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #screens {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .screen {
+            background: rgba(1, 1, 8, 0.95);
+            padding: 40px;
+            border-radius: 30px;
+            text-align: center;
+            border: 1px solid var(--neon-purple);
+            box-shadow: 0 0 50px rgba(188, 19, 254, 0.2);
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 90%;
+            pointer-events: auto;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        h2 {
+            font-size: 42px;
+            background: linear-gradient(to right, var(--neon-blue), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .difficulty-selector {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 10px 0;
+        }
+
+        .diff-btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .diff-btn.active {
+            background: var(--neon-purple);
+            border-color: var(--neon-purple);
+            box-shadow: 0 0 15px var(--neon-purple);
+        }
+
+        .btn {
+            padding: 18px 50px;
+            background: var(--neon-blue);
+            color: var(--bg-dark);
+            border: none;
+            border-radius: 15px;
+            font-size: 20px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        #mobile-hint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 12px;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        #joystick-container {
+            position: fixed;
+            bottom: 40px;
+            left: 40px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: none;
+            touch-action: none;
+            z-index: 30;
+        }
+
+        #joystick-knob {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            background: var(--neon-blue);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px var(--neon-blue);
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            #joystick-container { display: block; }
+        }
+    </style>
+</head>
+<body>
+    <div id="top-bar">
+        <div class="stat-item">
+            <span class="stat-label">Mass</span>
+            <span id="score" class="stat-value">100</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Difficulty</span>
+            <span id="current-diff-display" class="stat-value" style="font-size: 12px; color: var(--neon-purple);">NORMAL</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Best Mass</span>
+            <span id="best-score" class="stat-value">0</span>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="screens">
+            <div id="start-screen" class="screen active">
+                <h2>BLACK HOLE EATER</h2>
+                <div class="difficulty-selector">
+                    <button class="diff-btn" onclick="setDifficulty('easy')">EASY</button>
+                    <button class="diff-btn active" onclick="setDifficulty('normal')">NORMAL</button>
+                    <button class="diff-btn" onclick="setDifficulty('hard')">HARD</button>
+                </div>
+                <p style="opacity: 0.7;">Absorb smaller objects to grow. Avoid larger ones.</p>
+                <button class="btn" onclick="startGame()">SINGULARITY</button>
+            </div>
+
+            <div id="game-over-screen" class="screen">
+                <h2>COLLAPSED</h2>
+                <p>You were absorbed by a larger celestial body.</p>
+                <div style="margin: 10px 0;">
+                    <div class="stat-label">Final Mass</div>
+                    <div id="final-score" class="stat-value">0</div>
+                </div>
+                <button class="btn" onclick="startGame()">REGENERATE</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="joystick-container">
+        <div id="joystick-knob"></div>
+    </div>
+
+    <div id="mobile-hint">Use WASD, Arrows, or Joystick to navigate</div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const bestScoreEl = document.getElementById('best-score');
+        const finalScoreEl = document.getElementById('final-score');
+        const joystickContainer = document.getElementById('joystick-container');
+        const joystickKnob = document.getElementById('joystick-knob');
+
+        // Game Constants
+        const INITIAL_RADIUS = 20;
+        const FOOD_COUNT = 150;
+        const ENEMY_COUNT = 15;
+        const WORLD_SIZE = 3000;
+
+        const DIFFICULTIES = {
+            easy: { enemySpeed: 1.5, foodValue: 2, label: 'EASY' },
+            normal: { enemySpeed: 2.5, foodValue: 1.5, label: 'NORMAL' },
+            hard: { enemySpeed: 4.0, foodValue: 1.0, label: 'HARD' }
+        };
+
+        // Game State
+        let currentDifficulty = 'normal';
+        let gameActive = false;
+        let lastTime = performance.now();
+        
+        let player = {
+            x: WORLD_SIZE / 2,
+            y: WORLD_SIZE / 2,
+            radius: INITIAL_RADIUS,
+            targetX: WORLD_SIZE / 2,
+            targetY: WORLD_SIZE / 2
+        };
+
+        let food = [];
+        let enemies = [];
+        let camera = { x: 0, y: 0 };
+        let keys = {};
+        let joystick = { active: false, x: 0, y: 0 };
+
+        function setDifficulty(diff) {
+            currentDifficulty = diff;
+            document.querySelectorAll('.diff-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.innerText.toLowerCase() === diff);
+            });
+            document.getElementById('current-diff-display').innerText = DIFFICULTIES[diff].label;
+            updateBestScoreDisplay();
+        }
+
+        function updateBestScoreDisplay() {
+            const best = localStorage.getItem(`eater_best_${currentDifficulty}`) || 0;
+            bestScoreEl.innerText = best;
+        }
+
+        function spawnFood() {
+            while (food.length < FOOD_COUNT) {
+                food.push({
+                    x: Math.random() * WORLD_SIZE,
+                    y: Math.random() * WORLD_SIZE,
+                    radius: Math.random() * 4 + 2,
+                    color: `hsl(${Math.random() * 360}, 70%, 70%)`
+                });
+            }
+        }
+
+        function spawnEnemy(isInitial = false) {
+            const radius = player.radius * (0.5 + Math.random() * 1.5);
+            let x, y;
+            
+            // Spawn far from player
+            do {
+                x = Math.random() * WORLD_SIZE;
+                y = Math.random() * WORLD_SIZE;
+            } while (Math.hypot(x - player.x, y - player.y) < 800);
+
+            const enemy = {
+                x, y,
+                radius,
+                color: '#ff3e3e',
+                vx: (Math.random() - 0.5),
+                vy: (Math.random() - 0.5)
+            };
+            
+            if (isInitial) enemies.push(enemy);
+            else return enemy;
+        }
+
+        function initGame() {
+            player.radius = INITIAL_RADIUS;
+            player.x = WORLD_SIZE / 2;
+            player.y = WORLD_SIZE / 2;
+            player.targetX = player.x;
+            player.targetY = player.y;
+
+            food = [];
+            spawnFood();
+
+            enemies = [];
+            for (let i = 0; i < ENEMY_COUNT; i++) {
+                spawnEnemy(true);
+            }
+
+            scoreEl.innerText = Math.floor(player.radius * 5);
+            updateBestScoreDisplay();
+            lastTime = performance.now();
+        }
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        function startGame() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            initGame();
+            gameActive = true;
+        }
+
+        function gameOver() {
+            gameActive = false;
+            const finalMass = Math.floor(player.radius * 5);
+            finalScoreEl.innerText = finalMass;
+            const bestKey = `eater_best_${currentDifficulty}`;
+            const best = parseInt(localStorage.getItem(bestKey) || 0);
+            if (finalMass > best) {
+                localStorage.setItem(bestKey, finalMass);
+                bestScoreEl.innerText = finalMass;
+            }
+            document.getElementById('game-over-screen').classList.add('active');
+        }
+
+        function update(timestamp) {
+            const deltaTime = timestamp - lastTime;
+            lastTime = timestamp;
+            const f = Math.min(deltaTime / (1000 / 60), 3);
+
+            if (gameActive) {
+                const config = DIFFICULTIES[currentDifficulty];
+
+                // Handle Input (Keyboard and Joystick)
+                let inputX = 0;
+                let inputY = 0;
+
+                if (joystick.active) {
+                    inputX = joystick.x;
+                    inputY = joystick.y;
+                } else {
+                    if (keys['ArrowUp'] || keys['w'] || keys['W']) inputY -= 1;
+                    if (keys['ArrowDown'] || keys['s'] || keys['S']) inputY += 1;
+                    if (keys['ArrowLeft'] || keys['a'] || keys['A']) inputX -= 1;
+                    if (keys['ArrowRight'] || keys['d'] || keys['D']) inputX += 1;
+                }
+
+                if (inputX !== 0 || inputY !== 0) {
+                    const mag = Math.hypot(inputX, inputY);
+                    player.targetX = player.x + (inputX / mag) * 200;
+                    player.targetY = player.y + (inputY / mag) * 200;
+                }
+
+                // Player Movement (Smooth follow target)
+                const dx = player.targetX - player.x;
+                const dy = player.targetY - player.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist > 5) {
+                    const speed = Math.min(dist / 10, 5 / (player.radius / 20));
+                    player.x += (dx / dist) * speed * f;
+                    player.y += (dy / dist) * speed * f;
+                }
+
+                // Keep in world bounds
+                player.x = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, player.x));
+                player.y = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, player.y));
+
+                // Camera follow player
+                camera.x = player.x - canvas.width / 2;
+                camera.y = player.y - canvas.height / 2;
+
+                // Food collision
+                food = food.filter(f => {
+                    const d = Math.hypot(player.x - f.x, player.y - f.y);
+                    if (d < player.radius) {
+                        player.radius += (f.radius / player.radius) * config.foodValue;
+                        scoreEl.innerText = Math.floor(player.radius * 5);
+                        return false;
+                    }
+                    return true;
+                });
+                spawnFood();
+
+                // Enemy updates
+                enemies.forEach((en, idx) => {
+                    // Move enemy
+                    en.x += en.vx * config.enemySpeed * f;
+                    en.y += en.vy * config.enemySpeed * f;
+
+                    // Bounce off walls
+                    if (en.x < en.radius || en.x > WORLD_SIZE - en.radius) en.vx *= -1;
+                    if (en.y < en.radius || en.y > WORLD_SIZE - en.radius) en.vy *= -1;
+
+                    // Interaction with player
+                    const d = Math.hypot(player.x - en.x, player.y - en.y);
+                    if (d < player.radius + en.radius) {
+                        if (player.radius > en.radius * 1.1) {
+                            // Eat enemy
+                            player.radius += (en.radius / player.radius) * 5;
+                            enemies[idx] = spawnEnemy();
+                        } else if (d < en.radius) {
+                            gameOver();
+                        }
+                    }
+                });
+            }
+
+            draw();
+            requestAnimationFrame(update);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            ctx.translate(-camera.x, -camera.y);
+
+            // World Boundary
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 10;
+            ctx.strokeRect(0, 0, WORLD_SIZE, WORLD_SIZE);
+
+            // Grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= WORLD_SIZE; i += 100) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, WORLD_SIZE); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(WORLD_SIZE, i); ctx.stroke();
+            }
+
+            // Food
+            food.forEach(f => {
+                ctx.fillStyle = f.color;
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Enemies
+            enemies.forEach(en => {
+                const gradient = ctx.createRadialGradient(en.x, en.y, 0, en.x, en.y, en.radius);
+                gradient.addColorStop(0, '#000');
+                gradient.addColorStop(0.8, en.color);
+                gradient.addColorStop(1, 'rgba(255, 62, 62, 0)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(en.x, en.y, en.radius * 1.2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Red Glow
+                ctx.strokeStyle = en.color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(en.x, en.y, en.radius, 0, Math.PI * 2);
+                ctx.stroke();
+            });
+
+            // Player (Black Hole)
+            const pX = player.x;
+            const pY = player.y;
+            const r = player.radius;
+
+            // Event Horizon Glow
+            const glow = ctx.createRadialGradient(pX, pY, r * 0.8, pX, pY, r * 1.5);
+            glow.addColorStop(0, 'rgba(0, 243, 255, 0.5)');
+            glow.addColorStop(1, 'rgba(188, 19, 254, 0)');
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(pX, pY, r * 1.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Singularity
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(pX, pY, r, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = '#00f3ff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(pX, pY, r, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // Controls
+        function handleMove(clientX, clientY) {
+            if (!gameActive || joystick.active) return;
+            player.targetX = clientX + camera.x;
+            player.targetY = clientY + camera.y;
+        }
+
+        window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
+        window.addEventListener('touchmove', e => {
+            if (joystick.active) return;
+            e.preventDefault();
+            handleMove(e.touches[0].clientX, e.touches[0].clientY);
+        }, { passive: false });
+
+        window.addEventListener('keydown', e => {
+            keys[e.key] = true;
+            if (!gameActive && document.querySelector('.screen.active')) {
+                startGame();
+            }
+        });
+        window.addEventListener('keyup', e => {
+            keys[e.key] = false;
+        });
+
+        // Virtual Joystick Logic
+        joystickContainer.addEventListener('touchstart', e => {
+            joystick.active = true;
+            updateJoystick(e.touches[0]);
+        });
+        window.addEventListener('touchmove', e => {
+            if (joystick.active) {
+                updateJoystick(e.touches[0]);
+            }
+        });
+        window.addEventListener('touchend', () => {
+            joystick.active = false;
+            joystickKnob.style.transform = 'translate(-50%, -50%)';
+        });
+
+        function updateJoystick(touch) {
+            const rect = joystickContainer.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            let dx = touch.clientX - centerX;
+            let dy = touch.clientY - centerY;
+            const dist = Math.hypot(dx, dy);
+            const maxDist = rect.width / 2;
+            
+            if (dist > maxDist) {
+                dx = (dx / dist) * maxDist;
+                dy = (dy / dist) * maxDist;
+            }
+            
+            joystick.x = dx / maxDist;
+            joystick.y = dy / maxDist;
+            
+            joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+        }
+
+        updateBestScoreDisplay();
+        requestAnimationFrame(update);
+    </script>
+</body>
+</html>
