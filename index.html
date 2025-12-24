@@ -37,34 +37,38 @@
         font-family: 'Plus Jakarta Sans', sans-serif;
         color: white;
         overflow-x: hidden;
-        display: flex;
-        justify-content: center;
+        width: 100%;
       }
 
       #bg-canvas {
         position: fixed;
         top: 0;
         left: 0;
-        width: 100vw;
-        height: 100vh;
+        width: 100%;
+        height: 100%;
         z-index: -1;
         display: block;
       }
 
       .portal {
-        width: min(1200px, 94vw);
-        padding: 40px 0 60px; /* Reduced top padding from 80px */
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 20px 60px;
         z-index: 1;
         display: grid;
-        gap: 30px; /* Reduced gap from 60px */
-        pointer-events: none; /* Let clicks pass through to cards */
+        gap: 30px;
+        pointer-events: none;
       }
 
       header, .grid, footer {
         pointer-events: auto;
       }
 
-      header { text-align: center; }
+      header { 
+        text-align: center;
+        width: 100%;
+      }
 
       .eyebrow {
         font-family: 'Space Grotesk', sans-serif;
@@ -89,6 +93,8 @@
         line-height: 1.1;
         margin-bottom: 16px;
         animation: flowingColor 5s linear infinite;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
       }
 
       @keyframes flowingColor {
@@ -108,7 +114,8 @@
         display: flex;
         justify-content: center;
         gap: 12px;
-        margin-bottom: 10px; /* Reduced from 40px */
+        margin-bottom: 10px;
+        flex-wrap: wrap;
       }
 
       .pill {
@@ -118,13 +125,14 @@
         border: 1px solid var(--glass-border);
         font-size: 0.85rem;
         backdrop-filter: blur(10px);
+        white-space: nowrap;
       }
 
       .grid {
         display: grid;
         gap: 20px;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        max-width: 1000px;
+        grid-template-columns: repeat(4, 1fr);
+        max-width: 1100px;
         margin: 0 auto;
       }
 
@@ -194,15 +202,37 @@
         border-top: 1px solid var(--glass-border);
       }
 
-      @media (max-width: 768px) {
-        .portal { 
-          padding: 30px 16px 40px; 
-          gap: 24px;
+      @media (max-width: 1100px) {
+        .grid {
+          grid-template-columns: repeat(3, 1fr);
+          max-width: 900px;
         }
-        h1 { font-size: 2.2rem; }
-        .hero-copy { font-size: 1rem; margin-bottom: 20px; }
-        .grid { gap: 16px; }
-        .game-card { min-height: 120px; padding: 18px; }
+      }
+
+      @media (max-width: 850px) {
+        .grid { 
+          grid-template-columns: repeat(2, 1fr);
+          max-width: 600px;
+          gap: 16px;
+        }
+        .portal { 
+          padding: 20px 12px 40px; 
+          gap: 20px;
+        }
+        h1 { font-size: clamp(1.8rem, 10vw, 2.5rem); }
+        .hero-copy { font-size: 1rem; margin-bottom: 16px; }
+        .game-card { min-height: 110px; padding: 16px; }
+      }
+
+      @media (max-width: 520px) {
+        .grid {
+          grid-template-columns: 1fr;
+          max-width: 360px;
+        }
+        .pill {
+          font-size: 0.75rem;
+          padding: 4px 12px;
+        }
       }
     </style>
   </head>
@@ -272,6 +302,7 @@
         antialias: true, 
         alpha: false // Faster performance, we'll set clear color
       });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit to 2 for performance
       renderer.setClearColor(0x020010, 1);
       
       const scene = new THREE.Scene();
