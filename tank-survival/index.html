@@ -19,6 +19,14 @@
             font-family: 'Segoe UI', Arial, sans-serif;
             overflow: hidden;
         }
+
+        /* Mobile: align to top to leave room for controls */
+        @media (pointer: coarse) {
+            body {
+                align-items: flex-start;
+                padding-top: 10px;
+            }
+        }
         #gameContainer {
             position: relative;
             display: flex;
@@ -133,13 +141,14 @@
             left: 0;
             right: 0;
             padding: 15px;
+            padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
             pointer-events: none;
             z-index: 200;
         }
 
         .joystick-container {
             position: absolute;
-            bottom: 20px;
+            bottom: calc(30px + env(safe-area-inset-bottom, 0px));
             width: 120px;
             height: 120px;
             pointer-events: auto;
@@ -176,7 +185,7 @@
 
         #fireBtn {
             position: absolute;
-            bottom: 160px;
+            bottom: calc(170px + env(safe-area-inset-bottom, 0px));
             right: 35px;
             width: 80px;
             height: 80px;
@@ -460,7 +469,10 @@
 
         function resizeCanvas() {
             const maxWidth = window.innerWidth - 20;
-            const maxHeight = window.innerHeight - 100;
+            // On mobile (touch devices), leave more room at bottom for controls
+            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            const controlsHeight = isTouchDevice ? 200 : 100;
+            const maxHeight = window.innerHeight - controlsHeight;
 
             let newWidth = baseWidth;
             let newHeight = baseHeight;
