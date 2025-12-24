@@ -3,297 +3,420 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Arcade Portal</title>
-    <meta
-      name="description"
-      content="A curated portal for mini single-page games."
-    />
+    <title>Arcade Portal - Deep Space</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+    
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+
     <style>
       :root {
-        color-scheme: light;
-        --ink: #1a1435;
-        --muted: #5b4f7a;
-        --peach: #fbe2c4;
-        --sunset: #ffb29f;
-        --berry: #7b4ee5;
-        --mint: #3bb8a9;
-        --card: rgba(255, 255, 255, 0.86);
-        --shadow: 0 30px 60px rgba(31, 23, 64, 0.18);
+        --purple: #7042f888;
+        --blue: #42b6f888;
+        --card-bg: rgba(255, 255, 255, 0.03);
+        --glass-border: rgba(255, 255, 255, 0.1);
       }
 
       * {
         box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
 
       body {
-        margin: 0;
         min-height: 100vh;
-        font-family: "Chakra Petch", "Trebuchet MS", sans-serif;
-        color: var(--ink);
-        background:
-          radial-gradient(1200px 800px at 10% -10%, #ffffff 0%, #f7f2ff 45%, transparent 65%),
-          radial-gradient(900px 700px at 100% 10%, #ffe7cf 0%, #fff4ea 55%, transparent 75%),
-          linear-gradient(135deg, #fbe2c4 0%, #f0f4ff 55%, #e9f8f5 100%);
+        background: #020010;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: white;
         overflow-x: hidden;
+        display: flex;
+        justify-content: center;
       }
 
-      body::before {
-        content: "";
+      #bg-canvas {
         position: fixed;
-        inset: -20% -10% auto -10%;
-        height: 70vh;
-        background:
-          radial-gradient(closest-side at 30% 40%, rgba(123, 78, 229, 0.22), transparent 65%),
-          radial-gradient(closest-side at 70% 40%, rgba(59, 184, 169, 0.24), transparent 68%);
-        pointer-events: none;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
         z-index: -1;
+        display: block;
       }
 
       .portal {
-        width: min(1100px, 92vw);
-        margin: 0 auto;
-        padding: 64px 0 80px;
+        width: min(1200px, 94vw);
+        padding: 40px 0 60px; /* Reduced top padding from 80px */
+        z-index: 1;
         display: grid;
-        gap: 48px;
+        gap: 30px; /* Reduced gap from 60px */
+        pointer-events: none; /* Let clicks pass through to cards */
       }
 
-      header {
-        display: grid;
-        gap: 18px;
+      header, .grid, footer {
+        pointer-events: auto;
       }
+
+      header { text-align: center; }
 
       .eyebrow {
-        font-size: 0.95rem;
-        letter-spacing: 0.2em;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.8rem;
+        letter-spacing: 0.3em;
         text-transform: uppercase;
-        color: var(--berry);
+        color: #a855f7;
+        margin-bottom: 12px;
+        display: block;
       }
 
       h1 {
-        margin: 0;
-        font-family: "Fraunces", "Times New Roman", serif;
-        font-weight: 700;
-        font-size: clamp(2.6rem, 6vw, 4.8rem);
-        line-height: 1.05;
+        font-size: clamp(2.2rem, 7vw, 4rem);
+        font-weight: 800;
+        background: linear-gradient(
+          to right, 
+          #fff, #a855f7, #42b6f8, #fff
+        );
+        background-size: 300% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        line-height: 1.1;
+        margin-bottom: 16px;
+        animation: flowingColor 5s linear infinite;
+      }
+
+      @keyframes flowingColor {
+        0% { background-position: 0% center; }
+        100% { background-position: 300% center; }
       }
 
       .hero-copy {
-        font-size: clamp(1.05rem, 2.3vw, 1.4rem);
-        color: var(--muted);
-        max-width: 45ch;
+        font-size: 1.1rem;
+        color: rgba(255, 255, 255, 0.6);
+        max-width: 600px;
+        margin: 0 auto 24px;
+        line-height: 1.5;
       }
 
-      .hero-meta {
+      .pills {
         display: flex;
-        flex-wrap: wrap;
-        gap: 16px;
-        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-bottom: 10px; /* Reduced from 40px */
       }
 
       .pill {
-        padding: 8px 16px;
-        border-radius: 999px;
-        background: rgba(123, 78, 229, 0.1);
-        color: var(--berry);
-        font-size: 0.9rem;
-        font-weight: 600;
-        letter-spacing: 0.04em;
+        padding: 6px 16px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--glass-border);
+        font-size: 0.85rem;
+        backdrop-filter: blur(10px);
       }
 
       .grid {
         display: grid;
-        gap: 24px;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        max-width: 1000px;
+        margin: 0 auto;
       }
 
       .game-card {
         position: relative;
-        padding: 24px;
+        padding: 20px;
         border-radius: 24px;
         text-decoration: none;
-        color: inherit;
-        background: var(--card);
-        box-shadow: var(--shadow);
-        border: 1px solid rgba(123, 78, 229, 0.12);
-        display: grid;
-        gap: 14px;
-        min-height: 220px;
-        transform: translateY(16px);
-        opacity: 0;
-        animation: riseIn 700ms ease forwards;
-        animation-delay: calc(var(--i) * 120ms);
+        color: white;
+        background: var(--card-bg);
+        backdrop-filter: blur(15px);
+        border: 1px solid var(--glass-border);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-height: 140px; /* Reduced from 200px */
+        transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+        box-shadow: 0 15px 35px -12px rgba(0, 0, 0, 0.5);
       }
 
-      .game-card::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border-radius: inherit;
-        background: linear-gradient(135deg, rgba(123, 78, 229, 0.18), rgba(59, 184, 169, 0.18));
-        opacity: 0;
-        transition: opacity 200ms ease;
-        z-index: 0;
-      }
-
-      .game-card:hover::after,
-      .game-card:focus-visible::after {
-        opacity: 1;
-      }
-
-      .game-card > * {
-        position: relative;
-        z-index: 1;
+      .game-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.3);
+        box-shadow: 0 25px 50px -12px rgba(112, 66, 248, 0.3);
       }
 
       .game-title {
-        font-size: 1.4rem;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 1.15rem;
         font-weight: 700;
+        color: #fff;
+        text-shadow: 0 0 10px rgba(255,255,255,0.2);
       }
 
       .game-desc {
-        color: var(--muted);
+        color: rgba(255, 255, 255, 0.45);
         line-height: 1.5;
+        font-size: 0.85rem;
       }
 
       .launch {
         margin-top: auto;
-        align-self: start;
-        display: inline-flex;
+        display: flex;
         align-items: center;
         gap: 8px;
         font-weight: 600;
-        color: var(--berry);
+        color: #a855f7;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
       }
 
       .launch span {
-        display: inline-block;
-        transition: transform 200ms ease;
+        transition: transform 0.3s ease;
       }
 
-      .game-card:hover .launch span,
-      .game-card:focus-visible .launch span {
-        transform: translateX(6px);
-      }
-
-      .spotlight {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        gap: 16px;
-        padding: 28px;
-        border-radius: 28px;
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.72));
-        border: 1px solid rgba(31, 23, 64, 0.08);
-      }
-
-      .spotlight h2 {
-        margin: 0;
-        font-size: 1.4rem;
+      .game-card:hover .launch span {
+        transform: translateX(8px);
       }
 
       footer {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px 24px;
-        color: var(--muted);
-        font-size: 0.95rem;
+        text-align: center;
+        padding-top: 40px;
+        color: rgba(255, 255, 255, 0.3);
+        font-size: 0.85rem;
+        border-top: 1px solid var(--glass-border);
       }
 
-      @keyframes riseIn {
-        from {
-          transform: translateY(26px);
-          opacity: 0;
+      @media (max-width: 768px) {
+        .portal { 
+          padding: 30px 16px 40px; 
+          gap: 24px;
         }
-        to {
-          transform: translateY(0);
-          opacity: 1;
-        }
-      }
-
-      @media (max-width: 720px) {
-        .portal {
-          padding: 48px 0 64px;
-        }
-
-        .hero-meta {
-          flex-direction: column;
-          align-items: flex-start;
-        }
-
-        .game-card {
-          min-height: 200px;
-        }
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        .game-card {
-          animation: none;
-          opacity: 1;
-          transform: none;
-        }
-
-        .launch span {
-          transition: none;
-        }
+        h1 { font-size: 2.2rem; }
+        .hero-copy { font-size: 1rem; margin-bottom: 20px; }
+        .grid { gap: 16px; }
+        .game-card { min-height: 120px; padding: 18px; }
       }
     </style>
   </head>
   <body>
+    <canvas id="bg-canvas"></canvas>
+
     <main class="portal">
       <header>
-        <span class="eyebrow">Geniuskey Arcade</span>
-        <h1>Pick a portal, drop into a mini-game.</h1>
+        <span class="eyebrow">The Cosmic Arcade</span>
+        <h1>Dream Dimension</h1>
         <p class="hero-copy">
-          Each folder hosts a single-page game. Choose a vibe and jump right in
-          without extra setup.
+          Explore miniature worlds floating in the deep void. 
+          Instant access to simple digital realms.
         </p>
-        <div class="hero-meta">
-          <span class="pill">3 games live</span>
-          <span class="pill">Instant play</span>
+        <div class="pills">
+          <span class="pill">4 Galaxies Online</span>
+          <span class="pill">Deep Exploration</span>
         </div>
       </header>
 
-      <section class="grid" aria-label="Game list">
-        <a class="game-card" style="--i: 1" href="offload/">
+      <section class="grid">
+        <a class="game-card" href="offload/">
           <div class="game-title">Offroad Racing</div>
           <div class="game-desc">
-            Blast through dirt tracks with farts-boost and slippery drifts.
+            High-speed drifts across dusty extraterrestrial tracks.
           </div>
-          <div class="launch">Race now <span>→</span></div>
+          <div class="launch">Engage Warp <span>→</span></div>
         </a>
-        <a class="game-card" style="--i: 2" href="rio-horror-school/">
-          <div class="game-title">Rio Horror School</div>
+        
+        <a class="game-card" href="rio-horror-school/">
+          <div class="game-title">Rio Horror</div>
           <div class="game-desc">
-            Navigate a creepy campus, dodge surprises, and escape the halls.
+            A haunting echo from a forgotten star system.
           </div>
-          <div class="launch">Enter the school <span>→</span></div>
+          <div class="launch">Investigate <span>→</span></div>
         </a>
-        <a class="game-card" style="--i: 3" href="tank-survival/">
+        
+        <a class="game-card" href="tank-survival/">
           <div class="game-title">Tank Survival</div>
           <div class="game-desc">
-            Hold the line, power up, and outlast waves in a fast survival run.
+            Tactical combat amidst the asteroid belts.
           </div>
-          <div class="launch">Start the battle <span>→</span></div>
+          <div class="launch">Deploy <span>→</span></div>
         </a>
-      </section>
-
-      <section class="spotlight">
-        <h2>Tip</h2>
-        <p class="hero-copy">
-          Add a new folder with its own <code>index.html</code> and it can be
-          linked here in seconds.
-        </p>
+        
+        <a class="game-card" href="volleyball/">
+          <div class="game-title">Cute Volleyball</div>
+          <div class="game-desc">
+            Zero-gravity sports with low-fidelity aesthetics.
+          </div>
+          <div class="launch">Commence <span>→</span></div>
+        </a>
       </section>
 
       <footer>
-        <span>Arcade portal for single-page mini games.</span>
-        <span>Built for fast launches and quick switches.</span>
+        <p>&copy; 2025 Geniuskey Arcade. Dimensional Portal v2.1 (ESM Build)</p>
       </footer>
     </main>
+
+    <script type="module">
+      import * as THREE from 'three';
+
+      // --- Scene Setup ---
+      const canvas = document.querySelector('#bg-canvas');
+      const renderer = new THREE.WebGLRenderer({ 
+        canvas, 
+        antialias: true, 
+        alpha: false // Faster performance, we'll set clear color
+      });
+      renderer.setClearColor(0x020010, 1);
+      
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x020010, 0.005);
+
+      const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 3000);
+      camera.position.z = 200;
+
+      // --- Lights ---
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
+      scene.add(ambientLight);
+
+      const blueLight = new THREE.PointLight(0x42b6f8, 100000, 1000);
+      blueLight.position.set(-150, -100, 50);
+      scene.add(blueLight);
+
+      const purpleLight = new THREE.PointLight(0xa855f7, 100000, 1000);
+      purpleLight.position.set(150, 150, 50);
+      scene.add(purpleLight);
+
+      // --- Starfield Helper ---
+      function createStars(count, size, color, range) {
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(count * 3);
+        for (let i = 0; i < count * 3; i++) {
+          positions[i] = (Math.random() - 0.5) * range;
+        }
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const material = new THREE.PointsMaterial({ 
+          size, 
+          color, 
+          transparent: true, 
+          opacity: Math.random() * 0.5 + 0.5,
+          sizeAttenuation: true
+        });
+        return new THREE.Points(geometry, material);
+      }
+
+      const farStars = createStars(10000, 0.6, 0xffffff, 2500);
+      scene.add(farStars);
+      const midStars = createStars(3000, 1.2, 0xaaaaff, 1500);
+      scene.add(midStars);
+
+      // --- Asteroids ---
+      const asteroids = [];
+      const asteroidGeo = new THREE.IcosahedronGeometry(1, 1);
+      for (let i = 0; i < 200; i++) {
+        const material = new THREE.MeshPhongMaterial({
+          color: i % 2 === 0 ? 0x222222 : 0x333333,
+          flatShading: true,
+          shininess: 0
+        });
+        const mesh = new THREE.Mesh(asteroidGeo, material);
+        mesh.position.set(
+          (Math.random() - 0.5) * 800,
+          (Math.random() - 0.5) * 800,
+          (Math.random() - 0.5) * 600
+        );
+        const scale = Math.random() * 8 + 1;
+        mesh.scale.set(scale, scale, scale);
+        mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+        mesh.userData = {
+          rotationSpeed: (Math.random() - 0.5) * 0.01,
+          driftSpeed: (Math.random() - 0.5) * 0.1
+        };
+        asteroids.push(mesh);
+        scene.add(mesh);
+      }
+
+      // --- Nebula Clusters ---
+      function createNebula(color, count, range) {
+        const group = new THREE.Group();
+        const geo = new THREE.SphereGeometry(1, 8, 8);
+        const mat = new THREE.MeshBasicMaterial({
+          color,
+          transparent: true,
+          opacity: 0.02,
+          depthWrite: false
+        });
+        for(let i=0; i<count; i++) {
+          const m = new THREE.Mesh(geo, mat);
+          m.position.set((Math.random()-0.5)*range, (Math.random()-0.5)*range, (Math.random()-0.5)*range);
+          m.scale.setScalar(Math.random()*50 + 20);
+          group.add(m);
+        }
+        return group;
+      }
+      const purpleNebula = createNebula(0xa855f7, 15, 400);
+      purpleNebula.position.set(100, 100, -200);
+      scene.add(purpleNebula);
+      
+      const blueNebula = createNebula(0x42b6f8, 15, 400);
+      blueNebula.position.set(-100, -100, -200);
+      scene.add(blueNebula);
+
+      // --- Animation & Interactivity ---
+      let mouseX = 0, mouseY = 0;
+      window.addEventListener('mousemove', (e) => {
+        mouseX = (e.clientX - window.innerWidth / 2) / 200;
+        mouseY = (e.clientY - window.innerHeight / 2) / 200;
+      });
+
+      function resize() {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        renderer.setSize(w, h);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      function animate() {
+        requestAnimationFrame(animate);
+        
+        // Parallax Effect
+        camera.position.x += (mouseX - camera.position.x) * 0.05;
+        camera.position.y += (-mouseY - camera.position.y) * 0.05;
+        camera.lookAt(0, 0, 0);
+
+        farStars.rotation.y += 0.0002;
+        midStars.rotation.y -= 0.0001;
+        
+        asteroids.forEach(a => {
+          a.rotation.x += a.userData.rotationSpeed;
+          a.rotation.y += a.userData.rotationSpeed;
+          a.position.z += a.userData.driftSpeed;
+          if (Math.abs(a.position.z) > 1000) a.userData.driftSpeed *= -1;
+        });
+
+        purpleNebula.rotation.z += 0.0005;
+        blueNebula.rotation.z -= 0.0005;
+
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      // Card effects
+      document.querySelectorAll('.game-card').forEach(card => {
+        card.onmousemove = e => {
+          const rect = card.getBoundingClientRect();
+          card.style.setProperty('--x', `${e.clientX - rect.left}px`);
+          card.style.setProperty('--y', `${e.clientY - rect.top}px`);
+        };
+      });
+    </script>
   </body>
 </html>
