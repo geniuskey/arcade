@@ -1,14 +1,17 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Arcade Portal - Deep Space</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
-    
-    <script type="importmap">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Arcade Portal - Deep Space</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet" />
+
+  <script type="importmap">
       {
         "imports": {
           "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
@@ -17,509 +20,647 @@
       }
     </script>
 
-    <style>
-      :root {
-        --purple: #7042f888;
-        --blue: #42b6f888;
-        --card-bg: rgba(255, 255, 255, 0.03);
-        --glass-border: rgba(255, 255, 255, 0.1);
+  <style>
+    :root {
+      --purple: #7042f888;
+      --blue: #42b6f888;
+      --card-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at center, #05001a 0%, #020010 100%);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: white;
+      overflow-x: hidden;
+      width: 100%;
+    }
+
+    #mouse-glow {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(112, 66, 248, 0.15) 0%, rgba(66, 182, 248, 0.05) 40%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+      transform: translate(-50%, -50%);
+      transition: width 0.3s, height 0.3s;
+      filter: blur(40px);
+    }
+
+    #bg-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      display: block;
+    }
+
+    .portal {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px 60px;
+      z-index: 1;
+      display: grid;
+      gap: 30px;
+      pointer-events: none;
+    }
+
+    header,
+    .grid,
+    footer {
+      pointer-events: auto;
+    }
+
+    header {
+      text-align: center;
+      width: 100%;
+    }
+
+    .eyebrow {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.8rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: #a855f7;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    h1 {
+      font-size: clamp(2.2rem, 7vw, 4rem);
+      font-weight: 800;
+      background: linear-gradient(to right,
+          #fff, #a855f7, #42b6f8, #fff);
+      background-size: 300% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.1;
+      margin-bottom: 16px;
+      animation: flowingColor 5s linear infinite;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    @keyframes flowingColor {
+      0% {
+        background-position: 0% center;
       }
 
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
+      100% {
+        background-position: 300% center;
       }
+    }
 
-      body {
-        min-height: 100vh;
-        background: #020010;
-        font-family: 'Plus Jakarta Sans', sans-serif;
-        color: white;
-        overflow-x: hidden;
-        width: 100%;
+    .hero-copy {
+      font-size: 1.1rem;
+      color: rgba(255, 255, 255, 0.6);
+      max-width: 600px;
+      margin: 0 auto 24px;
+      line-height: 1.5;
+    }
+
+    .pills {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      padding: 6px 16px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--glass-border);
+      font-size: 0.85rem;
+      backdrop-filter: blur(10px);
+      white-space: nowrap;
+    }
+
+    .grid {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(4, 1fr);
+      max-width: 1100px;
+      margin: 0 auto 40px;
+    }
+
+    .section-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #a855f7;
+      margin: 40px auto 20px;
+      max-width: 1100px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .section-title::before {
+      content: '';
+      display: block;
+      width: 30px;
+      height: 2px;
+      background: linear-gradient(to right, #a855f7, transparent);
+    }
+
+    .game-card {
+      position: relative;
+      padding: 20px;
+      border-radius: 24px;
+      text-decoration: none;
+      color: white;
+      background: var(--card-bg);
+      backdrop-filter: blur(15px);
+      border: 1px solid var(--glass-border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 140px;
+      /* Reduced from 200px */
+      transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+      box-shadow: 0 15px 35px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .game-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.3);
+      box-shadow: 0 25px 50px -12px rgba(112, 66, 248, 0.3);
+    }
+
+    .game-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+
+    .game-desc {
+      color: rgba(255, 255, 255, 0.45);
+      line-height: 1.5;
+      font-size: 0.85rem;
+    }
+
+    .launch {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      color: #a855f7;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .launch span {
+      transition: transform 0.3s ease;
+    }
+
+    .game-card:hover .launch span {
+      transform: translateX(8px);
+    }
+
+    footer {
+      text-align: center;
+      padding-top: 40px;
+      color: rgba(255, 255, 255, 0.3);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--glass-border);
+    }
+
+    @media (max-width: 1100px) {
+      .grid {
+        grid-template-columns: repeat(3, 1fr);
+        max-width: 900px;
       }
+    }
 
-      #bg-canvas {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: -1;
-        display: block;
+    @media (max-width: 850px) {
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+        max-width: 600px;
+        gap: 16px;
       }
 
       .portal {
-        width: 100%;
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 40px 20px 60px;
-        z-index: 1;
-        display: grid;
-        gap: 30px;
-        pointer-events: none;
-      }
-
-      header, .grid, footer {
-        pointer-events: auto;
-      }
-
-      header { 
-        text-align: center;
-        width: 100%;
-      }
-
-      .eyebrow {
-        font-family: 'Space Grotesk', sans-serif;
-        font-size: 0.8rem;
-        letter-spacing: 0.3em;
-        text-transform: uppercase;
-        color: #a855f7;
-        margin-bottom: 12px;
-        display: block;
+        padding: 20px 12px 40px;
+        gap: 20px;
       }
 
       h1 {
-        font-size: clamp(2.2rem, 7vw, 4rem);
-        font-weight: 800;
-        background: linear-gradient(
-          to right, 
-          #fff, #a855f7, #42b6f8, #fff
-        );
-        background-size: 300% auto;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        line-height: 1.1;
-        margin-bottom: 16px;
-        animation: flowingColor 5s linear infinite;
-        word-wrap: break-word;
-        overflow-wrap: break-word;
-      }
-
-      @keyframes flowingColor {
-        0% { background-position: 0% center; }
-        100% { background-position: 300% center; }
+        font-size: clamp(1.8rem, 10vw, 2.5rem);
       }
 
       .hero-copy {
-        font-size: 1.1rem;
-        color: rgba(255, 255, 255, 0.6);
-        max-width: 600px;
-        margin: 0 auto 24px;
-        line-height: 1.5;
-      }
-
-      .pills {
-        display: flex;
-        justify-content: center;
-        gap: 12px;
-        margin-bottom: 10px;
-        flex-wrap: wrap;
-      }
-
-      .pill {
-        padding: 6px 16px;
-        border-radius: 20px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid var(--glass-border);
-        font-size: 0.85rem;
-        backdrop-filter: blur(10px);
-        white-space: nowrap;
-      }
-
-      .grid {
-        display: grid;
-        gap: 20px;
-        grid-template-columns: repeat(4, 1fr);
-        max-width: 1100px;
-        margin: 0 auto;
+        font-size: 1rem;
+        margin-bottom: 16px;
       }
 
       .game-card {
-        position: relative;
-        padding: 20px;
-        border-radius: 24px;
-        text-decoration: none;
-        color: white;
-        background: var(--card-bg);
-        backdrop-filter: blur(15px);
-        border: 1px solid var(--glass-border);
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        min-height: 140px; /* Reduced from 200px */
-        transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-        box-shadow: 0 15px 35px -12px rgba(0, 0, 0, 0.5);
+        min-height: 110px;
+        padding: 16px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .grid {
+        grid-template-columns: 1fr;
+        max-width: 360px;
       }
 
-      .game-card:hover {
-        transform: translateY(-8px) scale(1.02);
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(255, 255, 255, 0.3);
-        box-shadow: 0 25px 50px -12px rgba(112, 66, 248, 0.3);
+      .pill {
+        font-size: 0.75rem;
+        padding: 4px 12px;
       }
+    }
+  </style>
+</head>
 
-      .game-title {
-        font-family: 'Space Grotesk', sans-serif;
-        font-size: 1.15rem;
-        font-weight: 700;
-        color: #fff;
-        text-shadow: 0 0 10px rgba(255,255,255,0.2);
-      }
+<body>
+  <div id="mouse-glow"></div>
+  <canvas id="bg-canvas"></canvas>
 
-      .game-desc {
-        color: rgba(255, 255, 255, 0.45);
-        line-height: 1.5;
-        font-size: 0.85rem;
-      }
+  <main class="portal">
+    <header>
+      <span class="eyebrow">The Cosmic Arcade</span>
+      <h1>Dream Dimension</h1>
+      <p class="hero-copy">
+        Explore miniature worlds floating in the deep void.
+        Instant access to simple digital realms.
+      </p>
+      <div class="pills">
+        <span class="pill">16 Galaxies Online</span>
+        <span class="pill">Deep Exploration</span>
+      </div>
+    </header>
 
-      .launch {
-        margin-top: auto;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 600;
-        color: #a855f7;
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-      }
-
-      .launch span {
-        transition: transform 0.3s ease;
-      }
-
-      .game-card:hover .launch span {
-        transform: translateX(8px);
-      }
-
-      footer {
-        text-align: center;
-        padding-top: 40px;
-        color: rgba(255, 255, 255, 0.3);
-        font-size: 0.85rem;
-        border-top: 1px solid var(--glass-border);
-      }
-
-      @media (max-width: 1100px) {
-        .grid {
-          grid-template-columns: repeat(3, 1fr);
-          max-width: 900px;
-        }
-      }
-
-      @media (max-width: 850px) {
-        .grid { 
-          grid-template-columns: repeat(2, 1fr);
-          max-width: 600px;
-          gap: 16px;
-        }
-        .portal { 
-          padding: 20px 12px 40px; 
-          gap: 20px;
-        }
-        h1 { font-size: clamp(1.8rem, 10vw, 2.5rem); }
-        .hero-copy { font-size: 1rem; margin-bottom: 16px; }
-        .game-card { min-height: 110px; padding: 16px; }
-      }
-
-      @media (max-width: 520px) {
-        .grid {
-          grid-template-columns: 1fr;
-          max-width: 360px;
-        }
-        .pill {
-          font-size: 0.75rem;
-          padding: 4px 12px;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <canvas id="bg-canvas"></canvas>
-
-    <main class="portal">
-      <header>
-        <span class="eyebrow">The Cosmic Arcade</span>
-        <h1>Dream Dimension</h1>
-        <p class="hero-copy">
-          Explore miniature worlds floating in the deep void. 
-          Instant access to simple digital realms.
-        </p>
-        <div class="pills">
-          <span class="pill">13 Galaxies Online</span>
-          <span class="pill">Deep Exploration</span>
+    <h2 class="section-title">Single Player Realms</h2>
+    <section class="grid">
+      <a class="game-card" href="city-race/">
+        <div class="game-title">City Race</div>
+        <div class="game-desc">
+          Drive through a neon metropolis, collect coins, and upgrade your vessel.
         </div>
-      </header>
+        <div class="launch">Cruise <span>→</span></div>
+      </a>
 
-      <section class="grid">
-        <a class="game-card" href="2048/">
-          <div class="game-title">Cosmic 2048</div>
-          <div class="game-desc">
-            Merge celestial bodies to create the ultimate singularity.
-          </div>
-          <div class="launch">Initialize <span>→</span></div>
-        </a>
+      <a class="game-card" href="2048/">
+        <div class="game-title">Cosmic 2048</div>
+        <div class="game-desc">
+          Merge celestial bodies to create the ultimate singularity.
+        </div>
+        <div class="launch">Initialize <span>→</span></div>
+      </a>
 
-        <a class="game-card" href="match/">
-          <div class="game-title">Planet Match</div>
-          <div class="game-desc">
-            Align celestial bodies in orbital paths to stabilize the galaxy.
-          </div>
-          <div class="launch">Synchronize <span>→</span></div>
-        </a>
+      <a class="game-card" href="run/">
+        <div class="game-title">Nebula Run</div>
+        <div class="game-desc">
+          Pilot your vessel through dense stardust and asteroid fields.
+        </div>
+        <div class="launch">Ignite <span>→</span></div>
+      </a>
 
-        <a class="game-card" href="run/">
-          <div class="game-title">Nebula Run</div>
-          <div class="game-desc">
-            Pilot your vessel through dense stardust and asteroid fields.
-          </div>
-          <div class="launch">Ignite <span>→</span></div>
-        </a>
+      <a class="game-card" href="tetris/">
+        <div class="game-title">Cosmic Tetris</div>
+        <div class="game-desc">
+          Arrange falling space debris to clear lines in the orbital grid.
+        </div>
+        <div class="launch">Initialize <span>→</span></div>
+      </a>
 
-        <a class="game-card" href="tetris/">
-          <div class="game-title">Cosmic Tetris</div>
-          <div class="game-desc">
-            Arrange falling space debris to clear lines in the orbital grid.
-          </div>
-          <div class="launch">Initialize <span>→</span></div>
-        </a>
+      <a class="game-card" href="eater/">
+        <div class="game-title">Black Hole Eater</div>
+        <div class="game-desc">
+          Consume stars and planets to grow your gravitational reach.
+        </div>
+        <div class="launch">Singularity <span>→</span></div>
+      </a>
 
-        <a class="game-card" href="eater/">
-          <div class="game-title">Black Hole Eater</div>
-          <div class="game-desc">
-            Consume stars and planets to grow your gravitational reach.
-          </div>
-          <div class="launch">Singularity <span>→</span></div>
-        </a>
+      <a class="game-card" href="defense/">
+        <div class="game-title">Meteor Defense</div>
+        <div class="game-desc">
+          Deflect plasma spheres to shatter incoming asteroid clusters.
+        </div>
+        <div class="launch">Engage <span>→</span></div>
+      </a>
 
-        <a class="game-card" href="defense/">
-          <div class="game-title">Meteor Defense</div>
-          <div class="game-desc">
-            Deflect plasma spheres to shatter incoming asteroid clusters.
-          </div>
-          <div class="launch">Engage <span>→</span></div>
-        </a>
+      <a class="game-card" href="jump/">
+        <div class="game-title">Galaxy Jump</div>
+        <div class="game-desc">
+          Leap across floating nebula platforms to reach the stars.
+        </div>
+        <div class="launch">Launch <span>→</span></div>
+      </a>
 
-        <a class="game-card" href="jump/">
-          <div class="game-title">Galaxy Jump</div>
-          <div class="game-desc">
-            Leap across floating nebula platforms to reach the stars.
-          </div>
-          <div class="launch">Launch <span>→</span></div>
-        </a>
+      <a class="game-card" href="snake/">
+        <div class="game-title">Cosmic Snake</div>
+        <div class="game-desc">
+          Navigate the void and consume stardust to grow your neon tail.
+        </div>
+        <div class="launch">Initialize <span>→</span></div>
+      </a>
 
-        <a class="game-card" href="snake/">
-          <div class="game-title">Cosmic Snake</div>
-          <div class="game-desc">
-            Navigate the void and consume stardust to grow your neon tail.
-          </div>
-          <div class="launch">Initialize <span>→</span></div>
-        </a>
+      <a class="game-card" href="stairs/">
+        <div class="game-title">Infinite Stairs</div>
+        <div class="game-desc">
+          Climb the never-ending steps with precision and speed.
+        </div>
+        <div class="launch">Ascend <span>→</span></div>
+      </a>
 
-        <a class="game-card" href="stairs/">
-          <div class="game-title">Infinite Stairs</div>
-          <div class="game-desc">
-            Climb the never-ending steps with precision and speed.
-          </div>
-          <div class="launch">Ascend <span>→</span></div>
-        </a>
+      <a class="game-card" href="offload/">
+        <div class="game-title">Offroad Racing</div>
+        <div class="game-desc">
+          High-speed drifts across dusty extraterrestrial tracks.
+        </div>
+        <div class="launch">Engage Warp <span>→</span></div>
+      </a>
 
-        <a class="game-card" href="offload/">
-          <div class="game-title">Offroad Racing</div>
-          <div class="game-desc">
-            High-speed drifts across dusty extraterrestrial tracks.
-          </div>
-          <div class="launch">Engage Warp <span>→</span></div>
-        </a>
-        
-        <a class="game-card" href="rio-horror-school/">
-          <div class="game-title">Rio Horror</div>
-          <div class="game-desc">
-            A haunting echo from a forgotten star system.
-          </div>
-          <div class="launch">Investigate <span>→</span></div>
-        </a>
-        
-        <a class="game-card" href="tank-survival/">
-          <div class="game-title">Tank Survival</div>
-          <div class="game-desc">
-            Tactical combat amidst the asteroid belts.
-          </div>
-          <div class="launch">Deploy <span>→</span></div>
-        </a>
-        
-        <a class="game-card" href="volleyball/">
-          <div class="game-title">Cute Volleyball</div>
-          <div class="game-desc">
-            Zero-gravity sports with low-fidelity aesthetics.
-          </div>
-          <div class="launch">Commence <span>→</span></div>
-        </a>
-      </section>
+      <a class="game-card" href="rio-horror-school/">
+        <div class="game-title">Rio Horror</div>
+        <div class="game-desc">
+          A haunting echo from a forgotten star system.
+        </div>
+        <div class="launch">Investigate <span>→</span></div>
+      </a>
 
-      <footer>
-        <p>&copy; 2025 Geniuskey Arcade. Dimensional Portal v2.1 (ESM Build)</p>
-      </footer>
-    </main>
+      <a class="game-card" href="tank-survival/">
+        <div class="game-title">Tank Survival</div>
+        <div class="game-desc">
+          Tactical combat amidst the asteroid belts.
+        </div>
+        <div class="launch">Deploy <span>→</span></div>
+      </a>
+    </section>
 
-    <script type="module">
-      import * as THREE from 'three';
+    <h2 class="section-title">Multiplayer Dimension</h2>
+    <section class="grid">
+      <a class="game-card" href="volleyball/">
+        <div class="game-title">Cute Volleyball</div>
+        <div class="game-desc">
+          Zero-gravity sports with low-fidelity aesthetics. 2-player mode available.
+        </div>
+        <div class="launch">Commence <span>→</span></div>
+      </a>
 
-      // --- Scene Setup ---
-      const canvas = document.querySelector('#bg-canvas');
-      const renderer = new THREE.WebGLRenderer({ 
-        canvas, 
-        antialias: true, 
-        alpha: false // Faster performance, we'll set clear color
+      <a class="game-card" href="bomb-survival/">
+        <div class="game-title">Bomb Survival</div>
+        <div class="game-desc">
+          Avoid falling bombs and sweeping lasers in this high-intensity survival ritual.
+        </div>
+        <div class="launch">Survive <span>→</span></div>
+      </a>
+
+      <a class="game-card" href="safe-zone/">
+        <div class="game-title">Safe Zone Scramble</div>
+        <div class="game-desc">
+          Musical chairs in space! Fight for and hold the green safe zones to survive the void.
+        </div>
+        <div class="launch">Scramble <span>→</span></div>
+      </a>
+
+      <a class="game-card" href="tile-fall/">
+        <div class="game-title">Tile Fall Survival</div>
+        <div class="game-desc">
+          The floor is a lie. Stay on the shrinking platform and push your opponent into the void.
+        </div>
+        <div class="launch">Initialize <span>→</span></div>
+      </a>
+    </section>
+
+    <footer>
+      <p>&copy; 2025 Geniuskey Arcade. Dimensional Portal v2.1 (ESM Build)</p>
+    </footer>
+  </main>
+
+  <script type="module">
+    import * as THREE from 'three';
+
+    // --- Scene Setup ---
+    const canvas = document.querySelector('#bg-canvas');
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: true,
+      alpha: false // Faster performance, we'll set clear color
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit to 2 for performance
+    renderer.setClearColor(0x020010, 1);
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x020010, 0.005);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 3000);
+    camera.position.z = 200;
+
+    // --- Lights ---
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
+    scene.add(ambientLight);
+
+    const blueLight = new THREE.PointLight(0x42b6f8, 100000, 1000);
+    blueLight.position.set(-150, -100, 50);
+    scene.add(blueLight);
+
+    const purpleLight = new THREE.PointLight(0xa855f7, 100000, 1000);
+    purpleLight.position.set(150, 150, 50);
+    scene.add(purpleLight);
+
+    // --- Starfield Helper ---
+    function createStars(count, size, color, range) {
+      const geometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(count * 3);
+      for (let i = 0; i < count * 3; i++) {
+        positions[i] = (Math.random() - 0.5) * range;
+      }
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const material = new THREE.PointsMaterial({
+        size,
+        color,
+        transparent: true,
+        opacity: Math.random() * 0.5 + 0.5,
+        sizeAttenuation: true
       });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit to 2 for performance
-      renderer.setClearColor(0x020010, 1);
+      return new THREE.Points(geometry, material);
+    }
+
+    const farStars = createStars(10000, 0.6, 0xffffff, 2500);
+    scene.add(farStars);
+    const midStars = createStars(3000, 1.2, 0xaaaaff, 1500);
+    scene.add(midStars);
+    const spaceDust = createStars(5000, 0.4, 0x42b6f8, 1000);
+    scene.add(spaceDust);
+
+    // --- Shooting Stars ---
+    const shootingStarGeo = new THREE.BufferGeometry();
+    const shootingStarMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+    const shootingStar = new THREE.Line(shootingStarGeo, shootingStarMat);
+    scene.add(shootingStar);
+
+    let isShooting = false;
+    function triggerShootingStar() {
+      if (isShooting) return;
+      isShooting = true;
+      const start = new THREE.Vector3((Math.random() - 0.5) * 1000, 500, (Math.random() - 0.5) * 500);
+      const end = start.clone().add(new THREE.Vector3((Math.random() - 0.5) * 500, -1000, (Math.random() - 0.5) * 500));
       
-      const scene = new THREE.Scene();
-      scene.fog = new THREE.FogExp2(0x020010, 0.005);
+      const points = [start, start.clone()];
+      shootingStarGeo.setFromPoints(points);
+      
+      let progress = 0;
+      const duration = 0.5 + Math.random() * 0.5;
+      const startTime = performance.now();
 
-      const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 3000);
-      camera.position.z = 200;
-
-      // --- Lights ---
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
-      scene.add(ambientLight);
-
-      const blueLight = new THREE.PointLight(0x42b6f8, 100000, 1000);
-      blueLight.position.set(-150, -100, 50);
-      scene.add(blueLight);
-
-      const purpleLight = new THREE.PointLight(0xa855f7, 100000, 1000);
-      purpleLight.position.set(150, 150, 50);
-      scene.add(purpleLight);
-
-      // --- Starfield Helper ---
-      function createStars(count, size, color, range) {
-        const geometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(count * 3);
-        for (let i = 0; i < count * 3; i++) {
-          positions[i] = (Math.random() - 0.5) * range;
+      function updateStar() {
+        const now = performance.now();
+        progress = (now - startTime) / (duration * 1000);
+        if (progress < 1) {
+          const currentEnd = start.clone().lerp(end, progress);
+          const currentStart = start.clone().lerp(end, Math.max(0, progress - 0.2));
+          shootingStarGeo.setFromPoints([currentStart, currentEnd]);
+          requestAnimationFrame(updateStar);
+        } else {
+          isShooting = false;
+          shootingStarGeo.setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+          setTimeout(triggerShootingStar, Math.random() * 5000 + 2000);
         }
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        const material = new THREE.PointsMaterial({ 
-          size, 
-          color, 
-          transparent: true, 
-          opacity: Math.random() * 0.5 + 0.5,
-          sizeAttenuation: true
-        });
-        return new THREE.Points(geometry, material);
       }
+      updateStar();
+    }
+    setTimeout(triggerShootingStar, 3000);
 
-      const farStars = createStars(10000, 0.6, 0xffffff, 2500);
-      scene.add(farStars);
-      const midStars = createStars(3000, 1.2, 0xaaaaff, 1500);
-      scene.add(midStars);
+    // --- Asteroids ---
+    const asteroids = [];
+    const asteroidGeo = new THREE.IcosahedronGeometry(1, 1);
+    for (let i = 0; i < 200; i++) {
+      const material = new THREE.MeshPhongMaterial({
+        color: i % 2 === 0 ? 0x222222 : 0x333333,
+        flatShading: true,
+        shininess: 0
+      });
+      const mesh = new THREE.Mesh(asteroidGeo, material);
+      mesh.position.set(
+        (Math.random() - 0.5) * 1200,
+        (Math.random() - 0.5) * 1200,
+        (Math.random() - 0.5) * 800
+      );
+      const scale = Math.random() * 8 + 1;
+      mesh.scale.set(scale, scale, scale);
+      mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+      mesh.userData = {
+        rotationSpeed: (Math.random() - 0.5) * 0.01,
+        driftSpeed: (Math.random() - 0.5) * 0.1
+      };
+      asteroids.push(mesh);
+      scene.add(mesh);
+    }
 
-      // --- Asteroids ---
-      const asteroids = [];
-      const asteroidGeo = new THREE.IcosahedronGeometry(1, 1);
-      for (let i = 0; i < 200; i++) {
-        const material = new THREE.MeshPhongMaterial({
-          color: i % 2 === 0 ? 0x222222 : 0x333333,
-          flatShading: true,
-          shininess: 0
-        });
-        const mesh = new THREE.Mesh(asteroidGeo, material);
-        mesh.position.set(
-          (Math.random() - 0.5) * 800,
-          (Math.random() - 0.5) * 800,
-          (Math.random() - 0.5) * 600
-        );
-        const scale = Math.random() * 8 + 1;
-        mesh.scale.set(scale, scale, scale);
-        mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
-        mesh.userData = {
-          rotationSpeed: (Math.random() - 0.5) * 0.01,
-          driftSpeed: (Math.random() - 0.5) * 0.1
-        };
-        asteroids.push(mesh);
-        scene.add(mesh);
-      }
-
-      // --- Nebula Clusters ---
-      function createNebula(color, count, range) {
-        const group = new THREE.Group();
-        const geo = new THREE.SphereGeometry(1, 8, 8);
+    // --- Nebula Clusters ---
+    function createNebula(color, count, range) {
+      const group = new THREE.Group();
+      const geo = new THREE.SphereGeometry(1, 8, 8);
+      for (let i = 0; i < count; i++) {
         const mat = new THREE.MeshBasicMaterial({
           color,
           transparent: true,
-          opacity: 0.02,
+          opacity: Math.random() * 0.02 + 0.01,
           depthWrite: false
         });
-        for(let i=0; i<count; i++) {
-          const m = new THREE.Mesh(geo, mat);
-          m.position.set((Math.random()-0.5)*range, (Math.random()-0.5)*range, (Math.random()-0.5)*range);
-          m.scale.setScalar(Math.random()*50 + 20);
-          group.add(m);
-        }
-        return group;
+        const m = new THREE.Mesh(geo, mat);
+        m.position.set((Math.random() - 0.5) * range, (Math.random() - 0.5) * range, (Math.random() - 0.5) * range);
+        m.scale.setScalar(Math.random() * 80 + 30);
+        group.add(m);
       }
-      const purpleNebula = createNebula(0xa855f7, 15, 400);
-      purpleNebula.position.set(100, 100, -200);
-      scene.add(purpleNebula);
+      return group;
+    }
+    const purpleNebula = createNebula(0xa855f7, 20, 500);
+    purpleNebula.position.set(150, 150, -300);
+    scene.add(purpleNebula);
+
+    const blueNebula = createNebula(0x42b6f8, 20, 500);
+    blueNebula.position.set(-150, -150, -300);
+    scene.add(blueNebula);
+
+    // --- Animation & Interactivity ---
+    let mouseX = 0, mouseY = 0;
+    const mouseGlow = document.getElementById('mouse-glow');
+
+    window.addEventListener('mousemove', (e) => {
+      mouseX = (e.clientX - window.innerWidth / 2) / 200;
+      mouseY = (e.clientY - window.innerHeight / 2) / 200;
       
-      const blueNebula = createNebula(0x42b6f8, 15, 400);
-      blueNebula.position.set(-100, -100, -200);
-      scene.add(blueNebula);
+      // Update CSS Glow position
+      mouseGlow.style.left = e.clientX + 'px';
+      mouseGlow.style.top = e.clientY + 'px';
+    });
 
-      // --- Animation & Interactivity ---
-      let mouseX = 0, mouseY = 0;
-      window.addEventListener('mousemove', (e) => {
-        mouseX = (e.clientX - window.innerWidth / 2) / 200;
-        mouseY = (e.clientY - window.innerHeight / 2) / 200;
+    function resize() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      renderer.setSize(w, h);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    function animate(time) {
+      requestAnimationFrame(animate);
+
+      // Parallax Effect
+      camera.position.x += (mouseX - camera.position.x) * 0.05;
+      camera.position.y += (-mouseY - camera.position.y) * 0.05;
+      camera.lookAt(0, 0, 0);
+
+      // Twinkle stars
+      midStars.material.opacity = 0.5 + Math.sin(time * 0.002) * 0.3;
+      spaceDust.rotation.y -= 0.0003;
+
+      farStars.rotation.y += 0.0002;
+      midStars.rotation.y -= 0.0001;
+
+      asteroids.forEach(a => {
+        a.rotation.x += a.userData.rotationSpeed;
+        a.rotation.y += a.userData.rotationSpeed;
+        a.position.z += a.userData.driftSpeed;
+        if (Math.abs(a.position.z) > 1000) a.userData.driftSpeed *= -1;
       });
 
-      function resize() {
-        const w = window.innerWidth;
-        const h = window.innerHeight;
-        renderer.setSize(w, h);
-        camera.aspect = w / h;
-        camera.updateProjectionMatrix();
-      }
-      window.addEventListener('resize', resize);
-      resize();
+      purpleNebula.rotation.z += 0.0003;
+      blueNebula.rotation.z -= 0.0003;
 
-      function animate() {
-        requestAnimationFrame(animate);
-        
-        // Parallax Effect
-        camera.position.x += (mouseX - camera.position.x) * 0.05;
-        camera.position.y += (-mouseY - camera.position.y) * 0.05;
-        camera.lookAt(0, 0, 0);
+      renderer.render(scene, camera);
+    }
+    animate(0);
 
-        farStars.rotation.y += 0.0002;
-        midStars.rotation.y -= 0.0001;
-        
-        asteroids.forEach(a => {
-          a.rotation.x += a.userData.rotationSpeed;
-          a.rotation.y += a.userData.rotationSpeed;
-          a.position.z += a.userData.driftSpeed;
-          if (Math.abs(a.position.z) > 1000) a.userData.driftSpeed *= -1;
-        });
+    // Card effects
+    document.querySelectorAll('.game-card').forEach(card => {
+      card.onmousemove = e => {
+        const rect = card.getBoundingClientRect();
+        card.style.setProperty('--x', `${e.clientX - rect.left}px`);
+        card.style.setProperty('--y', `${e.clientY - rect.top}px`);
+      };
+    });
+  </script>
+</body>
 
-        purpleNebula.rotation.z += 0.0005;
-        blueNebula.rotation.z -= 0.0005;
-
-        renderer.render(scene, camera);
-      }
-      animate();
-
-      // Card effects
-      document.querySelectorAll('.game-card').forEach(card => {
-        card.onmousemove = e => {
-          const rect = card.getBoundingClientRect();
-          card.style.setProperty('--x', `${e.clientX - rect.left}px`);
-          card.style.setProperty('--y', `${e.clientY - rect.top}px`);
-        };
-      });
-    </script>
-  </body>
 </html>

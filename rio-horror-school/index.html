@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -85,20 +86,20 @@
             gap: 3px;
             color: white;
             font-size: 11px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
             min-width: 160px;
         }
 
         #ui div {
             padding: 2px 6px;
-            background: rgba(0,0,0,0.4);
+            background: rgba(0, 0, 0, 0.4);
             border-radius: 3px;
             border-left: 2px solid #4a6a8a;
         }
 
         #holdingIndicator {
             padding: 5px 10px;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             border-radius: 4px;
             color: #aaa;
             font-size: 11px;
@@ -154,18 +155,21 @@
             display: inline-block;
             padding: 2px 6px;
             margin: 2px;
-            background: rgba(0,0,0,0.4);
+            background: rgba(0, 0, 0, 0.4);
             border-radius: 3px;
             color: #ddd;
         }
 
-        #startScreen, #gameOverScreen, #victoryScreen, #shopScreen {
+        #startScreen,
+        #gameOverScreen,
+        #victoryScreen,
+        #shopScreen {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.9);
+            background: rgba(0, 0, 0, 0.9);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -174,7 +178,10 @@
             z-index: 100;
         }
 
-        #startScreen h1, #gameOverScreen h1, #victoryScreen h1, #shopScreen h1 {
+        #startScreen h1,
+        #gameOverScreen h1,
+        #victoryScreen h1,
+        #shopScreen h1 {
             font-size: 48px;
             margin-bottom: 20px;
             text-shadow: 0 0 20px red;
@@ -188,7 +195,9 @@
             text-shadow: 0 0 20px cyan;
         }
 
-        #startScreen p, #gameOverScreen p, #victoryScreen p {
+        #startScreen p,
+        #gameOverScreen p,
+        #victoryScreen p {
             font-size: 16px;
             margin-bottom: 20px;
             max-width: 550px;
@@ -295,7 +304,7 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0, 0, 0, 0.7);
             color: #ff6b6b;
             font-size: 10px;
             text-align: center;
@@ -318,7 +327,7 @@
             font-size: 18px;
             font-weight: bold;
             padding: 8px 15px;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0, 0, 0, 0.7);
             border: 2px solid gold;
             border-radius: 8px;
             z-index: 10;
@@ -332,7 +341,7 @@
             color: #ff6b6b;
             font-size: 20px;
             padding: 8px 20px;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0, 0, 0, 0.7);
             border-radius: 8px;
             z-index: 10;
         }
@@ -346,7 +355,7 @@
         }
 
         .shop-item {
-            background: rgba(50,50,70,0.9);
+            background: rgba(50, 50, 70, 0.9);
             border: 2px solid #555;
             border-radius: 12px;
             padding: 15px;
@@ -564,12 +573,17 @@
                 padding: 3px 6px;
             }
 
-            #startScreen p, #gameOverScreen p, #victoryScreen p {
+            #startScreen p,
+            #gameOverScreen p,
+            #victoryScreen p {
                 font-size: 14px;
                 padding: 0 15px;
             }
 
-            #startScreen h1, #gameOverScreen h1, #victoryScreen h1, #shopScreen h1 {
+            #startScreen h1,
+            #gameOverScreen h1,
+            #victoryScreen h1,
+            #shopScreen h1 {
                 font-size: 32px;
             }
 
@@ -628,9 +642,32 @@
                 font-size: 24px;
             }
         }
+
+        .back-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            text-decoration: none;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-family: sans-serif;
+            font-size: 12px;
+            transition: background 0.3s;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
     </style>
 </head>
+
 <body>
+    <a href="../" class="back-btn">← Arcade</a>
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
 
@@ -698,9 +735,9 @@
                 <strong>과연, 😎 리오는 어떻게 이 상황을 극복할까요?</strong><br><br>
                 📌 5초 안에 무기를 줍거나 다른 교실로 도망가세요!<br>
                 <span class="desktop-only">⚔️ SPACE로 공격, E로 무기 줍기<br>
-                🫣 H로 책상/사물함에 숨기<br></span>
+                    🫣 H로 책상/사물함에 숨기<br></span>
                 <span class="mobile-only">⚔️ 버튼으로 공격/줍기/숨기<br>
-                🕹️ 조이스틱으로 이동<br></span>
+                    🕹️ 조이스틱으로 이동<br></span>
                 👀 빌런은 벽 너머를 볼 수 없어요!<br>
                 🚪 탈출구를 열 열쇠 5개 중 1개만 맞아요!<br>
                 🍎 음식과 열쇠는 자동으로 획득!<br><br>
@@ -987,8 +1024,8 @@
                         if (map[y][x] === FLOOR) {
                             // Check not blocking doors
                             const isNearDoor =
-                                (map[y-1] && map[y-1][x] === DOOR) ||
-                                (map[y+1] && map[y+1][x] === DOOR);
+                                (map[y - 1] && map[y - 1][x] === DOOR) ||
+                                (map[y + 1] && map[y + 1][x] === DOOR);
                             if (!isNearDoor) {
                                 map[y][x] = LOCKER;
                             }
@@ -1025,8 +1062,8 @@
         }
 
         function isNearWall(map, x, y) {
-            return map[y-1][x] === WALL || map[y+1][x] === WALL ||
-                   map[y][x-1] === WALL || map[y][x+1] === WALL;
+            return map[y - 1][x] === WALL || map[y + 1][x] === WALL ||
+                map[y][x - 1] === WALL || map[y][x + 1] === WALL;
         }
 
         // Get safe spawn positions (floor only, not hiding spots)
@@ -1042,10 +1079,10 @@
                 if (map[y][x] === FLOOR) {
                     // Check surrounding tiles - should have at least 2 adjacent floor tiles
                     let adjacentFloors = 0;
-                    if (map[y-1][x] === FLOOR) adjacentFloors++;
-                    if (map[y+1][x] === FLOOR) adjacentFloors++;
-                    if (map[y][x-1] === FLOOR) adjacentFloors++;
-                    if (map[y][x+1] === FLOOR) adjacentFloors++;
+                    if (map[y - 1][x] === FLOOR) adjacentFloors++;
+                    if (map[y + 1][x] === FLOOR) adjacentFloors++;
+                    if (map[y][x - 1] === FLOOR) adjacentFloors++;
+                    if (map[y][x + 1] === FLOOR) adjacentFloors++;
 
                     if (adjacentFloors >= 2) {
                         // Check not too close to existing positions
@@ -1057,7 +1094,7 @@
                             }
                         }
                         if (!tooClose) {
-                            positions.push({x, y});
+                            positions.push({ x, y });
                         }
                     }
                 }
@@ -1194,7 +1231,7 @@
             }
             // Key slot selection (6,7,8,9,0 maps to key slots 0-4)
             if (['6', '7', '8', '9', '0'].includes(e.key) && (gameState === 'playing' || gameState === 'countdown')) {
-                const keySlotMap = {'6': 0, '7': 1, '8': 2, '9': 3, '0': 4};
+                const keySlotMap = { '6': 0, '7': 1, '8': 2, '9': 3, '0': 4 };
                 selectKeySlot(keySlotMap[e.key]);
             }
         });
@@ -1409,7 +1446,7 @@
                         }
                     }
                     if (!tooClose) {
-                        positions.push({x, y});
+                        positions.push({ x, y });
                     }
                 }
                 attempts++;
@@ -1425,7 +1462,7 @@
             const spawnPositions = getSafeSpawnPositions(schoolMap, 10); // 1 player + 8 friends + 1 extra
 
             // Create player at first safe position
-            const playerSpawn = spawnPositions[0] || {x: 3, y: 3};
+            const playerSpawn = spawnPositions[0] || { x: 3, y: 3 };
             player = createEntity(playerSpawn.x, playerSpawn.y, '😎', 100);
 
             // Reset weapons if not keeping them (new game or restart)
@@ -1458,7 +1495,7 @@
             // Create friends at safe spawn positions
             friends = [];
             for (let i = 0; i < 8; i++) {
-                const pos = spawnPositions[i + 1] || {x: 3 + (i % 3), y: 3 + Math.floor(i / 3)};
+                const pos = spawnPositions[i + 1] || { x: 3 + (i % 3), y: 3 + Math.floor(i / 3) };
                 const friend = createEntity(pos.x, pos.y, FRIEND_EMOJIS[i], 100);
                 friend.state = 'idle';
                 friend.targetWeapon = null;
@@ -1496,7 +1533,7 @@
             }
 
             // Find a good escape door position (on a floor tile, preferably hallway area)
-            let doorPos = getFloorPositions(1)[0] || {x: 15, y: 9};
+            let doorPos = getFloorPositions(1)[0] || { x: 15, y: 9 };
             escapeDoor = {
                 x: doorPos.x * TILE_SIZE + TILE_SIZE / 2,
                 y: doorPos.y * TILE_SIZE + TILE_SIZE / 2,
@@ -1934,7 +1971,7 @@
                     if (tileX >= 0 && tileX < MAP_WIDTH && tileY >= 0 && tileY < MAP_HEIGHT) {
                         const tile = schoolMap[tileY][tileX];
                         if (tile === DESK || tile === LOCKER) {
-                            return { x: tileX * TILE_SIZE + TILE_SIZE/2, y: tileY * TILE_SIZE + TILE_SIZE/2 };
+                            return { x: tileX * TILE_SIZE + TILE_SIZE / 2, y: tileY * TILE_SIZE + TILE_SIZE / 2 };
                         }
                     }
                 }
@@ -1994,7 +2031,7 @@
             // Check if target moved recently (for player, check keys; for friends, check if they're running)
             if (target === player) {
                 return keys['w'] || keys['s'] || keys['a'] || keys['d'] ||
-                       keys['arrowup'] || keys['arrowdown'] || keys['arrowleft'] || keys['arrowright'];
+                    keys['arrowup'] || keys['arrowdown'] || keys['arrowleft'] || keys['arrowright'];
             } else {
                 // Friends make sound when fleeing (has target/running state)
                 return target.fleeTarget !== undefined || target.isRunning;
@@ -2041,13 +2078,13 @@
             const key = (x, y) => `${x},${y}`;
             const heuristic = (x1, y1, x2, y2) => Math.abs(x1 - x2) + Math.abs(y1 - y2);
 
-            openSet.push({x: startTileX, y: startTileY});
+            openSet.push({ x: startTileX, y: startTileY });
             gScore.set(key(startTileX, startTileY), 0);
             fScore.set(key(startTileX, startTileY), heuristic(startTileX, startTileY, endTileX, endTileY));
 
             const directions = [
-                {dx: 0, dy: -1}, {dx: 0, dy: 1}, {dx: -1, dy: 0}, {dx: 1, dy: 0},
-                {dx: -1, dy: -1}, {dx: 1, dy: -1}, {dx: -1, dy: 1}, {dx: 1, dy: 1}
+                { dx: 0, dy: -1 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }, { dx: 1, dy: 0 },
+                { dx: -1, dy: -1 }, { dx: 1, dy: -1 }, { dx: -1, dy: 1 }, { dx: 1, dy: 1 }
             ];
 
             let iterations = 0;
@@ -2064,7 +2101,7 @@
                     let curr = key(current.x, current.y);
                     while (cameFrom.has(curr)) {
                         const [x, y] = curr.split(',').map(Number);
-                        path.unshift({x: x * TILE_SIZE + TILE_SIZE/2, y: y * TILE_SIZE + TILE_SIZE/2});
+                        path.unshift({ x: x * TILE_SIZE + TILE_SIZE / 2, y: y * TILE_SIZE + TILE_SIZE / 2 });
                         curr = cameFrom.get(curr);
                     }
                     return path;
@@ -2092,10 +2129,10 @@
                     }
 
                     const tentativeG = (gScore.get(key(current.x, current.y)) || 0) +
-                                       (dir.dx !== 0 && dir.dy !== 0 ? 1.414 : 1);
+                        (dir.dx !== 0 && dir.dy !== 0 ? 1.414 : 1);
 
                     if (!openSet.find(n => n.x === nx && n.y === ny)) {
-                        openSet.push({x: nx, y: ny});
+                        openSet.push({ x: nx, y: ny });
                     } else if (tentativeG >= (gScore.get(nKey) || Infinity)) {
                         continue;
                     }
@@ -2120,10 +2157,10 @@
                 }
                 if (!exited) {
                     const exitOffsets = [
-                        {x: TILE_SIZE, y: 0}, {x: -TILE_SIZE, y: 0},
-                        {x: 0, y: TILE_SIZE}, {x: 0, y: -TILE_SIZE},
-                        {x: TILE_SIZE, y: TILE_SIZE}, {x: -TILE_SIZE, y: -TILE_SIZE},
-                        {x: TILE_SIZE, y: -TILE_SIZE}, {x: -TILE_SIZE, y: TILE_SIZE}
+                        { x: TILE_SIZE, y: 0 }, { x: -TILE_SIZE, y: 0 },
+                        { x: 0, y: TILE_SIZE }, { x: 0, y: -TILE_SIZE },
+                        { x: TILE_SIZE, y: TILE_SIZE }, { x: -TILE_SIZE, y: -TILE_SIZE },
+                        { x: TILE_SIZE, y: -TILE_SIZE }, { x: -TILE_SIZE, y: TILE_SIZE }
                     ];
                     for (let offset of exitOffsets) {
                         const newX = player.x + offset.x;
@@ -2325,7 +2362,7 @@
                 const attackX = player.x + player.direction.x * weaponData.range;
                 const attackY = player.y + player.direction.y * weaponData.range;
 
-                if (distance({x: attackX, y: attackY}, villain) < 50 || distance(player, villain) < weaponData.range) {
+                if (distance({ x: attackX, y: attackY }, villain) < 50 || distance(player, villain) < weaponData.range) {
                     villain.hp -= weaponData.damage;
                     villain.stunTimer = 8;
 
@@ -2473,10 +2510,10 @@
                         friend.isHiding = false;
                         // Find adjacent walkable position to exit hiding
                         const exitOffsets = [
-                            {x: TILE_SIZE, y: 0}, {x: -TILE_SIZE, y: 0},
-                            {x: 0, y: TILE_SIZE}, {x: 0, y: -TILE_SIZE},
-                            {x: TILE_SIZE, y: TILE_SIZE}, {x: -TILE_SIZE, y: -TILE_SIZE},
-                            {x: TILE_SIZE, y: -TILE_SIZE}, {x: -TILE_SIZE, y: TILE_SIZE}
+                            { x: TILE_SIZE, y: 0 }, { x: -TILE_SIZE, y: 0 },
+                            { x: 0, y: TILE_SIZE }, { x: 0, y: -TILE_SIZE },
+                            { x: TILE_SIZE, y: TILE_SIZE }, { x: -TILE_SIZE, y: -TILE_SIZE },
+                            { x: TILE_SIZE, y: -TILE_SIZE }, { x: -TILE_SIZE, y: TILE_SIZE }
                         ];
                         for (let offset of exitOffsets) {
                             const newX = friend.x + offset.x;
@@ -2739,12 +2776,12 @@
                         let randX, randY;
                         if (Math.random() < 0.7) {
                             // Target hallway (corridor at y = 12-14)
-                            randX = Math.floor(Math.random() * (MAP_WIDTH - 4) + 2) * TILE_SIZE + TILE_SIZE/2;
-                            randY = (Math.floor(Math.random() * 3) + 12) * TILE_SIZE + TILE_SIZE/2;
+                            randX = Math.floor(Math.random() * (MAP_WIDTH - 4) + 2) * TILE_SIZE + TILE_SIZE / 2;
+                            randY = (Math.floor(Math.random() * 3) + 12) * TILE_SIZE + TILE_SIZE / 2;
                         } else {
                             // Random location
-                            randX = Math.floor(Math.random() * MAP_WIDTH) * TILE_SIZE + TILE_SIZE/2;
-                            randY = Math.floor(Math.random() * MAP_HEIGHT) * TILE_SIZE + TILE_SIZE/2;
+                            randX = Math.floor(Math.random() * MAP_WIDTH) * TILE_SIZE + TILE_SIZE / 2;
+                            randY = Math.floor(Math.random() * MAP_HEIGHT) * TILE_SIZE + TILE_SIZE / 2;
                         }
                         if (isWalkable(randX, randY, villain.size)) {
                             villain.wanderTarget = { x: randX, y: randY };
@@ -2931,7 +2968,7 @@
                     ctx.strokeStyle = '#c4b498';
                     ctx.strokeRect(px, py, TILE_SIZE, TILE_SIZE);
 
-                    switch(tile) {
+                    switch (tile) {
                         case WALL:
                             ctx.fillStyle = '#5d4e37';
                             ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
@@ -2948,14 +2985,14 @@
                             ctx.fillStyle = '#4a6fa5';
                             ctx.fillRect(px + 2, py + 2, TILE_SIZE - 4, TILE_SIZE - 4);
                             ctx.fillStyle = '#3a5f95';
-                            ctx.fillRect(px + 5, py + 5, (TILE_SIZE - 10)/2 - 2, TILE_SIZE - 10);
-                            ctx.fillRect(px + TILE_SIZE/2 + 2, py + 5, (TILE_SIZE - 10)/2 - 2, TILE_SIZE - 10);
+                            ctx.fillRect(px + 5, py + 5, (TILE_SIZE - 10) / 2 - 2, TILE_SIZE - 10);
+                            ctx.fillRect(px + TILE_SIZE / 2 + 2, py + 5, (TILE_SIZE - 10) / 2 - 2, TILE_SIZE - 10);
                             break;
                         case DOOR:
                             ctx.fillStyle = '#c4a574';
                             ctx.fillRect(px + 3, py, TILE_SIZE - 6, TILE_SIZE);
                             ctx.fillStyle = '#b49564';
-                            ctx.fillRect(px + TILE_SIZE - 12, py + TILE_SIZE/2 - 3, 4, 6);
+                            ctx.fillRect(px + TILE_SIZE - 12, py + TILE_SIZE / 2 - 3, 4, 6);
                             break;
                         case BLACKBOARD:
                             ctx.fillStyle = '#2d5a3d';
@@ -2967,18 +3004,18 @@
                             break;
                         case TOILET:
                             ctx.fillStyle = '#e8e8e8';
-                            ctx.fillRect(px + TILE_SIZE*0.2, py + TILE_SIZE*0.15, TILE_SIZE*0.6, TILE_SIZE*0.7);
+                            ctx.fillRect(px + TILE_SIZE * 0.2, py + TILE_SIZE * 0.15, TILE_SIZE * 0.6, TILE_SIZE * 0.7);
                             ctx.fillStyle = '#ccc';
-                            ctx.fillRect(px + TILE_SIZE*0.3, py + TILE_SIZE*0.1, TILE_SIZE*0.4, TILE_SIZE*0.2);
+                            ctx.fillRect(px + TILE_SIZE * 0.3, py + TILE_SIZE * 0.1, TILE_SIZE * 0.4, TILE_SIZE * 0.2);
                             break;
                         case PLANT:
                             // Pot
                             ctx.fillStyle = '#8b4513';
-                            ctx.fillRect(px + TILE_SIZE*0.3, py + TILE_SIZE*0.6, TILE_SIZE*0.4, TILE_SIZE*0.35);
+                            ctx.fillRect(px + TILE_SIZE * 0.3, py + TILE_SIZE * 0.6, TILE_SIZE * 0.4, TILE_SIZE * 0.35);
                             // Leaves
                             ctx.fillStyle = '#228b22';
                             ctx.beginPath();
-                            ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE*0.4, TILE_SIZE*0.35, 0, Math.PI * 2);
+                            ctx.arc(px + TILE_SIZE / 2, py + TILE_SIZE * 0.4, TILE_SIZE * 0.35, 0, Math.PI * 2);
                             ctx.fill();
                             break;
                         case WINDOW:
@@ -2987,12 +3024,12 @@
                             ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
                             // Glass panes (light blue)
                             ctx.fillStyle = '#87CEEB';
-                            ctx.fillRect(px + 3, py + 3, TILE_SIZE/2 - 4, TILE_SIZE - 6);
-                            ctx.fillRect(px + TILE_SIZE/2 + 1, py + 3, TILE_SIZE/2 - 4, TILE_SIZE - 6);
+                            ctx.fillRect(px + 3, py + 3, TILE_SIZE / 2 - 4, TILE_SIZE - 6);
+                            ctx.fillRect(px + TILE_SIZE / 2 + 1, py + 3, TILE_SIZE / 2 - 4, TILE_SIZE - 6);
                             // Window divider
                             ctx.fillStyle = '#4d3e27';
-                            ctx.fillRect(px + TILE_SIZE/2 - 1, py, 2, TILE_SIZE);
-                            ctx.fillRect(px, py + TILE_SIZE/2 - 1, TILE_SIZE, 2);
+                            ctx.fillRect(px + TILE_SIZE / 2 - 1, py, 2, TILE_SIZE);
+                            ctx.fillRect(px, py + TILE_SIZE / 2 - 1, TILE_SIZE, 2);
                             break;
                     }
                 }
@@ -3224,7 +3261,7 @@
                 const margin = 50;
 
                 const isOffScreen = villainScreenX < -20 || villainScreenX > canvas.width + 20 ||
-                                   villainScreenY < -20 || villainScreenY > canvas.height + 20;
+                    villainScreenY < -20 || villainScreenY > canvas.height + 20;
 
                 if (isOffScreen) {
                     // Reset transform to draw in screen coordinates
@@ -3339,14 +3376,14 @@
             const ratio = Math.max(0, hp / maxHp);
 
             ctx.fillStyle = '#333';
-            ctx.fillRect(x - width/2, y, width, height);
+            ctx.fillRect(x - width / 2, y, width, height);
 
             ctx.fillStyle = ratio > 0.5 ? color : ratio > 0.25 ? '#f59e0b' : '#ef4444';
-            ctx.fillRect(x - width/2, y, width * ratio, height);
+            ctx.fillRect(x - width / 2, y, width * ratio, height);
 
             ctx.strokeStyle = '#fff';
             ctx.lineWidth = 1;
-            ctx.strokeRect(x - width/2, y, width, height);
+            ctx.strokeRect(x - width / 2, y, width, height);
         }
 
         function drawMinimap() {
@@ -3376,7 +3413,7 @@
 
                     // Check if this tile is in the viewport
                     const inViewport = worldX + TILE_SIZE > viewportLeft && worldX < viewportRight &&
-                                      worldY + TILE_SIZE > viewportTop && worldY < viewportBottom;
+                        worldY + TILE_SIZE > viewportTop && worldY < viewportBottom;
 
                     // Base colors
                     let baseColor;
@@ -3533,4 +3570,5 @@
         }
     </script>
 </body>
+
 </html>

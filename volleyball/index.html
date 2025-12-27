@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,16 +17,20 @@
             font-family: 'Arial', sans-serif;
             overflow: hidden;
         }
+
         #game-container {
             position: relative;
-            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
             border-radius: 10px;
             overflow: hidden;
         }
+
         canvas {
             display: block;
-            background-color: #87CEEB; /* Sky blue */
+            background-color: #87CEEB;
+            /* Sky blue */
         }
+
         #ui-layer {
             position: absolute;
             top: 0;
@@ -38,15 +43,21 @@
             align-items: center;
             pointer-events: none;
         }
+
         .menu {
             background: rgba(255, 255, 255, 0.9);
             padding: 20px 40px;
             border-radius: 20px;
             text-align: center;
             pointer-events: auto;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
-        h1 { color: #ff6b6b; margin-bottom: 20px; }
+
+        h1 {
+            color: #ff6b6b;
+            margin-bottom: 20px;
+        }
+
         button {
             display: block;
             width: 100%;
@@ -60,7 +71,12 @@
             color: white;
             transition: transform 0.1s;
         }
-        button:hover { transform: scale(1.05); background-color: #45b7af; }
+
+        button:hover {
+            transform: scale(1.05);
+            background-color: #45b7af;
+        }
+
         .score-board {
             position: absolute;
             top: 20px;
@@ -70,8 +86,9 @@
             font-size: 32px;
             font-weight: bold;
             color: white;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
+
         .controls-hint {
             position: absolute;
             bottom: 10px;
@@ -85,362 +102,364 @@
         }
     </style>
 </head>
-<body>
 
-<div id="game-container">
-    <canvas id="gameCanvas" width="800" height="500"></canvas>
-    <div id="ui-layer">
-        <div id="main-menu" class="menu">
-            <h1>귀여운 배구!</h1>
-            <button onclick="startGame(1)">1인용 (vs 컴퓨터)</button>
-            <button onclick="startGame(2)">2인용 (Local)</button>
-        </div>
-        <div id="game-over" class="menu" style="display: none;">
-            <h1 id="winner-text">승리!</h1>
-            <button onclick="resetToMenu()">메인으로</button>
-        </div>
-        <div id="score-display" class="score-board" style="display: none;">
-            <div id="p1-score">0</div>
-            <div id="p2-score">0</div>
-        </div>
-        <div id="controls-display" class="controls-hint" style="display: none;">
-            <div>1P: WASD + Space</div>
-            <div>2P: 방향키 + Enter</div>
+<body>
+    <a href="../" class="back-btn">← Arcade</a>
+    <div id="game-container">
+        <canvas id="gameCanvas" width="800" height="500"></canvas>
+        <div id="ui-layer">
+            <div id="main-menu" class="menu">
+                <h1>귀여운 배구!</h1>
+                <button onclick="startGame(1)">1인용 (vs 컴퓨터)</button>
+                <button onclick="startGame(2)">2인용 (Local)</button>
+            </div>
+            <div id="game-over" class="menu" style="display: none;">
+                <h1 id="winner-text">승리!</h1>
+                <button onclick="resetToMenu()">메인으로</button>
+            </div>
+            <div id="score-display" class="score-board" style="display: none;">
+                <div id="p1-score">0</div>
+                <div id="p2-score">0</div>
+            </div>
+            <div id="controls-display" class="controls-hint" style="display: none;">
+                <div>1P: WASD + Space</div>
+                <div>2P: 방향키 + Enter</div>
+            </div>
         </div>
     </div>
-</div>
 
-<script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const mainMenu = document.getElementById('main-menu');
-    const gameOverMenu = document.getElementById('game-over');
-    const winnerText = document.getElementById('winner-text');
-    const scoreDisplay = document.getElementById('score-display');
-    const controlsDisplay = document.getElementById('controls-display');
-    const p1ScoreEl = document.getElementById('p1-score');
-    const p2ScoreEl = document.getElementById('p2-score');
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const mainMenu = document.getElementById('main-menu');
+        const gameOverMenu = document.getElementById('game-over');
+        const winnerText = document.getElementById('winner-text');
+        const scoreDisplay = document.getElementById('score-display');
+        const controlsDisplay = document.getElementById('controls-display');
+        const p1ScoreEl = document.getElementById('p1-score');
+        const p2ScoreEl = document.getElementById('p2-score');
 
-    // Game Constants
-    const GRAVITY = 0.06; // Extremely low gravity
-    const FRICTION = 0.8;
-    const GROUND_Y = 450;
-    const NET_WIDTH = 10;
-    const NET_HEIGHT = 120;
-    const PLAYER_RADIUS = 35;
-    const BALL_RADIUS = 20;
+        // Game Constants
+        const GRAVITY = 0.06; // Extremely low gravity
+        const FRICTION = 0.8;
+        const GROUND_Y = 450;
+        const NET_WIDTH = 10;
+        const NET_HEIGHT = 120;
+        const PLAYER_RADIUS = 35;
+        const BALL_RADIUS = 20;
 
-    let gameState = 'menu';
-    let gameMode = 1; // 1 or 2
-    let p1Score = 0;
-    let p2Score = 0;
+        let gameState = 'menu';
+        let gameMode = 1; // 1 or 2
+        let p1Score = 0;
+        let p2Score = 0;
 
-    const keys = {};
-    window.addEventListener('keydown', e => keys[e.code] = true);
-    window.addEventListener('keyup', e => keys[e.code] = false);
+        const keys = {};
+        window.addEventListener('keydown', e => keys[e.code] = true);
+        window.addEventListener('keyup', e => keys[e.code] = false);
 
-    class Ball {
-        constructor() {
-            this.reset();
-        }
-        reset(toPlayer = 1) {
-            this.x = toPlayer === 1 ? 200 : 600;
-            this.y = 100;
-            this.vx = 0;
-            this.vy = 0;
-            this.lastTouched = 0;
-        }
-        update() {
-            if (gameState !== 'playing') return; // Ball only moves when playing
-
-            this.vy += GRAVITY * 0.4; 
-            this.x += this.vx;
-            this.y += this.vy;
-
-            // Walls
-            if (this.x - BALL_RADIUS < 0) {
-                this.x = BALL_RADIUS;
-                this.vx = -this.vx * 0.5;
+        class Ball {
+            constructor() {
+                this.reset();
             }
-            if (this.x + BALL_RADIUS > canvas.width) {
-                this.x = canvas.width - BALL_RADIUS;
-                this.vx = -this.vx * 0.5;
-            }
-
-            // Net collision
-            const netX = canvas.width / 2;
-            const netTop = GROUND_Y - NET_HEIGHT;
-            if (this.y + BALL_RADIUS > netTop) {
-                if (Math.abs(this.x - netX) < BALL_RADIUS + NET_WIDTH / 2) {
-                    if (this.x < netX) {
-                        this.x = netX - NET_WIDTH / 2 - BALL_RADIUS;
-                        this.vx = -Math.abs(this.vx) * 0.5;
-                    } else {
-                        this.x = netX + NET_WIDTH / 2 + BALL_RADIUS;
-                        this.vx = Math.abs(this.vx) * 0.5;
-                    }
-                }
-            }
-
-            // Floor (Score)
-            if (this.y + BALL_RADIUS > GROUND_Y) {
-                this.y = GROUND_Y - BALL_RADIUS;
+            reset(toPlayer = 1) {
+                this.x = toPlayer === 1 ? 200 : 600;
+                this.y = 100;
                 this.vx = 0;
                 this.vy = 0;
-                if (this.x < canvas.width / 2) {
-                    p2Score++;
-                    checkWin(2);
-                } else {
-                    p1Score++;
-                    checkWin(1);
-                }
+                this.lastTouched = 0;
             }
-        }
-        draw() {
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, BALL_RADIUS, 0, Math.PI * 2);
-            ctx.fillStyle = '#fff';
-            ctx.fill();
-            ctx.strokeStyle = '#ddd';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.closePath();
-            
-            // Ball pattern
-            ctx.beginPath();
-            ctx.moveTo(this.x - BALL_RADIUS, this.y);
-            ctx.quadraticCurveTo(this.x, this.y - 10, this.x + BALL_RADIUS, this.y);
-            ctx.stroke();
-        }
-    }
+            update() {
+                if (gameState !== 'playing') return; // Ball only moves when playing
 
-    class Player {
-        constructor(id, x, color) {
-            this.id = id;
-            this.x = x;
-            this.y = GROUND_Y;
-            this.vx = 0;
-            this.vy = 0;
-            this.color = color;
-            this.isJumping = false;
-            this.spikeCooldown = 0;
-        }
-        update(opponent, ball) {
-            if (gameState !== 'playing' && gameState !== 'scoring') return;
-            if (this.spikeCooldown > 0) this.spikeCooldown--;
+                this.vy += GRAVITY * 0.4;
+                this.x += this.vx;
+                this.y += this.vy;
 
-            // Controls
-            if (this.id === 1) {
-                if (keys['KeyA']) this.vx -= 0.4;
-                if (keys['KeyD']) this.vx += 0.4;
-                if (keys['KeyW'] && !this.isJumping) {
-                    this.vy = -5.4; // Increased from -4.5 (20% higher)
-                    this.isJumping = true;
+                // Walls
+                if (this.x - BALL_RADIUS < 0) {
+                    this.x = BALL_RADIUS;
+                    this.vx = -this.vx * 0.5;
                 }
-                if (keys['Space'] && this.spikeCooldown === 0) {
-                    this.spike(ball);
+                if (this.x + BALL_RADIUS > canvas.width) {
+                    this.x = canvas.width - BALL_RADIUS;
+                    this.vx = -this.vx * 0.5;
                 }
-            } else {
-                if (gameMode === 2) {
-                    if (keys['ArrowLeft']) this.vx -= 0.4;
-                    if (keys['ArrowRight']) this.vx += 0.4;
-                    if (keys['ArrowUp'] && !this.isJumping) {
-                        this.vy = -5.4; // Increased from -4.5
-                        this.isJumping = true;
+
+                // Net collision
+                const netX = canvas.width / 2;
+                const netTop = GROUND_Y - NET_HEIGHT;
+                if (this.y + BALL_RADIUS > netTop) {
+                    if (Math.abs(this.x - netX) < BALL_RADIUS + NET_WIDTH / 2) {
+                        if (this.x < netX) {
+                            this.x = netX - NET_WIDTH / 2 - BALL_RADIUS;
+                            this.vx = -Math.abs(this.vx) * 0.5;
+                        } else {
+                            this.x = netX + NET_WIDTH / 2 + BALL_RADIUS;
+                            this.vx = Math.abs(this.vx) * 0.5;
+                        }
                     }
-                    if (keys['Enter'] && this.spikeCooldown === 0) {
-                        this.spike(ball);
-                    }
-                } else {
-                    // AI (Ultra floaty)
-                    const targetX = ball.x + (ball.vx * 20);
-                    const safeTargetX = Math.max(canvas.width / 2 + PLAYER_RADIUS + 10, Math.min(canvas.width - PLAYER_RADIUS, targetX));
-                    
-                    if (this.x < safeTargetX - 10) this.vx += 0.3;
-                    else if (this.x > safeTargetX + 10) this.vx -= 0.3;
-                    
-                    if (ball.x > canvas.width / 2 && ball.y < 350 && Math.abs(this.x - ball.x) < 80 && !this.isJumping) {
-                        this.vy = -5.4;
-                        this.isJumping = true;
-                    }
-                    if (this.isJumping && ball.y < this.y && Math.abs(this.x - ball.x) < 40) {
-                        this.spike(ball);
+                }
+
+                // Floor (Score)
+                if (this.y + BALL_RADIUS > GROUND_Y) {
+                    this.y = GROUND_Y - BALL_RADIUS;
+                    this.vx = 0;
+                    this.vy = 0;
+                    if (this.x < canvas.width / 2) {
+                        p2Score++;
+                        checkWin(2);
+                    } else {
+                        p1Score++;
+                        checkWin(1);
                     }
                 }
             }
-
-            this.vy += GRAVITY;
-            this.x += this.vx;
-            this.y += this.vy;
-            this.vx *= FRICTION;
-
-            // Boundaries
-            const minX = this.id === 1 ? PLAYER_RADIUS : canvas.width / 2 + NET_WIDTH / 2 + PLAYER_RADIUS;
-            const maxX = this.id === 1 ? canvas.width / 2 - NET_WIDTH / 2 - PLAYER_RADIUS : canvas.width - PLAYER_RADIUS;
-            
-            if (this.x < minX) this.x = minX;
-            if (this.x > maxX) this.x = maxX;
-
-            if (this.y >= GROUND_Y) {
-                this.y = GROUND_Y;
-                this.vy = 0;
-                this.isJumping = false;
-            }
-
-            // Collision with ball
-            const dx = ball.x - this.x;
-            const dy = ball.y - (this.y - PLAYER_RADIUS);
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            
-            if (dist < PLAYER_RADIUS + BALL_RADIUS) {
-                const angle = Math.atan2(dy, dx);
-                const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
-                const newSpeed = Math.max(speed, 4); // Very slow base rebound
-                
-                ball.vx = Math.cos(angle) * newSpeed;
-                ball.vy = Math.sin(angle) * newSpeed;
-                
-                // Prevent ball from getting stuck inside player
-                const overlap = PLAYER_RADIUS + BALL_RADIUS - dist;
-                ball.x += Math.cos(angle) * overlap;
-                ball.y += Math.sin(angle) * overlap;
-            }
-        }
-        spike(ball) {
-            const dx = ball.x - this.x;
-            const dy = ball.y - (this.y - PLAYER_RADIUS);
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            
-            if (dist < PLAYER_RADIUS + BALL_RADIUS + 30) {
-                const dir = this.id === 1 ? 1 : -1;
-                ball.vx = 10 * dir; // Increased horizontal speed
-                ball.vy = 2.5;      // Reduced downward speed for a gentler angle
-                this.spikeCooldown = 30;
-                
-                // Visual effect (flash ball)
-                ctx.fillStyle = 'yellow';
+            draw() {
                 ctx.beginPath();
-                ctx.arc(ball.x, ball.y, BALL_RADIUS + 5, 0, Math.PI * 2);
+                ctx.arc(this.x, this.y, BALL_RADIUS, 0, Math.PI * 2);
+                ctx.fillStyle = '#fff';
                 ctx.fill();
+                ctx.strokeStyle = '#ddd';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.closePath();
+
+                // Ball pattern
+                ctx.beginPath();
+                ctx.moveTo(this.x - BALL_RADIUS, this.y);
+                ctx.quadraticCurveTo(this.x, this.y - 10, this.x + BALL_RADIUS, this.y);
+                ctx.stroke();
             }
         }
-        draw() {
-            ctx.save();
-            ctx.translate(this.x, this.y);
-            
-            // Body (Semi-circle/blob)
-            ctx.beginPath();
-            ctx.arc(0, -PLAYER_RADIUS, PLAYER_RADIUS, Math.PI, 0);
-            ctx.lineTo(PLAYER_RADIUS, 0);
-            ctx.lineTo(-PLAYER_RADIUS, 0);
-            ctx.fillStyle = this.color;
-            ctx.fill();
-            ctx.closePath();
 
-            // Eyes
-            ctx.fillStyle = 'white';
-            const eyeDir = this.id === 1 ? 1 : -1;
-            ctx.beginPath();
-            ctx.arc(15 * eyeDir, -45, 8, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = 'black';
-            ctx.beginPath();
-            ctx.arc(18 * eyeDir, -45, 4, 0, Math.PI * 2);
-            ctx.fill();
+        class Player {
+            constructor(id, x, color) {
+                this.id = id;
+                this.x = x;
+                this.y = GROUND_Y;
+                this.vx = 0;
+                this.vy = 0;
+                this.color = color;
+                this.isJumping = false;
+                this.spikeCooldown = 0;
+            }
+            update(opponent, ball) {
+                if (gameState !== 'playing' && gameState !== 'scoring') return;
+                if (this.spikeCooldown > 0) this.spikeCooldown--;
 
-            // Cheeks
-            ctx.fillStyle = 'rgba(255, 100, 100, 0.4)';
-            ctx.beginPath();
-            ctx.arc(25 * eyeDir, -30, 6, 0, Math.PI * 2);
-            ctx.fill();
+                // Controls
+                if (this.id === 1) {
+                    if (keys['KeyA']) this.vx -= 0.4;
+                    if (keys['KeyD']) this.vx += 0.4;
+                    if (keys['KeyW'] && !this.isJumping) {
+                        this.vy = -5.4; // Increased from -4.5 (20% higher)
+                        this.isJumping = true;
+                    }
+                    if (keys['Space'] && this.spikeCooldown === 0) {
+                        this.spike(ball);
+                    }
+                } else {
+                    if (gameMode === 2) {
+                        if (keys['ArrowLeft']) this.vx -= 0.4;
+                        if (keys['ArrowRight']) this.vx += 0.4;
+                        if (keys['ArrowUp'] && !this.isJumping) {
+                            this.vy = -5.4; // Increased from -4.5
+                            this.isJumping = true;
+                        }
+                        if (keys['Enter'] && this.spikeCooldown === 0) {
+                            this.spike(ball);
+                        }
+                    } else {
+                        // AI (Ultra floaty)
+                        const targetX = ball.x + (ball.vx * 20);
+                        const safeTargetX = Math.max(canvas.width / 2 + PLAYER_RADIUS + 10, Math.min(canvas.width - PLAYER_RADIUS, targetX));
 
-            ctx.restore();
+                        if (this.x < safeTargetX - 10) this.vx += 0.3;
+                        else if (this.x > safeTargetX + 10) this.vx -= 0.3;
+
+                        if (ball.x > canvas.width / 2 && ball.y < 350 && Math.abs(this.x - ball.x) < 80 && !this.isJumping) {
+                            this.vy = -5.4;
+                            this.isJumping = true;
+                        }
+                        if (this.isJumping && ball.y < this.y && Math.abs(this.x - ball.x) < 40) {
+                            this.spike(ball);
+                        }
+                    }
+                }
+
+                this.vy += GRAVITY;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vx *= FRICTION;
+
+                // Boundaries
+                const minX = this.id === 1 ? PLAYER_RADIUS : canvas.width / 2 + NET_WIDTH / 2 + PLAYER_RADIUS;
+                const maxX = this.id === 1 ? canvas.width / 2 - NET_WIDTH / 2 - PLAYER_RADIUS : canvas.width - PLAYER_RADIUS;
+
+                if (this.x < minX) this.x = minX;
+                if (this.x > maxX) this.x = maxX;
+
+                if (this.y >= GROUND_Y) {
+                    this.y = GROUND_Y;
+                    this.vy = 0;
+                    this.isJumping = false;
+                }
+
+                // Collision with ball
+                const dx = ball.x - this.x;
+                const dy = ball.y - (this.y - PLAYER_RADIUS);
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < PLAYER_RADIUS + BALL_RADIUS) {
+                    const angle = Math.atan2(dy, dx);
+                    const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+                    const newSpeed = Math.max(speed, 4); // Very slow base rebound
+
+                    ball.vx = Math.cos(angle) * newSpeed;
+                    ball.vy = Math.sin(angle) * newSpeed;
+
+                    // Prevent ball from getting stuck inside player
+                    const overlap = PLAYER_RADIUS + BALL_RADIUS - dist;
+                    ball.x += Math.cos(angle) * overlap;
+                    ball.y += Math.sin(angle) * overlap;
+                }
+            }
+            spike(ball) {
+                const dx = ball.x - this.x;
+                const dy = ball.y - (this.y - PLAYER_RADIUS);
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < PLAYER_RADIUS + BALL_RADIUS + 30) {
+                    const dir = this.id === 1 ? 1 : -1;
+                    ball.vx = 10 * dir; // Increased horizontal speed
+                    ball.vy = 2.5;      // Reduced downward speed for a gentler angle
+                    this.spikeCooldown = 30;
+
+                    // Visual effect (flash ball)
+                    ctx.fillStyle = 'yellow';
+                    ctx.beginPath();
+                    ctx.arc(ball.x, ball.y, BALL_RADIUS + 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                // Body (Semi-circle/blob)
+                ctx.beginPath();
+                ctx.arc(0, -PLAYER_RADIUS, PLAYER_RADIUS, Math.PI, 0);
+                ctx.lineTo(PLAYER_RADIUS, 0);
+                ctx.lineTo(-PLAYER_RADIUS, 0);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.closePath();
+
+                // Eyes
+                ctx.fillStyle = 'white';
+                const eyeDir = this.id === 1 ? 1 : -1;
+                ctx.beginPath();
+                ctx.arc(15 * eyeDir, -45, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = 'black';
+                ctx.beginPath();
+                ctx.arc(18 * eyeDir, -45, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Cheeks
+                ctx.fillStyle = 'rgba(255, 100, 100, 0.4)';
+                ctx.beginPath();
+                ctx.arc(25 * eyeDir, -30, 6, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
         }
-    }
 
-    const ball = new Ball();
-    const p1 = new Player(1, 150, '#FFD700'); // Yellow (Pikachu-ish)
-    const p2 = new Player(2, 650, '#FF69B4'); // Pink
+        const ball = new Ball();
+        const p1 = new Player(1, 150, '#FFD700'); // Yellow (Pikachu-ish)
+        const p2 = new Player(2, 650, '#FF69B4'); // Pink
 
-    function startGame(mode) {
-        gameMode = mode;
-        p1Score = 0;
-        p2Score = 0;
-        updateScore();
-        mainMenu.style.display = 'none';
-        gameOverMenu.style.display = 'none';
-        scoreDisplay.style.display = 'flex';
-        controlsDisplay.style.display = 'flex';
-        gameState = 'playing';
-        ball.reset(1);
-        requestAnimationFrame(gameLoop);
-    }
-
-    function checkWin(winner) {
-        updateScore();
-        gameState = 'scoring'; // Pause movement
-        
-        if (p1Score >= 15 || p2Score >= 15) {
-            setTimeout(() => {
-                gameState = 'gameOver';
-                gameOverMenu.style.display = 'block';
-                winnerText.innerText = winner === 1 ? '1P 승리!' : (gameMode === 1 ? '컴퓨터 승리!' : '2P 승리!');
-            }, 1000);
-        } else {
-            setTimeout(() => {
-                ball.reset(winner === 1 ? 2 : 1);
-                gameState = 'playing';
-            }, 1000); // 1 second delay
-        }
-    }
-
-    function updateScore() {
-        p1ScoreEl.innerText = p1Score;
-        p2ScoreEl.innerText = p2Score;
-    }
-
-    function resetToMenu() {
-        gameState = 'menu';
-        mainMenu.style.display = 'block';
-        gameOverMenu.style.display = 'none';
-        scoreDisplay.style.display = 'none';
-        controlsDisplay.style.display = 'none';
-    }
-
-    function drawEnvironment() {
-        // Ground
-        ctx.fillStyle = '#deb887';
-        ctx.fillRect(0, GROUND_Y, canvas.width, canvas.height - GROUND_Y);
-        
-        // Net
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(canvas.width / 2 - NET_WIDTH / 2, GROUND_Y - NET_HEIGHT, NET_WIDTH, NET_HEIGHT);
-        ctx.strokeStyle = '#333';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(canvas.width / 2 - NET_WIDTH / 2, GROUND_Y - NET_HEIGHT, NET_WIDTH, NET_HEIGHT);
-    }
-
-    function gameLoop() {
-        // Draw always, even when not playing (to avoid frozen screen)
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawEnvironment();
-        
-        if (gameState === 'playing' || gameState === 'scoring') {
-            p1.update(p2, ball);
-            p2.update(p1, ball);
-            ball.update();
-        }
-        
-        p1.draw();
-        p2.draw();
-        ball.draw();
-        
-        if (gameState !== 'menu' && gameState !== 'gameOver') {
+        function startGame(mode) {
+            gameMode = mode;
+            p1Score = 0;
+            p2Score = 0;
+            updateScore();
+            mainMenu.style.display = 'none';
+            gameOverMenu.style.display = 'none';
+            scoreDisplay.style.display = 'flex';
+            controlsDisplay.style.display = 'flex';
+            gameState = 'playing';
+            ball.reset(1);
             requestAnimationFrame(gameLoop);
         }
-    }
 
-</script>
+        function checkWin(winner) {
+            updateScore();
+            gameState = 'scoring'; // Pause movement
+
+            if (p1Score >= 15 || p2Score >= 15) {
+                setTimeout(() => {
+                    gameState = 'gameOver';
+                    gameOverMenu.style.display = 'block';
+                    winnerText.innerText = winner === 1 ? '1P 승리!' : (gameMode === 1 ? '컴퓨터 승리!' : '2P 승리!');
+                }, 1000);
+            } else {
+                setTimeout(() => {
+                    ball.reset(winner === 1 ? 2 : 1);
+                    gameState = 'playing';
+                }, 1000); // 1 second delay
+            }
+        }
+
+        function updateScore() {
+            p1ScoreEl.innerText = p1Score;
+            p2ScoreEl.innerText = p2Score;
+        }
+
+        function resetToMenu() {
+            gameState = 'menu';
+            mainMenu.style.display = 'block';
+            gameOverMenu.style.display = 'none';
+            scoreDisplay.style.display = 'none';
+            controlsDisplay.style.display = 'none';
+        }
+
+        function drawEnvironment() {
+            // Ground
+            ctx.fillStyle = '#deb887';
+            ctx.fillRect(0, GROUND_Y, canvas.width, canvas.height - GROUND_Y);
+
+            // Net
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(canvas.width / 2 - NET_WIDTH / 2, GROUND_Y - NET_HEIGHT, NET_WIDTH, NET_HEIGHT);
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(canvas.width / 2 - NET_WIDTH / 2, GROUND_Y - NET_HEIGHT, NET_WIDTH, NET_HEIGHT);
+        }
+
+        function gameLoop() {
+            // Draw always, even when not playing (to avoid frozen screen)
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawEnvironment();
+
+            if (gameState === 'playing' || gameState === 'scoring') {
+                p1.update(p2, ball);
+                p2.update(p1, ball);
+                ball.update();
+            }
+
+            p1.draw();
+            p2.draw();
+            ball.draw();
+
+            if (gameState !== 'menu' && gameState !== 'gameOver') {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+    </script>
 
 </body>
+
 </html>

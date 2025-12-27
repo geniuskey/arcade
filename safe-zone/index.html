@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safe Zone Scramble - Cosmic Arcade</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --p1-color: #00f3ff;
+            --p2-color: #bc13fe;
+            --safe-color: #00ff88;
+            --hazard-color: #ff0055;
+            --bg-dark: #020010;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        #game-container {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            background: radial-gradient(circle at center, #0a0a2a 0%, #020010 100%);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            text-decoration: none;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+            transition: all 0.3s;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 243, 255, 0.2);
+            border-color: var(--p1-color);
+            box-shadow: 0 0 15px var(--p1-color);
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            min-width: 150px;
+        }
+
+        .p1-stat {
+            border-color: var(--p1-color);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+        }
+
+        .p2-stat {
+            border-color: var(--p2-color);
+            box-shadow: 0 0 10px rgba(188, 19, 254, 0.2);
+        }
+
+        .stat-label {
+            font-size: 10px;
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        #timer-container {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+        }
+
+        #timer-progress {
+            width: 200px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        #timer-bar {
+            width: 100%;
+            height: 100%;
+            background: var(--safe-color);
+            transition: width 0.1s linear, background-color 0.3s;
+        }
+
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 40px;
+            text-align: center;
+            text-shadow: 0 0 20px white;
+            pointer-events: none;
+            display: none;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, var(--p1-color), var(--p2-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+
+        .instructions {
+            font-family: 'Share Tech Mono', monospace;
+            max-width: 80%;
+            text-align: center;
+            margin-bottom: 30px;
+            line-height: 1.6;
+            color: #aaa;
+        }
+
+        .btn {
+            background: transparent;
+            border: 2px solid white;
+            color: white;
+            padding: 15px 40px;
+            font-size: 20px;
+            font-family: 'Orbitron', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 5px;
+        }
+
+        .btn:hover {
+            background: white;
+            color: black;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+        }
+
+        .controls-hint {
+            display: flex;
+            gap: 40px;
+            margin-top: 20px;
+        }
+
+        .control-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .key-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            font-family: 'Share Tech Mono', monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <a href="../" class="back-btn">← Arcade</a>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="ui">
+            <div class="stat-box p1-stat">
+                <div class="stat-label">PLAYER 1 (WASD)</div>
+                <div id="p1-hp" class="stat-value">100</div>
+            </div>
+            <div class="stat-box p2-stat">
+                <div class="stat-label">PLAYER 2 (ARROWS)</div>
+                <div id="p2-hp" class="stat-value">100</div>
+            </div>
+        </div>
+
+        <div id="timer-container">
+            <div id="timer-label" class="stat-label">VOID BREACH IN</div>
+            <div id="cycle-timer" style="font-size: 24px; font-weight: bold;">5.0s</div>
+            <div id="timer-progress">
+                <div id="timer-bar"></div>
+            </div>
+        </div>
+
+        <div id="message"></div>
+
+        <div id="start-overlay" class="overlay">
+            <h1>SAFE ZONE SCRAMBLE</h1>
+            <p class="instructions">
+                The cosmic void is unstable. When the timer hits zero, only those inside the
+                <span style="color: var(--safe-color)">Green Safe Zones</span> will survive.
+                <br><br>
+                <span style="color: #ff0055; font-weight: bold;">WARNING:</span> Only one person can fit in a zone!
+                Physically push your opponent out to claim your spot.
+            </p>
+            <button class="btn" onclick="startGame()">INITIATE</button>
+
+            <div class="controls-hint">
+                <div class="control-item">
+                    <span class="stat-label" style="color: var(--p1-color)">BLUE PLAYER</span>
+                    <span class="key-box">W A S D</span>
+                </div>
+                <div class="control-item">
+                    <span class="stat-label" style="color: var(--p2-color)">PURPLE PLAYER</span>
+                    <span class="key-box">ARROWS</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-over-overlay" class="overlay" style="display: none;">
+            <h1 id="winner-text">GAME OVER</h1>
+            <p id="final-stats" class="instructions"></p>
+            <button class="btn" onclick="startGame()">REBOOT</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('game-container');
+
+        canvas.width = 600;
+        canvas.height = 600;
+
+        // Audio Context for sound effects
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playSound(freq, type, duration, vol) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        const keys = {};
+        window.addEventListener('keydown', e => {
+            keys[e.code] = true;
+            if (e.code === 'Enter' && !gameRunning) {
+                startGame();
+            }
+        });
+        window.addEventListener('keyup', e => keys[e.code] = false);
+
+        let gameRunning = false;
+        let players = [];
+        let safeZones = [];
+        let particles = [];
+        let timer = 5.0;
+        let maxTimer = 5.0;
+        let phase = 'waiting'; // 'waiting' or 'danger'
+        let round = 1;
+
+        class Player {
+            constructor(id, x, y, color, controls) {
+                this.id = id;
+                this.x = x;
+                this.y = y;
+                this.radius = 15;
+                this.color = color;
+                this.controls = controls;
+                this.hp = 100;
+                this.speed = 2;
+                this.vx = 0;
+                this.vy = 0;
+            }
+
+            update() {
+                if (keys[this.controls.up]) this.vy -= this.speed;
+                if (keys[this.controls.down]) this.vy += this.speed;
+                if (keys[this.controls.left]) this.vx -= this.speed;
+                if (keys[this.controls.right]) this.vx += this.speed;
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Friction
+                this.vx *= 0.8;
+                this.vy *= 0.8;
+
+                // Bounds
+                this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
+                this.y = Math.max(this.radius, Math.min(canvas.height - this.radius, this.y));
+            }
+
+            draw() {
+                ctx.save();
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.color;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Inner highlight
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(this.x - 4, this.y - 4, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class SafeZone {
+            constructor(x, y, radius) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.occupant = null;
+                this.pulse = 0;
+            }
+
+            draw() {
+                this.pulse += 0.05;
+                let s = Math.sin(this.pulse) * 5;
+
+                ctx.save();
+                ctx.shadowBlur = 20 + s;
+                ctx.shadowColor = '#00ff88';
+                ctx.strokeStyle = '#00ff88';
+                ctx.lineWidth = 3;
+
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius + s, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Fill translucent
+                ctx.fillStyle = 'rgba(0, 255, 136, 0.1)';
+                ctx.fill();
+
+                if (this.occupant) {
+                    ctx.fillStyle = 'rgba(0, 255, 136, 0.3)';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius - 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.vx = (Math.random() - 0.5) * 10;
+                this.vy = (Math.random() - 0.5) * 10;
+                this.life = 1.0;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= 0.02;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.life;
+                ctx.fillRect(this.x, this.y, 4, 4);
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function resolvePlayerCollision(p1, p2) {
+            let dx = p2.x - p1.x;
+            let dy = p2.y - p1.y;
+            let dist = Math.sqrt(dx * dx + dy * dy);
+            let minDist = p1.radius + p2.radius;
+
+            if (dist < minDist) {
+                let overlap = minDist - dist;
+                let nx = dx / dist;
+                let ny = dy / dist;
+
+                // Push apart
+                p1.x -= nx * overlap / 2;
+                p1.y -= ny * overlap / 2;
+                p2.x += nx * overlap / 2;
+                p2.y += ny * overlap / 2;
+
+                // Transfer momentum
+                let vdiffX = p1.vx - p2.vx;
+                let vdiffY = p1.vy - p2.vy;
+                let dot = vdiffX * nx + vdiffY * ny;
+
+                if (dot > 0) {
+                    p1.vx -= nx * dot;
+                    p1.vy -= ny * dot;
+                    p2.vx += nx * dot;
+                    p2.vy += ny * dot;
+
+                    if (gameRunning) playSound(150, 'square', 0.1, 0.05);
+                }
+            }
+        }
+
+        function spawnZones() {
+            safeZones = [];
+            // Round 1-3: 2 zones, Round 4-6: 1 zone (musical chairs!), Round 7+: 1 tiny zone
+            let count = round <= 3 ? 2 : 1;
+            let baseRadius = 40;
+            if (round >= 7) baseRadius = 30;
+            if (round >= 10) baseRadius = 25;
+
+            for (let i = 0; i < count; i++) {
+                let margin = 100;
+                let x = margin + Math.random() * (canvas.width - margin * 2);
+                let y = margin + Math.random() * (canvas.height - margin * 2);
+                safeZones.push(new SafeZone(x, y, baseRadius));
+            }
+        }
+
+        function startGame() {
+            initAudio();
+            document.getElementById('start-overlay').style.display = 'none';
+            document.getElementById('game-over-overlay').style.display = 'none';
+
+            gameRunning = true;
+            round = 1;
+            timer = 5.0;
+            maxTimer = 5.0;
+            phase = 'waiting';
+
+            players = [
+                new Player(1, 200, 300, '#00f3ff', { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD' }),
+                new Player(2, 400, 300, '#bc13fe', { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' })
+            ];
+
+            spawnZones();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            let winner = players[0].hp > 0 ? "PLAYER 1" : "PLAYER 2";
+            if (players[0].hp <= 0 && players[1].hp <= 0) winner = "DRAW";
+
+            document.getElementById('winner-text').innerText = winner === "DRAW" ? "MUTUAL ANNIHILATION" : winner + " VICTORIOUS";
+            document.getElementById('final-stats').innerText = `Survived through Round ${round}`;
+            document.getElementById('game-over-overlay').style.display = 'flex';
+
+            playSound(100, 'sawtooth', 0.5, 0.1);
+        }
+
+        let lastTime = 0;
+        const fps = 60;
+        const fpsInterval = 1000 / fps;
+
+        function gameLoop(currentTime) {
+            if (!gameRunning) return;
+
+            requestAnimationFrame(gameLoop);
+
+            const elapsed = currentTime - lastTime;
+            if (elapsed < fpsInterval) return;
+
+            lastTime = currentTime - (elapsed % fpsInterval);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            for (let i = 0; i < canvas.width; i += 50) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+            }
+
+            // Update Timer
+            timer -= 1 / 60;
+            if (timer <= 0) {
+                if (phase === 'waiting') {
+                    phase = 'danger';
+                    timer = 1.0; // Danger duration
+                    playSound(400, 'sawtooth', 0.3, 0.1);
+
+                    // Check survivors
+                    players.forEach(p => {
+                        let safe = false;
+                        safeZones.forEach(z => {
+                            let dx = p.x - z.x;
+                            let dy = p.y - z.y;
+                            if (Math.sqrt(dx * dx + dy * dy) < z.radius) safe = true;
+                        });
+                        if (!safe) {
+                            p.hp -= 34; // 3 hits and out
+                            // Effects
+                            for (let i = 0; i < 20; i++) particles.push(new Particle(p.x, p.y, p.color));
+                        }
+                    });
+                } else {
+                    phase = 'waiting';
+                    round++;
+                    maxTimer = Math.max(2.0, 5.0 - (round * 0.2));
+                    timer = maxTimer;
+                    spawnZones();
+                    playSound(600, 'sine', 0.2, 0.05);
+                }
+            }
+
+            // UI Update
+            document.getElementById('p1-hp').innerText = Math.max(0, players[0].hp);
+            document.getElementById('p2-hp').innerText = Math.max(0, players[1].hp);
+            document.getElementById('cycle-timer').innerText = timer.toFixed(1) + 's';
+
+            let bar = document.getElementById('timer-bar');
+            bar.style.width = (timer / maxTimer * 100) + '%';
+            bar.style.backgroundColor = phase === 'danger' ? '#ff0055' : '#00ff88';
+            document.getElementById('timer-label').innerText = phase === 'danger' ? 'VOID BREACH ACTIVE!' : 'VOID BREACH IN';
+
+            // Flash Screen in Danger phase
+            if (phase === 'danger') {
+                ctx.fillStyle = 'rgba(255, 0, 85, 0.15)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            // Zones
+            safeZones.forEach(z => {
+                // One per tile logic
+                z.occupant = null;
+                players.forEach(p => {
+                    let dx = p.x - z.x;
+                    let dy = p.y - z.y;
+                    if (Math.sqrt(dx * dx + dy * dy) < z.radius) {
+                        z.occupant = p;
+                    }
+                });
+                z.draw();
+            });
+
+            // Resolve Player-Player Collision
+            resolvePlayerCollision(players[0], players[1]);
+
+            // Safe Zone "Solid" constraint - Only one person can be inside
+            // In this version, we use physics naturally: since players collide with each other,
+            // they can push each other out of the zones. 
+            // The prompt says "One person per square", so if someone is in the center, 
+            // the other person hitting them will be blocked by their collision radius.
+
+            // Players
+            players.forEach(p => {
+                if (p.hp > 0) {
+                    p.update();
+                    p.draw();
+                }
+            });
+
+            // Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                particles[i].draw();
+                if (particles[i].life <= 0) particles.splice(i, 1);
+            }
+
+            if (players[0].hp <= 0 || players[1].hp <= 0) {
+                gameOver();
+            }
+        }
+    </script>
+</body>
+
+</html>

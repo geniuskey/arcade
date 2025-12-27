@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Infinite Stairs - Arcade</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=Space+Grotesk:wght@700&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --bg-color: #a0d8ef;
@@ -38,7 +41,7 @@
             height: 100%;
             background-color: var(--bg-color);
             overflow: hidden;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
         }
 
         canvas {
@@ -85,7 +88,7 @@
             color: #fff;
             font-weight: 800;
             font-size: 18px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
             z-index: 2;
         }
 
@@ -148,7 +151,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0, 0, 0, 0.85);
             display: none;
             flex-direction: column;
             justify-content: center;
@@ -233,7 +236,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -258,18 +261,41 @@
             transform: translateY(5px);
             box-shadow: 0 5px 0 #804f00;
         }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            text-decoration: none;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-family: sans-serif;
+            font-size: 12px;
+            transition: background 0.3s;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
     </style>
 </head>
+
 <body>
+    <a href="../" class="back-btn">← Arcade</a>
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
-        
-                <div id="ui">
-                    <div class="energy-bar-container">
-                        <div id="timer-text">30.00s</div>
-                        <div id="energy-fill"></div>
-                    </div>
-                    <div id="score-display">0</div>            
+
+        <div id="ui">
+            <div class="energy-bar-container">
+                <div id="timer-text">30.00s</div>
+                <div id="energy-fill"></div>
+            </div>
+            <div id="score-display">0</div>
             <div class="controls">
                 <div class="btn" id="btn-turn">
                     <div class="btn-icon">🔄</div>
@@ -289,7 +315,7 @@
         <div id="game-over">
             <h2>GAME OVER</h2>
             <p>Score: <span id="final-score">0</span></p>
-            
+
             <div class="leaderboard">
                 <h3>Best Rankings</h3>
                 <div id="rank-list">
@@ -346,7 +372,13 @@
 
         function generateStair() {
             const lastStair = stairs[stairs.length - 1];
-            const dir = Math.random() > 0.5 ? 1 : -1;
+            let dir = Math.random() > 0.5 ? 1 : -1;
+
+            // Keep stairs within canvas bounds
+            const limit = Math.floor(canvas.width / STAIR_WIDTH) - 1;
+            if (lastStair.x + dir > limit) dir = -1;
+            else if (lastStair.x + dir < -limit) dir = 1;
+
             stairs.push({
                 x: lastStair.x + dir,
                 y: lastStair.y + 1
@@ -357,7 +389,7 @@
             if (!gameActive) return;
             const nextStair = stairs[score + 1];
             const expectedX = stairs[score].x + charDir;
-            
+
             if (nextStair.x === expectedX) {
                 climbSuccess();
             } else {
@@ -370,7 +402,7 @@
             charDir *= -1;
             const nextStair = stairs[score + 1];
             const expectedX = stairs[score].x + charDir;
-            
+
             if (nextStair.x === expectedX) {
                 climbSuccess();
             } else {
@@ -383,7 +415,7 @@
             energy = Math.min(MAX_ENERGY, energy + ENERGY_RECOVERY);
             charPos = { x: stairs[score].x, y: stairs[score].y };
             targetCameraY = charPos.y * STAIR_HEIGHT;
-            
+
             if (stairs.length < score + 20) {
                 generateStair();
             }
@@ -409,7 +441,7 @@
         function displayRankings() {
             const rankList = document.getElementById('rank-list');
             const scores = JSON.parse(localStorage.getItem('stairs_scores') || '[]');
-            
+
             rankList.innerHTML = scores.map((s, i) => `
                 <div class="rank-item">
                     <span class="rank-num">${i + 1}</span>
@@ -446,7 +478,7 @@
             e.preventDefault();
             handleTurn();
         });
-        
+
         // Mouse/Click for desktop testing
         document.getElementById('btn-climb').addEventListener('mousedown', (e) => {
             handleClimb();
@@ -482,13 +514,13 @@
 
         function draw(timestamp) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
+
             const deltaTime = (timestamp - lastTime) / 1000;
             lastTime = timestamp;
 
             // Smoothing camera
             cameraY += (targetCameraY - cameraY) * 0.2;
-            
+
             const centerX = canvas.width / 2;
             const centerY = canvas.height * 0.7 - (targetCameraY - cameraY); // Fixed base position
 
@@ -502,7 +534,7 @@
             stairs.forEach((stair, index) => {
                 const screenX = stair.x * (STAIR_WIDTH / 2);
                 const screenY = -stair.y * STAIR_HEIGHT;
-                
+
                 // Only draw visible stairs
                 if (screenY + cameraY > -canvas.height && screenY + cameraY < 200) {
                     drawStair(ctx, screenX, screenY, index >= score);
@@ -535,7 +567,7 @@
             // Side/Shadow
             ctx.fillStyle = active ? '#ddd' : '#aaa';
             ctx.fillRect(x - STAIR_WIDTH / 2, y + STAIR_HEIGHT / 2, STAIR_WIDTH, 4);
-            
+
             // Texture/Detail
             ctx.strokeStyle = 'rgba(0,0,0,0.1)';
             ctx.lineWidth = 2;
@@ -545,26 +577,26 @@
         function drawCharacter(ctx, x, y, dir) {
             ctx.save();
             ctx.translate(x, y - 5); // Offset slightly above stair
-            
+
             if (dir === -1) ctx.scale(-1, 1);
 
             // Simple "Pixel Art" Character
             // Body
             ctx.fillStyle = '#333'; // Suit
             ctx.fillRect(-15, -50, 30, 45);
-            
+
             // Head
             ctx.fillStyle = '#ffdbac'; // Skin
             ctx.fillRect(-12, -70, 24, 20);
-            
+
             // Hair
             ctx.fillStyle = '#4b3621';
             ctx.fillRect(-12, -75, 24, 8);
-            
+
             // Eyes
             ctx.fillStyle = '#000';
             ctx.fillRect(4, -65, 4, 4);
-            
+
             // Feet
             ctx.fillStyle = '#fff';
             ctx.fillRect(-10, -5, 10, 6);
@@ -587,4 +619,5 @@
         draw();
     </script>
 </body>
+
 </html>

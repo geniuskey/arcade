@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tile Fall Survival - Cosmic Arcade</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --p1-color: #00f3ff;
+            --p2-color: #bc13fe;
+            --tile-color: rgba(255, 255, 255, 0.1);
+            --warn-color: #ff0055;
+            --bg-dark: #020010;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        #game-container {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            background: radial-gradient(circle at center, #0a0a2a 0%, #020010 100%);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            text-decoration: none;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+            transition: all 0.3s;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 243, 255, 0.2);
+            border-color: var(--p1-color);
+            box-shadow: 0 0 15px var(--p1-color);
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+        }
+
+        .status-box {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            min-width: 150px;
+        }
+
+        .p1-status {
+            border-color: var(--p1-color);
+        }
+
+        .p2-status {
+            border-color: var(--p2-color);
+        }
+
+        .label {
+            font-size: 10px;
+            opacity: 0.7;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .stat {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            text-align: center;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 40px;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, var(--p1-color), var(--p2-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .instructions {
+            font-family: 'Share Tech Mono', monospace;
+            color: #888;
+            margin-bottom: 30px;
+            line-height: 1.6;
+            max-width: 450px;
+        }
+
+        .btn {
+            background: transparent;
+            border: 2px solid white;
+            color: white;
+            padding: 12px 40px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 4px;
+        }
+
+        .btn:hover {
+            background: white;
+            color: black;
+            box-shadow: 0 0 30px white;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 40px;
+            margin-top: 20px;
+        }
+
+        .key {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            font-family: 'Share Tech Mono', monospace;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <a href="../" class="back-btn">← Arcade</a>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="ui">
+            <div class="status-box p1-status">
+                <div class="label">P1: WASD</div>
+                <div id="p1-state" class="stat">STANDING</div>
+            </div>
+            <div class="status-box p2-status">
+                <div class="label">P2: ARROWS</div>
+                <div id="p2-state" class="stat">STANDING</div>
+            </div>
+        </div>
+
+        <div id="start-overlay" class="overlay">
+            <h1>TILE FALL SURVIVAL</h1>
+            <p class="instructions">
+                The floor is a lie. Random tiles will flash <span style="color:var(--warn-color)">RED</span> before
+                vanishing into the void.
+                <br><br>
+                Bump into your opponent to push them off!
+                Last one on the platform wins.
+            </p>
+            <button class="btn" onclick="startGame()">INITIATE</button>
+            <div class="controls-row">
+                <div>
+                    <div class="label" style="color:var(--p1-color)">Player 1</div>
+                    <span class="key">W A S D</span>
+                </div>
+                <div>
+                    <div class="label" style="color:var(--p2-color)">Player 2</div>
+                    <span class="key">ARROWS</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-over-overlay" class="overlay" style="display:none">
+            <h1 id="winner-text">GAME OVER</h1>
+            <button class="btn" onclick="startGame()">RETRY</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 600;
+        canvas.height = 600;
+
+        // Constants
+        const GRID_SIZE = 8;
+        const TILE_GAP = 4;
+        const TILE_DIM = (canvas.width - (GRID_SIZE + 1) * TILE_GAP) / GRID_SIZE;
+
+        // Game State
+        let gameRunning = false;
+        let p1, p2;
+        let tiles = [];
+        let particles = [];
+        let timeToNextFall = 2000;
+        let lastFallTime = 0;
+        let lastFrameTime = 0;
+        const fpsInterval = 1000 / 60;
+
+        const keys = {};
+        window.addEventListener('keydown', e => {
+            keys[e.code] = true;
+            // Allow starting game with Enter
+            if (e.code === 'Enter' && !gameRunning) {
+                startGame();
+            }
+        });
+        window.addEventListener('keyup', e => keys[e.code] = false);
+
+        class Player {
+            constructor(x, y, color, controls) {
+                this.x = x;
+                this.y = y;
+                this.radius = 24; // Doubled from 12
+                this.color = color;
+                this.controls = controls;
+                this.vx = 0;
+                this.vy = 0;
+                this.accel = 0.8;
+                this.friction = 0.92;
+                this.isFalling = false;
+                this.scale = 1;
+                this.opacity = 1;
+            }
+
+            update() {
+                if (this.isFalling) {
+                    this.scale -= 0.05;
+                    this.opacity -= 0.05;
+                    if (this.scale <= 0) this.scale = 0;
+                    return;
+                }
+
+                if (keys[this.controls.up]) this.vy -= this.accel;
+                if (keys[this.controls.down]) this.vy += this.accel;
+                if (keys[this.controls.left]) this.vx -= this.accel;
+                if (keys[this.controls.right]) this.vx += this.accel;
+
+                this.vx *= this.friction;
+                this.vy *= this.friction;
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Wall Bounce
+                if (this.x - this.radius < 0) {
+                    this.x = this.radius;
+                    this.vx *= -0.5; // Bounce with energy loss
+                } else if (this.x + this.radius > canvas.width) {
+                    this.x = canvas.width - this.radius;
+                    this.vx *= -0.5;
+                }
+
+                if (this.y - this.radius < 0) {
+                    this.y = this.radius;
+                    this.vy *= -0.5;
+                } else if (this.y + this.radius > canvas.height) {
+                    this.y = canvas.height - this.radius;
+                    this.vy *= -0.5;
+                }
+
+                // Check Tile Collision (Falling)
+                const gridX = Math.floor(this.x / (TILE_DIM + TILE_GAP));
+                const gridY = Math.floor(this.y / (TILE_DIM + TILE_GAP));
+
+                let onSolidGround = false;
+                if (gridX >= 0 && gridX < GRID_SIZE && gridY >= 0 && gridY < GRID_SIZE) {
+                    const tile = tiles[gridY * GRID_SIZE + gridX];
+                    if (tile && tile.state !== 'vanished') {
+                        onSolidGround = true;
+                    }
+                }
+
+                if (!onSolidGround) {
+                    this.isFalling = true;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+                ctx.translate(this.x, this.y);
+                ctx.scale(this.scale, this.scale);
+
+                // Glow
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.color;
+                ctx.fillStyle = this.color;
+
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Highlight
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(-4, -4, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        class Tile {
+            constructor(r, c) {
+                this.r = r;
+                this.c = c;
+                this.x = c * (TILE_DIM + TILE_GAP) + TILE_GAP;
+                this.y = r * (TILE_DIM + TILE_GAP) + TILE_GAP;
+                this.state = 'safe'; // safe, warning, vanished
+                this.warningStartTime = 0;
+                this.warningDuration = 1500;
+            }
+
+            update(now) {
+                if (this.state === 'warning') {
+                    if (now - this.warningStartTime > this.warningDuration) {
+                        this.state = 'vanished';
+                        // Spawn some dust/particles
+                        for (let i = 0; i < 5; i++) {
+                            particles.push(new Particle(this.x + TILE_DIM / 2, this.y + TILE_DIM / 2, 'rgba(255,255,255,0.3)'));
+                        }
+                    }
+                }
+            }
+
+            draw(now) {
+                if (this.state === 'vanished') return;
+
+                ctx.save();
+                if (this.state === 'warning') {
+                    const flash = Math.sin((now - this.warningStartTime) * 0.02) * 0.5 + 0.5;
+                    ctx.fillStyle = `rgba(255, 0, 85, ${0.3 + flash * 0.5})`;
+                    ctx.shadowBlur = 10 * flash;
+                    ctx.shadowColor = '#ff0055';
+                } else {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(this.x, this.y, TILE_DIM, TILE_DIM);
+                }
+
+                ctx.fillRect(this.x, this.y, TILE_DIM, TILE_DIM);
+                ctx.restore();
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() - 0.5) * 4;
+                this.life = 1.0;
+                this.color = color;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= 0.02;
+            }
+            draw() {
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, 2, 2);
+            }
+        }
+
+        function resolveCollision(a, b) {
+            if (a.isFalling || b.isFalling) return;
+
+            let dx = b.x - a.x;
+            let dy = b.y - a.y;
+            let distance = Math.sqrt(dx * dx + dy * dy);
+            let minDist = a.radius + b.radius;
+
+            if (distance < minDist) {
+                // 1. Static Resolution: Push balls apart so they don't overlap
+                let overlap = minDist - distance;
+                let nx = dx / distance; // Normal X
+                let ny = dy / distance; // Normal Y
+                
+                // Move each ball away by half the overlap
+                a.x -= nx * overlap / 2;
+                a.y -= ny * overlap / 2;
+                b.x += nx * overlap / 2;
+                b.y += ny * overlap / 2;
+
+                // 2. Dynamic Resolution: Swap momentum or push back
+                // Relative velocity
+                let rvx = b.vx - a.vx;
+                let rvy = b.vy - a.vy;
+                
+                // Dot product of relative velocity and normal
+                let velAlongNormal = rvx * nx + rvy * ny;
+
+                // Do not resolve if velocities are separating
+                if (velAlongNormal > 0) return;
+
+                // Simple elastic bounce
+                let restitution = 0.8;
+                let j = -(1 + restitution) * velAlongNormal;
+                j /= 2; // Assuming equal mass
+
+                let impulseX = j * nx;
+                let impulseY = j * ny;
+
+                a.vx -= impulseX;
+                a.vy -= impulseY;
+                b.vx += impulseX;
+                b.vy += impulseY;
+            }
+        }
+
+        function startGame() {
+            document.getElementById('start-overlay').style.display = 'none';
+            document.getElementById('game-over-overlay').style.display = 'none';
+
+            p1 = new Player(150, 300, '#00f3ff', { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD' });
+            p2 = new Player(450, 300, '#bc13fe', { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' });
+
+            tiles = [];
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    tiles.push(new Tile(r, c));
+                }
+            }
+
+            particles = [];
+            const now = performance.now();
+            lastFallTime = now;
+            lastFrameTime = now;
+            timeToNextFall = 2000;
+            gameRunning = true;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameLoop(now) {
+            if (!gameRunning) return;
+
+            const elapsed = now - lastFrameTime;
+
+            if (elapsed < fpsInterval) {
+                requestAnimationFrame(gameLoop);
+                return;
+            }
+
+            lastFrameTime = now - (elapsed % fpsInterval);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Handle Tile Falling Logic
+            if (now - lastFallTime > timeToNextFall) {
+                const availableTiles = tiles.filter(t => t.state === 'safe');
+                if (availableTiles.length > 1) {
+                    const randomTile = availableTiles[Math.floor(Math.random() * availableTiles.length)];
+                    randomTile.state = 'warning';
+                    randomTile.warningStartTime = now;
+
+                    lastFallTime = now;
+                    // Slightly speed up
+                    timeToNextFall = Math.max(400, timeToNextFall - 50);
+                }
+            }
+
+            // Draw & Update Tiles
+            tiles.forEach(t => {
+                t.update(now);
+                t.draw(now);
+            });
+
+            // Physics
+            resolveCollision(p1, p2);
+            p1.update();
+            p2.update();
+
+            // Draw Players
+            p1.draw();
+            p2.draw();
+
+            // Update UI
+            document.getElementById('p1-state').innerText = p1.isFalling ? 'FALLING' : 'SAFE';
+            document.getElementById('p2-state').innerText = p2.isFalling ? 'FALLING' : 'SAFE';
+
+            // Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                particles[i].draw();
+                if (particles[i].life <= 0) particles.splice(i, 1);
+            }
+
+            // Game Over Check
+            if (p1.opacity <= 0 || p2.opacity <= 0) {
+                gameRunning = false;
+                const winner = p1.opacity > 0 ? 'PLAYER 1' : (p2.opacity > 0 ? 'PLAYER 2' : 'DRAW');
+                document.getElementById('winner-text').innerText = winner === 'DRAW' ? 'NO SURVIVORS' : winner + ' WINS';
+                document.getElementById('game-over-overlay').style.display = 'flex';
+            } else {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Black Hole Eater - Arcade</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=Space+Grotesk:wght@700&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --neon-blue: #00f3ff;
@@ -66,12 +69,119 @@
             font-weight: 700;
         }
 
+        /* Leaderboard & Log Styles */
+        #leaderboard {
+            position: fixed;
+            top: 70px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 12px;
+            border-left: 3px solid var(--neon-blue);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+            min-width: 150px;
+        }
+
+        .leaderboard-title {
+            font-size: 10px;
+            color: var(--neon-blue);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 4px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .leaderboard-item.is-player {
+            color: var(--neon-blue);
+            font-weight: bold;
+        }
+
+        #game-log {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .log-entry {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            border-right: 3px solid var(--neon-purple);
+            animation: slideIn 0.3s ease-out, fadeOut 0.5s ease-in 2.5s forwards;
+            color: white;
+            white-space: nowrap;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(50px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        #announcement {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 100;
+            pointer-events: none;
+            display: none;
+        }
+
+        .announce-title {
+            font-size: 60px;
+            font-weight: 800;
+            color: var(--neon-blue);
+            text-shadow: 0 0 20px var(--neon-blue);
+            margin-bottom: 10px;
+            animation: bounceIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .announce-subtitle {
+            font-size: 30px;
+            color: var(--neon-purple);
+            text-shadow: 0 0 10px var(--neon-purple);
+            animation: slideUp 0.5s ease-out 0.5s both;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.1); opacity: 1; }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
         #game-container {
             position: relative;
             width: 100vw;
             height: 100vh;
             overflow: hidden;
-            cursor: none;
+            cursor: default;
         }
 
         canvas {
@@ -115,6 +225,7 @@
             font-size: 42px;
             background: linear-gradient(to right, var(--neon-blue), var(--neon-purple));
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
         }
@@ -194,19 +305,49 @@
         }
 
         @media (max-width: 768px) {
-            #joystick-container { display: block; }
+            #joystick-container {
+                display: block;
+            }
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            text-decoration: none;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-family: sans-serif;
+            font-size: 12px;
+            transition: background 0.3s;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 0, 0, 0.8);
         }
     </style>
 </head>
+
 <body>
+    <a href="../" class="back-btn">← Arcade</a>
     <div id="top-bar">
         <div class="stat-item">
             <span class="stat-label">Mass</span>
             <span id="score" class="stat-value">100</span>
         </div>
         <div class="stat-item">
+            <span class="stat-label">Stage</span>
+            <span id="stage-display" class="stat-value">1</span>
+        </div>
+        <div class="stat-item">
             <span class="stat-label">Difficulty</span>
-            <span id="current-diff-display" class="stat-value" style="font-size: 12px; color: var(--neon-purple);">NORMAL</span>
+            <span id="current-diff-display" class="stat-value"
+                style="font-size: 12px; color: var(--neon-purple);">NORMAL</span>
         </div>
         <div class="stat-item">
             <span class="stat-label">Best Mass</span>
@@ -214,9 +355,21 @@
         </div>
     </div>
 
+    <div id="leaderboard">
+        <div class="leaderboard-title">Top Celestials</div>
+        <div id="leaderboard-list"></div>
+    </div>
+
+    <div id="game-log"></div>
+
+    <div id="announcement">
+        <div id="announce-title" class="announce-title">MISSION CLEAR</div>
+        <div id="announce-subtitle" class="announce-subtitle">STAGE 2 START!</div>
+    </div>
+
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
-        
+
         <div id="screens">
             <div id="start-screen" class="screen active">
                 <h2>BLACK HOLE EATER</h2>
@@ -257,10 +410,15 @@
         const joystickKnob = document.getElementById('joystick-knob');
 
         // Game Constants
-        const INITIAL_RADIUS = 20;
+        const INITIAL_RADIUS = 10;
         const FOOD_COUNT = 150;
         const ENEMY_COUNT = 15;
         const WORLD_SIZE = 3000;
+        const CELESTIAL_NAMES = [
+            'Sirius', 'Canopus', 'Arcturus', 'Vega', 'Capella', 'Rigel', 'Procyon', 'Achernar', 
+            'Betelgeuse', 'Hadar', 'Altair', 'Aldebaran', 'Antares', 'Spica', 'Pollux', 'Fomalhaut',
+            'Deneb', 'Mimosa', 'Regulus', 'Adhara', 'Castor', 'Gacrux', 'Shaula'
+        ];
 
         const DIFFICULTIES = {
             easy: { enemySpeed: 1.5, foodValue: 2, label: 'EASY' },
@@ -272,13 +430,16 @@
         let currentDifficulty = 'normal';
         let gameActive = false;
         let lastTime = performance.now();
-        
+        let currentStage = 1;
+        let isTransitioning = false;
+
         let player = {
+            name: 'Singularity',
             x: WORLD_SIZE / 2,
             y: WORLD_SIZE / 2,
             radius: INITIAL_RADIUS,
-            targetX: WORLD_SIZE / 2,
-            targetY: WORLD_SIZE / 2
+            vx: 0,
+            vy: 0
         };
 
         let food = [];
@@ -286,6 +447,15 @@
         let camera = { x: 0, y: 0 };
         let keys = {};
         let joystick = { active: false, x: 0, y: 0 };
+
+        function addLog(msg) {
+            const logContainer = document.getElementById('game-log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerText = msg;
+            logContainer.prepend(entry);
+            setTimeout(() => entry.remove(), 3000);
+        }
 
         function setDifficulty(diff) {
             currentDifficulty = diff;
@@ -313,33 +483,40 @@
         }
 
         function spawnEnemy(isInitial = false) {
-            const radius = player.radius * (0.5 + Math.random() * 1.5);
+            const minMass = 100;
+            const maxMass = 2000 * Math.pow(2, currentStage - 1);
+            const randomMass = minMass + Math.random() * (maxMass - minMass);
+            const radius = Math.sqrt(randomMass);
             let x, y;
-            
+
             // Spawn far from player
             do {
                 x = Math.random() * WORLD_SIZE;
                 y = Math.random() * WORLD_SIZE;
             } while (Math.hypot(x - player.x, y - player.y) < 800);
 
+            const name = CELESTIAL_NAMES[Math.floor(Math.random() * CELESTIAL_NAMES.length)];
             const enemy = {
+                name,
                 x, y,
                 radius,
                 color: '#ff3e3e',
                 vx: (Math.random() - 0.5),
                 vy: (Math.random() - 0.5)
             };
-            
+
             if (isInitial) enemies.push(enemy);
             else return enemy;
         }
 
         function initGame() {
+            currentStage = 1;
+            document.getElementById('stage-display').innerText = currentStage;
             player.radius = INITIAL_RADIUS;
             player.x = WORLD_SIZE / 2;
             player.y = WORLD_SIZE / 2;
-            player.targetX = player.x;
-            player.targetY = player.y;
+            player.vx = 0;
+            player.vy = 0;
 
             food = [];
             spawnFood();
@@ -349,7 +526,7 @@
                 spawnEnemy(true);
             }
 
-            scoreEl.innerText = Math.floor(player.radius * 5);
+            scoreEl.innerText = Math.floor(player.radius * player.radius);
             updateBestScoreDisplay();
             lastTime = performance.now();
         }
@@ -370,7 +547,7 @@
 
         function gameOver() {
             gameActive = false;
-            const finalMass = Math.floor(player.radius * 5);
+            const finalMass = Math.floor(player.radius * player.radius);
             finalScoreEl.innerText = finalMass;
             const bestKey = `eater_best_${currentDifficulty}`;
             const best = parseInt(localStorage.getItem(bestKey) || 0);
@@ -401,27 +578,46 @@
                     if (keys['ArrowDown'] || keys['s'] || keys['S']) inputY += 1;
                     if (keys['ArrowLeft'] || keys['a'] || keys['A']) inputX -= 1;
                     if (keys['ArrowRight'] || keys['d'] || keys['D']) inputX += 1;
-                }
-
-                if (inputX !== 0 || inputY !== 0) {
+                    
+                    // Normalize keyboard diagonal
                     const mag = Math.hypot(inputX, inputY);
-                    player.targetX = player.x + (inputX / mag) * 200;
-                    player.targetY = player.y + (inputY / mag) * 200;
+                    if (mag > 1) {
+                        inputX /= mag;
+                        inputY /= mag;
+                    }
                 }
 
-                // Player Movement (Smooth follow target)
-                const dx = player.targetX - player.x;
-                const dy = player.targetY - player.y;
-                const dist = Math.hypot(dx, dy);
-                if (dist > 5) {
-                    const speed = Math.min(dist / 10, 5 / (player.radius / 20));
-                    player.x += (dx / dist) * speed * f;
-                    player.y += (dy / dist) * speed * f;
+                const maxSpeed = 20 / Math.sqrt(player.radius);
+                if (inputX !== 0 || inputY !== 0) {
+                    const targetVx = inputX * maxSpeed;
+                    const targetVy = inputY * maxSpeed;
+                    
+                    // Acceleration
+                    player.vx += (targetVx - player.vx) * 0.15 * f;
+                    player.vy += (targetVy - player.vy) * 0.15 * f;
+                } else {
+                    // Friction/Deceleration
+                    player.vx *= Math.pow(0.92, f);
+                    player.vy *= Math.pow(0.92, f);
+                    if (Math.abs(player.vx) < 0.01) player.vx = 0;
+                    if (Math.abs(player.vy) < 0.01) player.vy = 0;
                 }
+
+                player.x += player.vx * f;
+                player.y += player.vy * f;
 
                 // Keep in world bounds
                 player.x = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, player.x));
                 player.y = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, player.y));
+                
+                // If hit world bound, stop velocity
+                if (player.x === player.radius || player.x === WORLD_SIZE - player.radius) player.vx = 0;
+                if (player.y === player.radius || player.y === WORLD_SIZE - player.radius) player.vy = 0;
+
+                // Update Leaderboard
+                if (Math.floor(timestamp / 500) !== Math.floor((timestamp - deltaTime) / 500)) {
+                    updateLeaderboard();
+                }
 
                 // Camera follow player
                 camera.x = player.x - canvas.width / 2;
@@ -431,8 +627,8 @@
                 food = food.filter(f => {
                     const d = Math.hypot(player.x - f.x, player.y - f.y);
                     if (d < player.radius) {
-                        player.radius += (f.radius / player.radius) * config.foodValue;
-                        scoreEl.innerText = Math.floor(player.radius * 5);
+                        player.radius = Math.sqrt(player.radius * player.radius + f.radius * f.radius * config.foodValue);
+                        scoreEl.innerText = Math.floor(player.radius * player.radius);
                         return false;
                     }
                     return true;
@@ -440,10 +636,13 @@
                 spawnFood();
 
                 // Enemy updates
-                enemies.forEach((en, idx) => {
-                    // Move enemy
-                    en.x += en.vx * config.enemySpeed * f;
-                    en.y += en.vy * config.enemySpeed * f;
+                for (let i = 0; i < enemies.length; i++) {
+                    const en = enemies[i];
+                    
+                    // Move enemy based on their mass (speed = 20 / sqrt(radius))
+                    const enemyMaxSpeed = (20 / Math.sqrt(en.radius)) * (config.enemySpeed / 2.5);
+                    en.x += en.vx * (enemyMaxSpeed + currentStage * 0.2) * f;
+                    en.y += en.vy * (enemyMaxSpeed + currentStage * 0.2) * f;
 
                     // Bounce off walls
                     if (en.x < en.radius || en.x > WORLD_SIZE - en.radius) en.vx *= -1;
@@ -451,20 +650,102 @@
 
                     // Interaction with player
                     const d = Math.hypot(player.x - en.x, player.y - en.y);
-                    if (d < player.radius + en.radius) {
-                        if (player.radius > en.radius * 1.1) {
-                            // Eat enemy
-                            player.radius += (en.radius / player.radius) * 5;
-                            enemies[idx] = spawnEnemy();
-                        } else if (d < en.radius) {
+                    if (d < Math.max(player.radius, en.radius)) {
+                        if (player.radius > en.radius) {
+                            // Player eats enemy
+                            addLog(`You consumed ${en.name}`);
+                            player.radius = Math.sqrt(player.radius * player.radius + en.radius * en.radius);
+                            scoreEl.innerText = Math.floor(player.radius * player.radius);
+                            enemies.splice(i, 1);
+                            i--;
+                            continue;
+                        } else if (en.radius > player.radius) {
+                            // Enemy eats player
+                            addLog(`${en.name} absorbed you`);
                             gameOver();
+                            return;
                         }
                     }
-                });
+
+                    // Interaction with other enemies
+                    for (let j = i + 1; j < enemies.length; j++) {
+                        const en2 = enemies[j];
+                        const d2 = Math.hypot(en.x - en2.x, en.y - en2.y);
+                        if (d2 < Math.max(en.radius, en2.radius)) {
+                            if (en.radius > en2.radius) {
+                                addLog(`${en.name} consumed ${en2.name}`);
+                                en.radius = Math.sqrt(en.radius * en.radius + en2.radius * en2.radius);
+                                enemies.splice(j, 1);
+                                j--;
+                            } else if (en2.radius > en.radius) {
+                                addLog(`${en2.name} consumed ${en.name}`);
+                                en2.radius = Math.sqrt(en2.radius * en2.radius + en.radius * en.radius);
+                                enemies.splice(i, 1);
+                                i--;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Stage Clear Logic
+                if (enemies.length === 0 && gameActive) {
+                    nextStage();
+                }
             }
 
             draw();
             requestAnimationFrame(update);
+        }
+
+        function nextStage() {
+            if (isTransitioning) return;
+            isTransitioning = true;
+            
+            // Show Announcement
+            const announce = document.getElementById('announcement');
+            const title = document.getElementById('announce-title');
+            const subtitle = document.getElementById('announce-subtitle');
+            
+            title.innerText = "MISSION CLEAR";
+            subtitle.innerText = `STAGE ${currentStage + 1} START!`;
+            announce.style.display = 'block';
+
+            addLog(`Rank 1 Achieved! Stage ${currentStage} Clear!`);
+
+            setTimeout(() => {
+                currentStage++;
+                document.getElementById('stage-display').innerText = currentStage;
+                
+                // Spawn new set of enemies for next stage
+                enemies = [];
+                const count = ENEMY_COUNT + (currentStage - 1) * 2;
+                for (let i = 0; i < count; i++) {
+                    enemies.push(spawnEnemy());
+                }
+                
+                spawnFood();
+                announce.style.display = 'none';
+                isTransitioning = false;
+            }, 3000);
+        }
+
+        function updateLeaderboard() {
+            const list = [...enemies, player]
+                .sort((a, b) => b.radius - a.radius);
+            
+            // Check for Rank 1 Stage Clear
+            if (gameActive && !isTransitioning && list[0] === player && enemies.length > 0) {
+                nextStage();
+            }
+
+            const container = document.getElementById('leaderboard-list');
+            container.innerHTML = list.slice(0, 5).map((item, idx) => `
+                <div class="leaderboard-item ${item === player ? 'is-player' : ''}">
+                    <span>${idx + 1}. ${item.name}</span>
+                    <span>${Math.floor(item.radius * item.radius)}</span>
+                </div>
+            `).join('');
         }
 
         function draw() {
@@ -500,18 +781,27 @@
                 gradient.addColorStop(0, '#000');
                 gradient.addColorStop(0.8, en.color);
                 gradient.addColorStop(1, 'rgba(255, 62, 62, 0)');
-                
+
                 ctx.fillStyle = gradient;
                 ctx.beginPath();
                 ctx.arc(en.x, en.y, en.radius * 1.2, 0, Math.PI * 2);
                 ctx.fill();
-                
+
                 // Red Glow
                 ctx.strokeStyle = en.color;
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 ctx.arc(en.x, en.y, en.radius, 0, Math.PI * 2);
                 ctx.stroke();
+
+                // Enemy Name Tag
+                ctx.fillStyle = 'white';
+                ctx.font = `bold ${Math.max(12, en.radius / 2)}px 'Space Grotesk'`;
+                ctx.textAlign = 'center';
+                ctx.shadowBlur = 5;
+                ctx.shadowColor = 'black';
+                ctx.fillText(en.name, en.x, en.y - en.radius - 10);
+                ctx.shadowBlur = 0;
             });
 
             // Player (Black Hole)
@@ -533,29 +823,27 @@
             ctx.beginPath();
             ctx.arc(pX, pY, r, 0, Math.PI * 2);
             ctx.fill();
-            
+
             ctx.strokeStyle = '#00f3ff';
             ctx.lineWidth = 3;
             ctx.beginPath();
             ctx.arc(pX, pY, r, 0, Math.PI * 2);
             ctx.stroke();
 
+            // Player Name Tag
+            ctx.fillStyle = '#00f3ff';
+            ctx.font = `bold ${Math.max(14, r / 2)}px 'Space Grotesk'`;
+            ctx.textAlign = 'center';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'black';
+            ctx.fillText(player.name, pX, pY - r - 15);
+            ctx.shadowBlur = 0;
+
             ctx.restore();
         }
 
         // Controls
-        function handleMove(clientX, clientY) {
-            if (!gameActive || joystick.active) return;
-            player.targetX = clientX + camera.x;
-            player.targetY = clientY + camera.y;
-        }
-
-        window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
-        window.addEventListener('touchmove', e => {
-            if (joystick.active) return;
-            e.preventDefault();
-            handleMove(e.touches[0].clientX, e.touches[0].clientY);
-        }, { passive: false });
+        // Removed mouse/touch follow controls in favor of WASD/Arrows/Joystick
 
         window.addEventListener('keydown', e => {
             keys[e.key] = true;
@@ -580,26 +868,28 @@
         window.addEventListener('touchend', () => {
             joystick.active = false;
             joystickKnob.style.transform = 'translate(-50%, -50%)';
+            joystick.x = 0;
+            joystick.y = 0;
         });
 
         function updateJoystick(touch) {
             const rect = joystickContainer.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;
-            
+
             let dx = touch.clientX - centerX;
             let dy = touch.clientY - centerY;
             const dist = Math.hypot(dx, dy);
             const maxDist = rect.width / 2;
-            
+
             if (dist > maxDist) {
                 dx = (dx / dist) * maxDist;
                 dy = (dy / dist) * maxDist;
             }
-            
+
             joystick.x = dx / maxDist;
             joystick.y = dy / maxDist;
-            
+
             joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
         }
 
@@ -607,4 +897,5 @@
         requestAnimationFrame(update);
     </script>
 </body>
+
 </html>

@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cosmic Snake - Arcade</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=Space+Grotesk:wght@700&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --neon-blue: #00f3ff;
@@ -228,6 +231,7 @@
             font-size: 32px;
             background: linear-gradient(to right, var(--neon-blue), var(--neon-purple));
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
         }
@@ -283,9 +287,32 @@
                 display: flex;
             }
         }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            text-decoration: none;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-family: sans-serif;
+            font-size: 12px;
+            transition: background 0.3s;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
     </style>
 </head>
+
 <body>
+    <a href="../" class="back-btn">← Arcade</a>
     <div id="top-bar">
         <div class="stat-item">
             <span class="stat-label">Stardust</span>
@@ -293,7 +320,8 @@
         </div>
         <div class="stat-item">
             <span class="stat-label">Difficulty</span>
-            <span id="current-diff-display" class="stat-value" style="font-size: 14px; color: var(--neon-purple);">NORMAL</span>
+            <span id="current-diff-display" class="stat-value"
+                style="font-size: 14px; color: var(--neon-purple);">NORMAL</span>
         </div>
         <div class="stat-item">
             <span class="stat-label">Best</span>
@@ -303,7 +331,7 @@
 
     <div id="game-container">
         <canvas id="snakeCanvas"></canvas>
-        
+
         <div id="screens">
             <div id="start-screen" class="screen active">
                 <h2>COSMIC SNAKE</h2>
@@ -341,7 +369,7 @@
         const scoreEl = document.getElementById('score');
         const bestScoreEl = document.getElementById('best-score');
         const finalScoreEl = document.getElementById('final-score');
-        
+
         // Grid config
         const GRID_SIZE = 20;
         let tileCount;
@@ -484,7 +512,7 @@
                 startGame();
                 return;
             }
-            switch(dir) {
+            switch (dir) {
                 case 'up': if (dy !== 1) { nextDx = 0; nextDy = -1; } break;
                 case 'down': if (dy !== -1) { nextDx = 0; nextDy = 1; } break;
                 case 'left': if (dx !== 1) { nextDx = -1; nextDy = 0; } break;
@@ -497,7 +525,7 @@
                 startGame();
                 return;
             }
-            switch(e.key) {
+            switch (e.key) {
                 case 'ArrowUp': setDirection('up'); break;
                 case 'ArrowDown': setDirection('down'); break;
                 case 'ArrowLeft': setDirection('left'); break;
@@ -530,9 +558,9 @@
             ctx.shadowColor = '#ff00ff';
             ctx.beginPath();
             ctx.arc(
-                food.x * tileSize + tileSize/2, 
-                food.y * tileSize + tileSize/2, 
-                tileSize/3, 0, Math.PI * 2
+                food.x * tileSize + tileSize / 2,
+                food.y * tileSize + tileSize / 2,
+                tileSize / 3, 0, Math.PI * 2
             );
             ctx.fill();
             ctx.shadowBlur = 0;
@@ -545,12 +573,12 @@
                     ctx.shadowBlur = 10;
                     ctx.shadowColor = '#00f3ff';
                 }
-                
+
                 const margin = isHead ? 2 : 4;
                 ctx.fillRect(
-                    part.x * tileSize + margin, 
-                    part.y * tileSize + margin, 
-                    tileSize - margin * 2, 
+                    part.x * tileSize + margin,
+                    part.y * tileSize + margin,
+                    tileSize - margin * 2,
                     tileSize - margin * 2
                 );
                 ctx.shadowBlur = 0;
@@ -566,4 +594,5 @@
         draw();
     </script>
 </body>
+
 </html>

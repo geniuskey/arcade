@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cosmic Tetris - Arcade</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=Space+Grotesk:wght@700&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --neon-blue: #00f3ff;
@@ -136,6 +139,7 @@
             font-size: 32px;
             background: linear-gradient(to right, var(--neon-blue), var(--neon-purple));
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
         }
@@ -205,11 +209,36 @@
         }
 
         @media (min-width: 769px) {
-            #mobile-controls { display: none; }
+            #mobile-controls {
+                display: none;
+            }
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            text-decoration: none;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-family: sans-serif;
+            font-size: 12px;
+            transition: background 0.3s;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 0, 0, 0.8);
         }
     </style>
 </head>
+
 <body>
+    <a href="../" class="back-btn">← Arcade</a>
     <div id="top-bar">
         <div class="stat-item">
             <span class="stat-label">Score</span>
@@ -217,7 +246,8 @@
         </div>
         <div class="stat-item">
             <span class="stat-label">Diff</span>
-            <span id="current-diff-display" class="stat-value" style="font-size: 14px; color: var(--neon-purple);">NORMAL</span>
+            <span id="current-diff-display" class="stat-value"
+                style="font-size: 14px; color: var(--neon-purple);">NORMAL</span>
         </div>
         <div class="stat-item">
             <span class="stat-label">Best</span>
@@ -250,7 +280,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div id="side-panel">
             <div class="stat-item">
                 <span class="stat-label">Next</span>
@@ -375,7 +405,7 @@
         function arenaSweep() {
             let rowCount = 1;
             const fullLines = [];
-            
+
             for (let y = arena.length - 1; y > 0; --y) {
                 let isFull = true;
                 for (let x = 0; x < arena[y].length; ++x) {
@@ -392,7 +422,7 @@
             if (fullLines.length > 0) {
                 isAnimating = true;
                 animatingLines = fullLines;
-                
+
                 setTimeout(() => {
                     fullLines.forEach(y => {
                         const row = arena.splice(y, 1)[0].fill(0);
@@ -410,7 +440,7 @@
 
         const arena = createMatrix(COLS, ROWS);
         const player = {
-            pos: {x: 0, y: 0},
+            pos: { x: 0, y: 0 },
             matrix: null,
             next: null,
             score: 0,
@@ -494,7 +524,7 @@
             player.next = createPiece(PIECES[PIECES.length * Math.random() | 0]);
             player.pos.y = 0;
             player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
-            
+
             if (collide(arena, player)) {
                 gameOver();
             }
@@ -533,19 +563,19 @@
 
         function drawNext() {
             nextContext.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
-            drawMatrix(player.next, {x: 1, y: 1}, nextContext);
+            drawMatrix(player.next, { x: 1, y: 1 }, nextContext);
         }
 
         function draw() {
             context.clearRect(0, 0, canvas.width, canvas.height);
-            
+
             // Draw Grid
             context.strokeStyle = 'rgba(255, 255, 255, 0.05)';
             context.lineWidth = 0.05;
-            for(let x=0; x<=COLS; x++) { context.beginPath(); context.moveTo(x, 0); context.lineTo(x, ROWS); context.stroke(); }
-            for(let y=0; y<=ROWS; y++) { context.beginPath(); context.moveTo(0, y); context.lineTo(COLS, y); context.stroke(); }
+            for (let x = 0; x <= COLS; x++) { context.beginPath(); context.moveTo(x, 0); context.lineTo(x, ROWS); context.stroke(); }
+            for (let y = 0; y <= ROWS; y++) { context.beginPath(); context.moveTo(0, y); context.lineTo(COLS, y); context.stroke(); }
 
-            drawMatrix(arena, {x: 0, y: 0});
+            drawMatrix(arena, { x: 0, y: 0 });
             drawMatrix(player.matrix, player.pos);
 
             // Draw Line Clear Animation
@@ -607,4 +637,5 @@
         draw();
     </script>
 </body>
+
 </html>

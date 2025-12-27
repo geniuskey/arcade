@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nebula Run - Arcade</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=Space+Grotesk:wght@700&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --neon-blue: #00f3ff;
@@ -116,6 +119,7 @@
             font-size: 36px;
             background: linear-gradient(to right, var(--neon-blue), var(--neon-purple));
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
         }
@@ -165,9 +169,32 @@
             font-size: 14px;
             pointer-events: none;
         }
+
+        .back-btn {
+            position: fixed;
+            top: 50px;
+            left: 20px;
+            z-index: 1000;
+            text-decoration: none;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-family: sans-serif;
+            font-size: 12px;
+            transition: background 0.3s;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
     </style>
 </head>
+
 <body>
+    <a href="../" class="back-btn">← Arcade</a>
     <div id="top-bar">
         <div class="stat-item">
             <span class="stat-label">Distance</span>
@@ -175,7 +202,8 @@
         </div>
         <div class="stat-item">
             <span class="stat-label">Difficulty</span>
-            <span id="current-diff-display" class="stat-value" style="font-size: 12px; color: var(--neon-purple);">NORMAL</span>
+            <span id="current-diff-display" class="stat-value"
+                style="font-size: 12px; color: var(--neon-purple);">NORMAL</span>
         </div>
         <div class="stat-item">
             <span class="stat-label">Best</span>
@@ -185,7 +213,7 @@
 
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
-        
+
         <div id="screens">
             <div id="start-screen" class="screen active">
                 <h2>NEBULA RUN</h2>
@@ -235,7 +263,7 @@
         let currentDifficulty = 'normal';
         let gameActive = false;
         let lastTime = performance.now();
-        
+
         let rocket = {
             x: 100,
             y: 0,
@@ -315,12 +343,12 @@
         function jump() {
             if (!gameActive) return;
             rocket.vy = DIFFICULTIES[currentDifficulty].thrust;
-            
+
             // Add exhaust particles
-            for(let i=0; i<5; i++) {
+            for (let i = 0; i < 5; i++) {
                 particles.push({
                     x: rocket.x,
-                    y: rocket.y + ROCKET_HEIGHT/2,
+                    y: rocket.y + ROCKET_HEIGHT / 2,
                     vx: -Math.random() * 5 - 2,
                     vy: (Math.random() - 0.5) * 4,
                     life: 1.0,
@@ -387,9 +415,9 @@
 
             // Background Stars (Subtle)
             ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-            for(let i=0; i<20; i++) {
+            for (let i = 0; i < 20; i++) {
                 ctx.beginPath();
-                ctx.arc((i * 137) % canvas.width, (i * 251) % canvas.height, 1, 0, Math.PI*2);
+                ctx.arc((i * 137) % canvas.width, (i * 251) % canvas.height, 1, 0, Math.PI * 2);
                 ctx.fill();
             }
 
@@ -400,16 +428,16 @@
                 const gradient = ctx.createLinearGradient(p.x, 0, p.x + PIPE_WIDTH, 0);
                 gradient.addColorStop(0, '#bc13fe');
                 gradient.addColorStop(1, '#ff00ff');
-                
+
                 ctx.fillStyle = gradient;
                 ctx.shadowBlur = 10;
                 ctx.shadowColor = '#bc13fe';
-                
+
                 // Top Pipe
                 ctx.fillRect(p.x, 0, PIPE_WIDTH, p.top);
                 // Bottom Pipe
                 ctx.fillRect(p.x, p.top + config.gap, PIPE_WIDTH, canvas.height - (p.top + config.gap));
-                
+
                 ctx.shadowBlur = 0;
             });
 
@@ -424,7 +452,7 @@
             ctx.translate(rocket.x, rocket.y);
             // Tilt based on velocity
             ctx.rotate(Math.min(Math.max(rocket.vy * 0.05, -0.5), 0.5));
-            
+
             // Vessel Body
             ctx.fillStyle = '#00f3ff';
             ctx.shadowBlur = 15;
@@ -435,11 +463,11 @@
             ctx.lineTo(0, ROCKET_HEIGHT);
             ctx.closePath();
             ctx.fill();
-            
+
             // Cockpit
             ctx.fillStyle = '#fff';
             ctx.fillRect(ROCKET_WIDTH * 0.4, ROCKET_HEIGHT * 0.35, ROCKET_WIDTH * 0.2, ROCKET_HEIGHT * 0.3);
-            
+
             ctx.restore();
         }
 
@@ -464,4 +492,5 @@
         requestAnimationFrame(update);
     </script>
 </body>
+
 </html>
