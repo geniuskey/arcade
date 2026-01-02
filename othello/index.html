@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Othello - Cosmic Arcade</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --p1-color: #00f3ff;
+            --p2-color: #bc13fe;
+            --board-color: #0a0a2a;
+            --grid-color: rgba(0, 255, 136, 0.3);
+            --bg-dark: #020010;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        #game-container {
+            position: relative;
+            width: 600px;
+            height: 700px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        #status-bar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .player-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s;
+            padding: 10px;
+            border-radius: 10px;
+            min-width: 120px;
+            border: 2px solid transparent; /* Added to reserve space */
+        }
+
+        .player-info.active {
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+
+        #p1-info.active { border: 2px solid var(--p1-color); }
+        #p2-info.active { border: 2px solid var(--p2-color); }
+
+        .score { font-size: 24px; font-weight: bold; }
+        .label { font-size: 10px; opacity: 0.7; margin-bottom: 5px; }
+
+        canvas {
+            background: var(--board-color);
+            border: 4px solid var(--grid-color);
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.1);
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            text-decoration: none;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+            transition: all 0.3s;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 243, 255, 0.2);
+            border-color: var(--p1-color);
+            box-shadow: 0 0 15px var(--p1-color);
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            text-align: center;
+            border-radius: 15px;
+        }
+
+        h1 {
+            font-size: 42px;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, var(--p1-color), var(--p2-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn {
+            background: transparent;
+            border: 2px solid white;
+            color: white;
+            padding: 12px 30px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 8px;
+            margin: 5px;
+        }
+
+        .btn:hover, .btn.active {
+            background: white;
+            color: black;
+            box-shadow: 0 0 20px white;
+        }
+
+        .start-btn {
+            padding: 15px 60px;
+            font-size: 24px;
+            border-color: var(--p1-color);
+            color: var(--p1-color);
+            margin-top: 20px;
+        }
+
+        .start-btn:hover {
+            background: var(--p1-color);
+            color: black;
+            box-shadow: 0 0 30px var(--p1-color);
+        }
+    </style>
+</head>
+
+<body>
+    <a href="../" class="back-btn">← Arcade</a>
+
+    <div id="game-container">
+        <div id="status-bar">
+            <div id="p1-info" class="player-info">
+                <div class="label" style="color: var(--p1-color)">PLAYER 1</div>
+                <div id="p1-score" class="score">2</div>
+            </div>
+            <div id="turn-display" style="font-size: 14px; color: var(--safe-color)">P1 TURN</div>
+            <div id="p2-info" class="player-info">
+                <div class="label" style="color: var(--p2-color)">PLAYER 2</div>
+                <div id="p2-score" class="score">2</div>
+            </div>
+        </div>
+
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="start-overlay" class="overlay">
+            <h1>COSMIC OTHELLO</h1>
+            <div style="margin-bottom: 20px;">
+                <button id="mode-1p" class="btn active" onclick="setMode(1)">1 PLAYER</button>
+                <button id="mode-2p" class="btn" onclick="setMode(2)">2 PLAYERS</button>
+            </div>
+            <button class="btn start-btn" onclick="startGame()">INITIATE</button>
+        </div>
+
+        <div id="game-over-overlay" class="overlay" style="display:none">
+            <h1 id="winner-text">P1 WINS!</h1>
+            <p id="final-score" style="margin-bottom: 20px;"></p>
+            <button class="btn start-btn" onclick="startGame()">REBOOT</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const GRID_COUNT = 8;
+        const CELL_SIZE = 70;
+        canvas.width = GRID_COUNT * CELL_SIZE;
+        canvas.height = GRID_COUNT * CELL_SIZE;
+
+        let board = [];
+        let currentPlayer = 1; // 1: P1 (Blue), 2: P2 (Purple)
+        let gameMode = 1; // 1: 1P, 2: 2P
+        let gameRunning = false;
+        let validMoves = [];
+
+        function setMode(m) {
+            gameMode = m;
+            document.getElementById('mode-1p').classList.toggle('active', m === 1);
+            document.getElementById('mode-2p').classList.toggle('active', m === 2);
+        }
+
+        function startGame() {
+            document.getElementById('start-overlay').style.display = 'none';
+            document.getElementById('game-over-overlay').style.display = 'none';
+            
+            initBoard();
+            currentPlayer = 1;
+            gameRunning = true;
+            updateGame();
+        }
+
+        function initBoard() {
+            board = Array(GRID_COUNT).fill().map(() => Array(GRID_COUNT).fill(0));
+            // Initial 4 pieces
+            board[3][3] = 2;
+            board[3][4] = 1;
+            board[4][3] = 1;
+            board[4][4] = 2;
+        }
+
+        function getValidMoves(player) {
+            let moves = [];
+            for (let r = 0; r < GRID_COUNT; r++) {
+                for (let c = 0; c < GRID_COUNT; c++) {
+                    if (board[r][c] === 0 && checkMove(r, c, player).length > 0) {
+                        moves.push({ r, c });
+                    }
+                }
+            }
+            return moves;
+        }
+
+        function checkMove(r, c, player) {
+            let opponent = player === 1 ? 2 : 1;
+            let toFlip = [];
+            let directions = [
+                [-1, -1], [-1, 0], [-1, 1],
+                [0, -1],           [0, 1],
+                [1, -1],  [1, 0],  [1, 1]
+            ];
+
+            for (let [dr, dc] of directions) {
+                let tempFlip = [];
+                let currR = r + dr;
+                let currC = c + dc;
+
+                while (currR >= 0 && currR < GRID_COUNT && currC >= 0 && currC < GRID_COUNT) {
+                    if (board[currR][currC] === opponent) {
+                        tempFlip.push({ r: currR, c: currC });
+                    } else if (board[currR][currC] === player) {
+                        if (tempFlip.length > 0) toFlip.push(...tempFlip);
+                        break;
+                    } else {
+                        break;
+                    }
+                    currR += dr;
+                    currC += dc;
+                }
+            }
+            return toFlip;
+        }
+
+        function makeMove(r, c) {
+            let flipped = checkMove(r, c, currentPlayer);
+            if (flipped.length === 0) return false;
+
+            board[r][c] = currentPlayer;
+            flipped.forEach(pos => board[pos.r][pos.c] = currentPlayer);
+            
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            updateGame();
+            
+            // AI Turn
+            if (gameRunning && gameMode === 1 && currentPlayer === 2) {
+                setTimeout(makeAIMove, 800);
+            }
+            return true;
+        }
+
+        function makeAIMove() {
+            let moves = getValidMoves(2);
+            if (moves.length > 0) {
+                // Greedy AI: choose move that flips most pieces
+                let bestMove = moves[0];
+                let maxFlipped = -1;
+                
+                moves.forEach(m => {
+                    let count = checkMove(m.r, m.c, 2).length;
+                    // Prioritize corners
+                    if ((m.r === 0 || m.r === 7) && (m.c === 0 || m.c === 7)) count += 100;
+                    if (count > maxFlipped) {
+                        maxFlipped = count;
+                        bestMove = m;
+                    }
+                });
+                
+                makeMove(bestMove.r, bestMove.c);
+            } else {
+                // Pass if no moves
+                currentPlayer = 1;
+                updateGame();
+            }
+        }
+
+        function updateGame() {
+            validMoves = getValidMoves(currentPlayer);
+            
+            // Update Scores
+            let s1 = 0, s2 = 0;
+            board.forEach(row => row.forEach(cell => {
+                if (cell === 1) s1++;
+                if (cell === 2) s2++;
+            }));
+            
+            document.getElementById('p1-score').innerText = s1;
+            document.getElementById('p2-score').innerText = s2;
+            document.getElementById('p1-info').classList.toggle('active', currentPlayer === 1);
+            document.getElementById('p2-info').classList.toggle('active', currentPlayer === 2);
+            document.getElementById('turn-display').innerText = `P${currentPlayer} TURN`;
+
+            // Check if game over
+            if (validMoves.length === 0) {
+                let opponentMoves = getValidMoves(currentPlayer === 1 ? 2 : 1);
+                if (opponentMoves.length === 0) {
+                    endGame(s1, s2);
+                } else {
+                    // Auto-pass
+                    setTimeout(() => {
+                        currentPlayer = currentPlayer === 1 ? 2 : 1;
+                        updateGame();
+                        if (gameMode === 1 && currentPlayer === 2) setTimeout(makeAIMove, 800);
+                    }, 1000);
+                }
+            }
+            
+            draw();
+        }
+
+        function endGame(s1, s2) {
+            gameRunning = false;
+            let winnerText = "";
+            if (s1 > s2) winnerText = "PLAYER 1 WINS!";
+            else if (s2 > s1) winnerText = "PLAYER 2 WINS!";
+            else winnerText = "IT'S A DRAW!";
+            
+            document.getElementById('winner-text').innerText = winnerText;
+            document.getElementById('final-score').innerText = `BLUE: ${s1} | PURPLE: ${s2}`;
+            document.getElementById('game-over-overlay').style.display = 'flex';
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Grid
+            ctx.strokeStyle = "rgba(0, 255, 136, 0.2)";
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= GRID_COUNT; i++) {
+                ctx.beginPath(); ctx.moveTo(i * CELL_SIZE, 0); ctx.lineTo(i * CELL_SIZE, canvas.height); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, i * CELL_SIZE); ctx.lineTo(canvas.width, i * CELL_SIZE); ctx.stroke();
+            }
+
+            // Draw Pieces
+            for (let r = 0; r < GRID_COUNT; r++) {
+                for (let c = 0; c < GRID_COUNT; c++) {
+                    if (board[r][c] !== 0) {
+                        drawPiece(r, c, board[r][c]);
+                    }
+                }
+            }
+
+            // Draw Valid Move Hints
+            validMoves.forEach(m => {
+                ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+                ctx.beginPath();
+                ctx.arc(m.c * CELL_SIZE + CELL_SIZE / 2, m.r * CELL_SIZE + CELL_SIZE / 2, 8, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function drawPiece(r, c, player) {
+            let x = c * CELL_SIZE + CELL_SIZE / 2;
+            let y = r * CELL_SIZE + CELL_SIZE / 2;
+            let radius = CELL_SIZE * 0.4;
+            let color = player === 1 ? "#00f3ff" : "#bc13fe";
+
+            ctx.save();
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = color;
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Inner gloss
+            ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+            ctx.beginPath();
+            ctx.arc(x - radius/3, y - radius/3, radius/4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        canvas.addEventListener('click', (e) => {
+            if (!gameRunning) return;
+            if (gameMode === 1 && currentPlayer === 2) return; // AI Turn
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const c = Math.floor(x / CELL_SIZE);
+            const r = Math.floor(y / CELL_SIZE);
+            
+            makeMove(r, c);
+        });
+
+        window.addEventListener('keydown', e => {
+            if (e.code === 'Enter' && !gameRunning) startGame();
+        });
+    </script>
+</body>
+
+</html>

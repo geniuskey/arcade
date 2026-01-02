@@ -282,7 +282,10 @@
                         if (dist < BOMB_RADIUS + PLAYER_SIZE) {
                             if (p.hasShield) {
                                 p.hasShield = false;
-                                // Small invulnerability window? No, just shield gone
+                                // Move player slightly away from explosion center to prevent instant death
+                                const angle = Math.atan2(p.y - this.y, p.x - this.x);
+                                p.x += Math.cos(angle) * 30;
+                                p.y += Math.sin(angle) * 30;
                             } else {
                                 p.alive = false;
                             }
@@ -357,8 +360,14 @@
                         }
 
                         if (hit) {
-                            if (p.hasShield) p.hasShield = false;
-                            else p.alive = false;
+                            if (p.hasShield) {
+                                p.hasShield = false;
+                                // Teleport slightly to avoid re-hit in same exploding frame
+                                if (this.type === 'h') p.y += (p.y > this.pos ? 40 : -40);
+                                else p.x += (p.x > this.pos ? 40 : -40);
+                            } else {
+                                p.alive = false;
+                            }
                         }
                     }
                 });
@@ -421,6 +430,33 @@
             }
         }
 
+        function resolvePlayerCollision(a, b) {
+            if (!a.alive || !b.alive) return;
+
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const distance = Math.hypot(dx, dy);
+            const minDist = PLAYER_SIZE * 2;
+
+            if (distance < minDist) {
+                const overlap = (minDist - distance) + 1;
+                const nx = dx / (distance || 1);
+                const ny = dy / (distance || 1);
+
+                // Push both players apart
+                a.x -= nx * overlap / 2;
+                a.y -= ny * overlap / 2;
+                b.x += nx * overlap / 2;
+                b.y += ny * overlap / 2;
+
+                // Final bounds check to ensure nobody is pushed out of the world
+                [a, b].forEach(p => {
+                    p.x = Math.max(PLAYER_SIZE, Math.min(WIDTH - PLAYER_SIZE, p.x));
+                    p.y = Math.max(PLAYER_SIZE, Math.min(HEIGHT - PLAYER_SIZE, p.y));
+                });
+            }
+        }
+
         function init() {
             p1 = new Player(200, 300, '#42b6f8', { up: 'w', left: 'a', down: 's', right: 'd' });
             p2 = new Player(600, 300, '#a855f7', { up: 'ArrowUp', left: 'ArrowLeft', down: 'ArrowDown', right: 'ArrowRight' });
@@ -473,6 +509,8 @@
             // Update & Draw
             p1.update();
             p2.update();
+            
+            resolvePlayerCollision(p1, p2);
 
             items = items.filter(i => !i.collected);
             items.forEach(i => { i.update(); i.draw(); });

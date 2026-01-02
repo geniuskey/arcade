@@ -282,6 +282,8 @@
         let buildings = [];
         let keys = {};
         let joystick = { x: 0, y: 0, active: false };
+        let lastFrameTime = 0;
+        const fpsInterval = 1000 / 60;
 
         function init() {
             // Generate City Grid
@@ -360,34 +362,35 @@
             });
         }
 
-        function update() {
+        function update(dt) {
             const speedFactor = Math.abs(car.speed) / car.maxSpeed;
             const currentMaxSteer = car.maxSteer * (1.6 - speedFactor * 0.8);
 
             let targetSteer = 0;
             if (keys['KeyA'] || keys['ArrowLeft'] || joystick.x < -0.2) targetSteer = -currentMaxSteer;
             if (keys['KeyD'] || keys['ArrowRight'] || joystick.x > 0.2) targetSteer = currentMaxSteer;
-            car.steerAngle += (targetSteer - car.steerAngle) * car.steerSpeed;
+            car.steerAngle += (targetSteer - car.steerAngle) * car.steerSpeed * dt;
 
             let forward = keys['KeyW'] || keys['ArrowUp'] || joystick.y < -0.2;
             let backward = keys['KeyS'] || keys['ArrowDown'] || joystick.y > 0.2;
 
-            if (forward) car.speed += car.accel;
-            else if (backward) car.speed -= car.brake;
+            if (forward) car.speed += car.accel * dt;
+            else if (backward) car.speed -= car.brake * dt;
             else {
-                car.speed *= car.friction;
+                car.speed *= Math.pow(car.friction, dt);
                 if (Math.abs(car.speed) < 0.05) car.speed = 0;
             }
 
             car.speed = Math.max(-car.maxSpeed / 2, Math.min(car.maxSpeed, car.speed));
 
+            const moveStep = car.speed * dt;
             const frontWheel = {
-                x: car.x + Math.cos(car.angle) * car.wheelBase / 2 + Math.cos(car.angle + car.steerAngle) * car.speed,
-                y: car.y + Math.sin(car.angle) * car.wheelBase / 2 + Math.sin(car.angle + car.steerAngle) * car.speed
+                x: car.x + Math.cos(car.angle) * car.wheelBase / 2 + Math.cos(car.angle + car.steerAngle) * moveStep,
+                y: car.y + Math.sin(car.angle) * car.wheelBase / 2 + Math.sin(car.angle + car.steerAngle) * moveStep
             };
             const backWheel = {
-                x: car.x - Math.cos(car.angle) * car.wheelBase / 2 + Math.cos(car.angle) * car.speed,
-                y: car.y - Math.sin(car.angle) * car.wheelBase / 2 + Math.sin(car.angle) * car.speed
+                x: car.x - Math.cos(car.angle) * car.wheelBase / 2 + Math.cos(car.angle) * moveStep,
+                y: car.y - Math.sin(car.angle) * car.wheelBase / 2 + Math.sin(car.angle) * moveStep
             };
 
             const nextX = (frontWheel.x + backWheel.x) / 2;
@@ -436,49 +439,66 @@
                 ctx.fillRect(i - ROAD_WIDTH / 2, 0, ROAD_WIDTH, WORLD_SIZE);
             }
 
+            // Draw Road Lines (Skipping intersections to avoid crosswalk overlap)
             ctx.lineWidth = 2;
             for (let i = 0; i <= WORLD_SIZE; i += BLOCK_SIZE) {
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-                ctx.setLineDash([]);
-                ctx.beginPath();
-                ctx.moveTo(0, i - ROAD_WIDTH / 2 + 5); ctx.lineTo(WORLD_SIZE, i - ROAD_WIDTH / 2 + 5);
-                ctx.moveTo(0, i + ROAD_WIDTH / 2 - 5); ctx.lineTo(WORLD_SIZE, i + ROAD_WIDTH / 2 - 5);
-                ctx.stroke();
+                // Horizontal lines
+                for (let x = 0; x < WORLD_SIZE; x += BLOCK_SIZE) {
+                    const startX = x + ROAD_WIDTH / 2 + 60;
+                    const endX = x + BLOCK_SIZE - ROAD_WIDTH / 2 - 60;
+                    if (startX >= endX) continue;
 
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-                ctx.setLineDash([20, 30]);
-                ctx.beginPath();
-                ctx.moveTo(0, i - ROAD_WIDTH / 4); ctx.lineTo(WORLD_SIZE, i - ROAD_WIDTH / 4);
-                ctx.moveTo(0, i + ROAD_WIDTH / 4); ctx.lineTo(WORLD_SIZE, i + ROAD_WIDTH / 4);
-                ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                    ctx.beginPath();
+                    ctx.moveTo(startX, i - ROAD_WIDTH / 2 + 5); ctx.lineTo(endX, i - ROAD_WIDTH / 2 + 5);
+                    ctx.moveTo(startX, i + ROAD_WIDTH / 2 - 5); ctx.lineTo(endX, i + ROAD_WIDTH / 2 - 5);
+                    ctx.stroke();
 
-                ctx.strokeStyle = '#ffd700';
-                ctx.setLineDash([40, 20]);
-                ctx.beginPath();
-                ctx.moveTo(0, i - 4); ctx.lineTo(WORLD_SIZE, i - 4);
-                ctx.moveTo(0, i + 4); ctx.lineTo(WORLD_SIZE, i + 4);
-                ctx.stroke();
+                    // Lanes
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                    ctx.setLineDash([20, 30]);
+                    ctx.beginPath();
+                    ctx.moveTo(startX, i - ROAD_WIDTH / 4); ctx.lineTo(endX, i - ROAD_WIDTH / 4);
+                    ctx.moveTo(startX, i + ROAD_WIDTH / 4); ctx.lineTo(endX, i + ROAD_WIDTH / 4);
+                    ctx.stroke();
 
-                ctx.setLineDash([]);
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-                ctx.beginPath();
-                ctx.moveTo(i - ROAD_WIDTH / 2 + 5, 0); ctx.lineTo(i - ROAD_WIDTH / 2 + 5, WORLD_SIZE);
-                ctx.moveTo(i + ROAD_WIDTH / 2 - 5, 0); ctx.lineTo(i + ROAD_WIDTH / 2 - 5, WORLD_SIZE);
-                ctx.stroke();
+                    // Center yellow lines
+                    ctx.strokeStyle = '#ffd700';
+                    ctx.setLineDash([]); // Change to solid
+                    ctx.beginPath();
+                    ctx.moveTo(startX, i - 2); ctx.lineTo(endX, i - 2);
+                    ctx.moveTo(startX, i + 2); ctx.lineTo(endX, i + 2);
+                    ctx.stroke();
+                }
 
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-                ctx.setLineDash([20, 30]);
-                ctx.beginPath();
-                ctx.moveTo(i - ROAD_WIDTH / 4, 0); ctx.lineTo(i - ROAD_WIDTH / 4, WORLD_SIZE);
-                ctx.moveTo(i + ROAD_WIDTH / 4, 0); ctx.lineTo(i + ROAD_WIDTH / 4, WORLD_SIZE);
-                ctx.stroke();
+                // Vertical lines
+                for (let y = 0; y < WORLD_SIZE; y += BLOCK_SIZE) {
+                    const startY = y + ROAD_WIDTH / 2 + 60;
+                    const endY = y + BLOCK_SIZE - ROAD_WIDTH / 2 - 60;
+                    if (startY >= endY) continue;
 
-                ctx.strokeStyle = '#ffd700';
-                ctx.setLineDash([40, 20]);
-                ctx.beginPath();
-                ctx.moveTo(i - 4, 0); ctx.lineTo(i - 4, WORLD_SIZE);
-                ctx.moveTo(i + 4, 0); ctx.lineTo(i + 4, WORLD_SIZE);
-                ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                    ctx.beginPath();
+                    ctx.moveTo(i - ROAD_WIDTH / 2 + 5, startY); ctx.lineTo(i - ROAD_WIDTH / 2 + 5, endY);
+                    ctx.moveTo(i + ROAD_WIDTH / 2 - 5, startY); ctx.lineTo(i + ROAD_WIDTH / 2 - 5, endY);
+                    ctx.stroke();
+
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                    ctx.setLineDash([20, 30]);
+                    ctx.beginPath();
+                    ctx.moveTo(i - ROAD_WIDTH / 4, startY); ctx.lineTo(i - ROAD_WIDTH / 4, endY);
+                    ctx.moveTo(i + ROAD_WIDTH / 4, startY); ctx.lineTo(i + ROAD_WIDTH / 4, endY);
+                    ctx.stroke();
+
+                    ctx.strokeStyle = '#ffd700';
+                    ctx.setLineDash([]); // Change to solid
+                    ctx.beginPath();
+                    ctx.moveTo(i - 2, startY); ctx.lineTo(i - 2, endY);
+                    ctx.moveTo(i + 2, startY); ctx.lineTo(i + 2, endY);
+                    ctx.stroke();
+                }
             }
 
             ctx.setLineDash([]);
@@ -553,26 +573,39 @@
         }
 
         function drawCrosswalk(x, y) {
-            const cwW = 40; // Crosswalk width
-            const stripeW = 8;
+            const cwW = 20; // Crosswalk band width
+            const stripeW = 6; // Stripe width
             const stripeGap = 12;
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
 
             // Top
             for (let i = -ROAD_WIDTH / 2 + 10; i < ROAD_WIDTH / 2 - 10; i += stripeGap) {
+                // Row 1
                 ctx.fillRect(x + i, y - ROAD_WIDTH / 2 - cwW - 5, stripeW, cwW);
+                // Row 2 (offset)
+                ctx.fillRect(x + i + stripeW, y - ROAD_WIDTH / 2 - 2 * cwW - 5, stripeW, cwW);
             }
             // Bottom
             for (let i = -ROAD_WIDTH / 2 + 10; i < ROAD_WIDTH / 2 - 10; i += stripeGap) {
+                // Row 1
                 ctx.fillRect(x + i, y + ROAD_WIDTH / 2 + 5, stripeW, cwW);
+                // Row 2 (offset)
+                ctx.fillRect(x + i + stripeW, y + ROAD_WIDTH / 2 + cwW + 5, stripeW, cwW);
             }
             // Left
             for (let i = -ROAD_WIDTH / 2 + 10; i < ROAD_WIDTH / 2 - 10; i += stripeGap) {
+                // Row 1
                 ctx.fillRect(x - ROAD_WIDTH / 2 - cwW - 5, y + i, cwW, stripeW);
+                // Row 2 (offset)
+                ctx.fillRect(x - ROAD_WIDTH / 2 - 2 * cwW - 5, y + i + stripeW, cwW, stripeW);
             }
             // Right
             for (let i = -ROAD_WIDTH / 2 + 10; i < ROAD_WIDTH / 2 - 10; i += stripeGap) {
+                // Row 1
                 ctx.fillRect(x + ROAD_WIDTH / 2 + 5, y + i, cwW, stripeW);
+                // Row 2 (offset)
+                ctx.fillRect(x + ROAD_WIDTH / 2 + cwW + 5, y + i + stripeW, cwW, stripeW);
             }
         }
 
@@ -641,10 +674,19 @@
             jKnob.style.transform = 'translate(-50%, -50%)';
         });
 
-        function loop() {
-            if (shopModal.style.display !== 'flex') update();
-            draw();
+        function loop(timestamp) {
             requestAnimationFrame(loop);
+            
+            if (!lastFrameTime) lastFrameTime = timestamp;
+            const elapsed = timestamp - lastFrameTime;
+            lastFrameTime = timestamp;
+
+            // Calculate delta time factor (1.0 = 60fps)
+            // Limit delta to avoid huge jumps if window loses focus
+            const dt = Math.min(elapsed / (1000 / 60), 3);
+
+            if (shopModal.style.display !== 'flex') update(dt);
+            draw();
         }
 
         function resizeCanvas() {
@@ -657,7 +699,7 @@
         resizeCanvas();
 
         init();
-        loop();
+        requestAnimationFrame(loop);
     </script>
 </body>
 

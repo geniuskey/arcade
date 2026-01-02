@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>⛓️ 슬기로운 감방생활</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #1a1a2e; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; overflow: hidden; }
+        #gameContainer { position: relative; display: flex; flex-direction: column; }
+        #gameCanvas { border: 4px solid #4a4a6a; border-radius: 8px 8px 0 0; box-shadow: 0 0 30px rgba(0, 0, 0, 0.5); background: #222; }
+        #bottomBar { width: 968px; height: 140px; background: linear-gradient(180deg, #2c3e50 0%, #000000 100%); border: 4px solid #4a4a6a; border-top: 2px solid #6a6a8a; border-radius: 0 0 8px 8px; display: flex; align-items: center; padding: 10px; gap: 15px; }
+        #ui { display: flex; flex-direction: column; gap: 5px; color: white; font-size: 13px; min-width: 180px; }
+        #ui div { padding: 4px 8px; background: rgba(0, 0, 0, 0.6); border-radius: 4px; border-left: 3px solid #3498db; }
+        #inventory { display: flex; gap: 5px; }
+        .inv-slot { width: 50px; height: 50px; background: #34495e; border: 2px solid #7f8c8d; border-radius: 5px; display: flex; justify-content: center; align-items: center; font-size: 24px; position: relative; }
+        .inv-slot.active { border-color: #f1c40f; box-shadow: 0 0 10px #f1c40f; }
+        #minimapContainer { margin-left: auto; border: 2px solid #6a6a8a; background: #000; }
+        #minimap { display: block; }
+        #startScreen, #gameOverScreen, #victoryScreen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; text-align: center; padding: 20px; }
+        h1 { font-size: 48px; margin-bottom: 20px; color: #e74c3c; text-shadow: 2px 2px 0 #000; }
+        p { font-size: 18px; margin-bottom: 30px; line-height: 1.6; max-width: 600px; }
+        button { padding: 15px 40px; font-size: 20px; background: #2980b9; color: white; border: none; border-radius: 5px; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #3498db; transform: scale(1.05); }
+        .hidden { display: none !important; }
+        .back-btn { position: fixed; top: 10px; right: 10px; z-index: 1000; text-decoration: none; color: white; background: rgba(0, 0, 0, 0.5); padding: 8px 16px; border-radius: 20px; font-size: 14px; }
+    </style>
+</head>
+
+<body>
+    <a href="../" class="back-btn">← Arcade</a>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="startScreen">
+            <h1>⛓️ 슬기로운 감방생활</h1>
+            <p>억울하게 수감되었습니다. 담배 10개를 모아 상점에서 마스터키를 사고 식당 위쪽 문으로 탈출하세요!<br><br><b>WASD: 이동 | E: 상호작용 | H: 은신</b></p>
+            <button onclick="startGame()">감옥 입장</button>
+        </div>
+        <div id="gameOverScreen" class="hidden">
+            <h1>🚔 독방행!</h1>
+            <p>교도관에게 붙잡혔습니다.</p>
+            <button onclick="location.reload()">다시 시도</button>
+        </div>
+        <div id="victoryScreen" class="hidden">
+            <h1>🎉 탈출 성공!</h1>
+            <p>축하합니다! 자유의 몸이 되었습니다.</p>
+            <button onclick="location.reload()">다시 하기</button>
+        </div>
+        <div id="bottomBar">
+            <div id="ui">
+                <div>❤️ 체력: <span id="hp">100</span> / 100</div>
+                <div>💰 담배: <span id="money">0</span> / 10 개</div>
+                <div>🕒 생존: <span id="time">0</span>일차</div>
+                <div id="goal" style="color: #f1c40f; border-left-color: #f1c40f;">🎯 목표: 담배 10개 수집</div>
+            </div>
+            <div id="inventory">
+                <div class="inv-slot" id="slot-key" title="마스터키"></div>
+                <div class="inv-slot" title="비상식량">🍎</div>
+                <div class="inv-slot" title="도구">⚒️</div>
+            </div>
+            <div id="minimapContainer"><canvas id="minimap" width="200" height="120"></canvas></div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const minimap = document.getElementById('minimap');
+        const mctx = minimap.getContext('2d');
+        canvas.width = 960; canvas.height = 544;
+        const TILE_SIZE = 32; const MAP_W = 30; const MAP_H = 17;
+        const FLOOR = 0, WALL = 1, BARS = 2, DOOR = 3, TABLE = 4, CHAIR = 5, BED = 6, DESK = 7, SHOP_COUNTER = 8;
+        let map = [];
+        let player = { x: 0, y: 0, hp: 100, money: 0, days: 1, isHiding: false, gracePeriod: 0, hasKey: false };
+        let guards = []; let prisoners = []; let items = []; let gameState = 'start'; let frameCount = 0; let keys = {};
+
+        function initMap() {
+            for (let y = 0; y < MAP_H; y++) {
+                map[y] = [];
+                for (let x = 0; x < MAP_W; x++) map[y][x] = (x === 0 || x === MAP_W - 1 || y === 0 || y === MAP_H - 1) ? WALL : FLOOR;
+            }
+            let drs = [];
+            // 식당
+            for (let y = 1; y < MAP_H - 1; y++) map[y][7] = WALL;
+            map[2][7] = DOOR; drs.push({x:7, y:2}); map[14][7] = DOOR; drs.push({x:7, y:14});
+            for (let y = 3; y < 14; y++) { map[y][2] = TABLE; map[y][1] = CHAIR; map[y][3] = CHAIR; }
+            // 감방
+            for (let i = 0; i < 3; i++) {
+                let sx = 8 + (i * 7); if (i < 2) for (let y = 11; y < 16; y++) map[y][sx + 6] = WALL;
+                for (let x = sx; x < sx + 7; x++) map[11][x] = BARS;
+                map[11][sx + 3] = DOOR; drs.push({x:sx + 3, y:11});
+                map[14][sx + 5] = BED; map[14][sx + 1] = DESK;
+                prisoners.push({ x: (sx + 2) * TILE_SIZE, y: 13 * TILE_SIZE, emoji: '👥' });
+            }
+            for (let i = 0; i < 2; i++) {
+                let sx = 8 + (i * 7); for (let x = sx; x < sx + 7; x++) map[5][x] = BARS;
+                map[5][sx + 3] = DOOR; drs.push({x:sx + 3, y:5});
+                map[2][sx + 1] = BED; for (let y = 1; y < 5; y++) map[y][sx + 6] = WALL;
+            }
+            // 상점/창고
+            for (let x = 22; x < 25; x++) map[3][x] = WALL; map[3][23] = DOOR; drs.push({x:23, y:3});
+            for (let y = 1; y < 5; y++) map[y][25] = WALL; for (let x = 25; x < 29; x++) map[5][x] = WALL;
+            map[3][25] = DOOR; drs.push({x:25, y:3}); map[2][27] = SHOP_COUNTER;
+            map[8][8] = DESK;
+            for (let i = 0; i < 15; i++) {
+                let rx = Math.floor(Math.random() * (MAP_W - 2)) + 1, ry = Math.floor(Math.random() * (MAP_H - 2)) + 1;
+                if (map[ry][rx] === FLOOR) items.push({ x: rx * TILE_SIZE, y: ry * TILE_SIZE });
+            }
+            return drs;
+        }
+
+        function createGuard(drs) {
+            let d = drs[Math.floor(Math.random() * drs.length)];
+            return { x: d.x * TILE_SIZE, y: d.y * TILE_SIZE, targetDoor: d, speed: 1.2, angle: 0, drs: drs, waitTimer: 10, pathStep: 0 };
+        }
+
+        function startGame() {
+            document.getElementById('startScreen').classList.add('hidden');
+            let drs = initMap(); guards = [createGuard(drs), createGuard(drs)];
+            gameState = 'playing'; player.x = 11 * TILE_SIZE; player.y = 13 * TILE_SIZE;
+            player.hp = 100; player.money = 0; player.days = 1; player.isHiding = false; player.gracePeriod = 60; player.hasKey = false;
+            gameLoop();
+        }
+
+        function update() {
+            if (gameState !== 'playing') return;
+            if (player.gracePeriod > 0) player.gracePeriod--;
+            if (!player.isHiding) {
+                let dx = 0, dy = 0; if (keys['w']) dy -= 3; if (keys['s']) dy += 3; if (keys['a']) dx -= 3; if (keys['d']) dx += 3;
+                moveEntity(player, dx, dy);
+            }
+            if (keys['h']) {
+                keys['h'] = false;
+                if (player.isHiding) player.isHiding = false;
+                else {
+                    let tx = Math.floor((player.x + 16) / TILE_SIZE), ty = Math.floor((player.y + 16) / TILE_SIZE);
+                    let can = false; for(let oy = -1; oy <= 1; oy++) for(let ox = -1; ox <= 1; ox++) {
+                        let t = map[ty+oy]?.[tx+ox]; if (t === BED || t === TABLE) {
+                            can = true; if (t === BED) { player.hp = Math.min(100, player.hp + 30); player.days++; player.gracePeriod = 60; }
+                            break;
+                        }
+                    }
+                    if (can) player.isHiding = true;
+                }
+            }
+            if (keys['e']) {
+                keys['e'] = false;
+                items = items.filter(it => { if (Math.hypot(player.x - it.x, player.y - it.y) < 40) { player.money++; checkGoal(); return false; } return true; });
+                let tx = Math.floor((player.x + 16) / TILE_SIZE), ty = Math.floor((player.y + 16) / TILE_SIZE);
+                if (map[ty][tx] === SHOP_COUNTER || map[ty+1]?.[tx] === SHOP_COUNTER) {
+                    if (player.money >= 10 && !player.hasKey) { player.money -= 10; player.hasKey = true; document.getElementById('slot-key').textContent = '🔑'; checkGoal(); alert("마스터키 구입! 식당 위쪽 문(x7, y2)으로 탈출하세요!"); }
+                }
+                for(let oy = -1; oy <= 1; oy++) for(let ox = -1; ox <= 1; ox++) {
+                    let t = map[ty+oy]?.[tx+ox]; if (t === TABLE) player.hp = Math.min(100, player.hp + 10);
+                    if (t === DOOR && (tx+ox) === 7 && (ty+oy) === 2 && player.hasKey) victory();
+                }
+            }
+            guards.forEach(g => {
+                if (g.waitTimer > 0) { g.waitTimer--; if (g.waitTimer === 0) {
+                    let n; do { n = g.drs[Math.floor(Math.random()*g.drs.length)]; } while(n === g.targetDoor); g.targetDoor = n; g.pathStep = 0;
+                } return; }
+                let tx = g.targetDoor.x * TILE_SIZE, ty = g.targetDoor.y * TILE_SIZE, cy = 8 * TILE_SIZE;
+                let gx = tx, gy = ty; if (g.pathStep === 0) { gx = g.x; gy = cy; if (Math.abs(g.y-cy)<5) g.pathStep = 1; }
+                else if (g.pathStep === 1) { gx = tx; gy = cy; if (Math.abs(g.x-tx)<5) g.pathStep = 2; }
+                else { if (Math.hypot(tx-g.x, ty-g.y)<5) { g.waitTimer = 80; return; } }
+                let a = Math.atan2(gy-g.y, gx-g.x); g.x += Math.cos(a)*g.speed; g.y += Math.sin(a)*g.speed; g.angle = a;
+                if (!player.isHiding && player.gracePeriod <= 0) {
+                    let d = Math.hypot(player.x-g.x, player.y-g.y);
+                    if (d < 130 && (Math.abs(a - Math.atan2(player.y-g.y, player.x-g.x)) < 0.7 || d < 40)) { gameState = 'gameover'; document.getElementById('gameOverScreen').classList.remove('hidden'); }
+                }
+            });
+            document.getElementById('hp').textContent = Math.floor(player.hp); document.getElementById('money').textContent = player.money; document.getElementById('time').textContent = player.days;
+            frameCount++; if (frameCount % 600 === 0 && !player.isHiding) player.hp -= 1;
+            if (player.hp <= 0) { gameState = 'gameover'; document.getElementById('gameOverScreen').classList.remove('hidden'); }
+        }
+
+        function checkGoal() {
+            let g = document.getElementById('goal');
+            if (!player.hasKey) { g.textContent = `🎯 목표: 담배 수집 (${player.money}/10)`; if (player.money >= 10) g.textContent = "🎯 목표: 상점에서 키 구입"; }
+            else { g.textContent = "🎯 목표: 식당 위쪽 문으로 탈출"; g.style.color = "#2ecc71"; }
+        }
+
+        function moveEntity(ent, dx, dy) { if (isWalkable(ent.x + dx, ent.y)) ent.x += dx; if (isWalkable(ent.x, ent.y + dy)) ent.y += dy; }
+        function isWalkable(x, y) {
+            let p = 6; let pts = [{x:x+p, y:y+p}, {x:x+32-p, y:y+p}, {x:x+p, y:y+32-p}, {x:x+32-p, y:y+32-p}];
+            for (let pt of pts) {
+                let tx = Math.floor(pt.x/TILE_SIZE), ty = Math.floor(pt.y/TILE_SIZE);
+                if (tx < 0 || tx >= MAP_W || ty < 0 || ty >= MAP_H) return false;
+                let t = map[ty][tx]; if (t !== FLOOR && t !== DOOR) return false;
+            } return true;
+        }
+
+        function victory() { gameState = 'victory'; document.getElementById('victoryScreen').classList.remove('hidden'); }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
+                let t = map[y][x], px = x*TILE_SIZE, py = y*TILE_SIZE;
+                ctx.fillStyle = '#222'; ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                ctx.strokeStyle = '#333'; ctx.strokeRect(px, py, TILE_SIZE, TILE_SIZE);
+                if (t === WALL) { ctx.fillStyle = '#1c2833'; ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE); }
+                else if (t === BARS) { ctx.fillStyle = '#2c3e50'; ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE); ctx.fillStyle = '#7f8c8d'; for(let i=0;i<4;i++) ctx.fillRect(px+4+i*8, py, 2, TILE_SIZE); }
+                else if (t === DOOR) { ctx.fillStyle = '#5d6d7e'; ctx.fillRect(px+2, py+2, TILE_SIZE-4, TILE_SIZE-4); ctx.fillStyle = '#34495e'; ctx.fillRect(px+6, py+6, TILE_SIZE-12, TILE_SIZE-12); ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(px+TILE_SIZE-10, py+TILE_SIZE/2, 2, 0, Math.PI*2); ctx.fill(); }
+                else if (t === TABLE) { ctx.fillStyle = '#5d4037'; ctx.fillRect(px+2, py+10, TILE_SIZE-4, TILE_SIZE-14); }
+                else if (t === BED) { ctx.fillStyle = '#2e86c1'; ctx.fillRect(px+2, py+12, TILE_SIZE-4, TILE_SIZE-16); ctx.fillStyle = 'white'; ctx.fillRect(px+2, py+12, 10, 8); }
+                else if (t === CHAIR) { ctx.fillStyle = '#4e342e'; ctx.fillRect(px+10, py+10, TILE_SIZE-20, TILE_SIZE-20); }
+                else if (t === DESK) { ctx.fillStyle = '#455a64'; ctx.fillRect(px+2, py+6, TILE_SIZE-4, TILE_SIZE-10); }
+                else if (t === SHOP_COUNTER) { ctx.fillStyle = '#d4ac0d'; ctx.fillRect(px, py+16, TILE_SIZE, 16); }
+            }
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            items.forEach(it => { ctx.font = '20px Arial'; ctx.fillText('🚬', it.x+16, it.y+16); });
+            prisoners.forEach(p => { ctx.font = '24px Arial'; ctx.fillText(p.emoji, p.x+16, p.y+16); });
+            if (!player.isHiding) { ctx.font = '24px Arial'; ctx.fillText('👨‍🔧', player.x+16, player.y+16); }
+            else { ctx.fillStyle = 'rgba(52, 152, 219, 0.5)'; ctx.beginPath(); ctx.arc(player.x+16, player.y+16, 12, 0, Math.PI*2); ctx.fill(); ctx.font = '10px Arial'; ctx.fillStyle = 'white'; ctx.fillText('은신중', player.x+16, player.y+16); }
+            guards.forEach(g => {
+                let gr = ctx.createRadialGradient(g.x+16, g.y+16, 20, g.x+16, g.y+16, 120);
+                gr.addColorStop(0, 'rgba(231, 76, 60, 0.4)'); gr.addColorStop(1, 'rgba(231, 76, 60, 0)');
+                ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(g.x+16, g.y+16); ctx.arc(g.x+16, g.y+16, 120, g.angle-0.6, g.angle+0.6); ctx.lineTo(g.x+16, g.y+16); ctx.fill();
+                ctx.font = '24px Arial'; ctx.fillText('👮', g.x+16, g.y+16);
+            });
+            mctx.fillStyle = 'black'; mctx.fillRect(0, 0, minimap.width, minimap.height);
+            let s = 3; for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) if (map[y][x] === WALL) { mctx.fillStyle = '#555'; mctx.fillRect(x*s+10, y*s+10, s, s); }
+            mctx.fillStyle = 'cyan'; mctx.fillRect((player.x/TILE_SIZE)*s+10, (player.y/TILE_SIZE)*s+10, s, s);
+        }
+        window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true); window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+        function gameLoop() { update(); draw(); if (gameState === 'playing') requestAnimationFrame(gameLoop); }
+    </script>
+</body>
+</html>
