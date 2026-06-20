@@ -1203,5 +1203,12 @@
       updateHud();
       requestAnimationFrame(loop);
     </script>
+    <script src="../mobile-arcade.js"></script>
+    <script>
+        // Full-window canvas: no scaling needed. Bridge touch -> mouse for aim/shoot,
+        // and add a touch button for the super shot (X key).
+        MobileArcade.mouseBridge(document.getElementById('game'));
+        MobileArcade.actions([{ label: '💥특수', key: 'x' }], { side: 'right' });
+    </script>
   </body>
 </html>

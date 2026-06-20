@@ -226,5 +226,11 @@
         window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true); window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
         function gameLoop() { update(); draw(); if (gameState === 'playing') requestAnimationFrame(gameLoop); }
     </script>
+    <script src="../mobile-arcade.js"></script>
+    <script>
+        MobileArcade.fit('#gameContainer');
+        MobileArcade.dpad({ up: 'w', down: 's', left: 'a', right: 'd' }, { side: 'left' });
+        MobileArcade.actions([{ label: '🫣숨기', key: 'h' }, { label: '✋줍기', key: 'e' }], { side: 'right' });
+    </script>
 </body>
 </html>
