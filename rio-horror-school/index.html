@@ -20,6 +20,7 @@
             min-height: 100vh;
             font-family: 'Segoe UI', sans-serif;
             overflow: hidden;
+            overflow-x: hidden;
         }
 
         #gameContainer {
@@ -469,7 +470,8 @@
 
         @media (max-width: 1000px) {
             body {
-                overflow: auto;
+                overflow-y: auto;
+                overflow-x: hidden;
                 align-items: flex-start;
                 padding: 5px;
             }
@@ -497,7 +499,6 @@
         }
 
         @media (max-width: 600px) {
-            #gameCanvas { width: 100vw; height: auto; }
         }
 
         .back-btn {
@@ -1810,6 +1811,30 @@
             if (gameState === 'playing') tryHide();
         }, { passive: false });
         document.getElementById('gameContainer').addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+
+        // ---------------- Responsive scaling ----------------
+        // The game is laid out at a fixed size (960px canvas + bottom bar). On small
+        // screens we scale the whole container down so it fits the viewport width and
+        // the map is fully visible, then compensate the layout box so no extra gap
+        // or horizontal scroll remains.
+        const gameContainer = document.getElementById('gameContainer');
+        function fitToScreen() {
+            gameContainer.style.transform = 'none';
+            gameContainer.style.marginBottom = '';
+            const fullW = gameContainer.offsetWidth;
+            const fullH = gameContainer.offsetHeight;
+            const availW = window.innerWidth - 6;
+            const scale = Math.min(1, availW / fullW);
+            if (scale < 1) {
+                gameContainer.style.transformOrigin = 'top center';
+                gameContainer.style.transform = 'scale(' + scale + ')';
+                gameContainer.style.marginBottom = '-' + (fullH * (1 - scale)) + 'px';
+            }
+        }
+        window.addEventListener('resize', fitToScreen);
+        window.addEventListener('orientationchange', () => setTimeout(fitToScreen, 250));
+        window.addEventListener('load', fitToScreen);
+        fitToScreen();
     </script>
 </body>
 
