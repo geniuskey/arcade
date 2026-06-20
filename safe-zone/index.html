@@ -628,6 +628,12 @@
             }
         }
     </script>
+    <script src="../mobile-arcade.js"></script>
+    <script>
+        MobileArcade.fit('#game-container');
+        MobileArcade.dpad({ up: 'w', down: 's', left: 'a', right: 'd' }, { side: 'left', tag: 'P1' });
+        MobileArcade.dpad({ up: 'up', down: 'down', left: 'left', right: 'right' }, { side: 'right', tag: 'P2' });
+    </script>
 </body>
 
 </html>

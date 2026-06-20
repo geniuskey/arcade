@@ -459,7 +459,14 @@
         }
 
     </script>
-
+    <script src="../mobile-arcade.js"></script>
+    <script>
+        MobileArcade.fit('#game-container');
+        MobileArcade.dpad({ up: 'w', left: 'a', right: 'd' }, { side: 'left', tag: 'P1 점프/이동' });
+        MobileArcade.actions([{ label: '스파이크', key: 'space' }], { side: 'left', bottom: '180px' });
+        MobileArcade.dpad({ up: 'up', left: 'left', right: 'right' }, { side: 'right', tag: 'P2 점프/이동' });
+        MobileArcade.actions([{ label: '스파이크', key: 'enter' }], { side: 'right', bottom: '180px' });
+    </script>
 </body>
 
 </html>
