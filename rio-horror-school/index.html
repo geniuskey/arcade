@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>😎리오의 공포학교</title>
+    <title>리오의 공포학교</title>
     <style>
         * {
             margin: 0;
@@ -12,51 +12,119 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --ink: #f4efe6;
+            --muted: #9aa0ad;
+            --panel: rgba(13, 16, 24, 0.9);
+            --panel-strong: rgba(7, 9, 14, 0.96);
+            --steel: #5c6576;
+            --line: rgba(255, 255, 255, 0.12);
+            --amber: #f6c453;
+            --green: #59d98e;
+            --red: #ef4444;
+            --cyan: #67e8f9;
+        }
+
+        html {
+            background: #05060a;
+        }
+
         body {
-            background: #0d0d18;
+            background:
+                radial-gradient(circle at 50% 18%, rgba(95, 22, 28, 0.28), transparent 34%),
+                linear-gradient(180deg, #151722 0%, #080a10 58%, #040509 100%);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            font-family: 'Segoe UI', sans-serif;
+            font-family: "Pretendard", "Noto Sans KR", "Segoe UI", sans-serif;
             overflow: hidden;
             overflow-x: hidden;
+            color: var(--ink);
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background:
+                linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+            background-size: 48px 48px, 48px 48px;
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.2));
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background:
+                repeating-linear-gradient(0deg, rgba(255,255,255,0.028) 0 1px, transparent 1px 4px),
+                radial-gradient(ellipse at center, transparent 42%, rgba(0, 0, 0, 0.62) 100%);
+            opacity: 0.55;
+            mix-blend-mode: overlay;
         }
 
         #gameContainer {
             position: relative;
             display: flex;
             flex-direction: column;
+            isolation: isolate;
+            border-radius: 14px;
+            box-shadow:
+                0 26px 80px rgba(0, 0, 0, 0.55),
+                0 0 0 1px rgba(255, 255, 255, 0.06);
+        }
+
+        #gameContainer::before {
+            content: "";
+            position: absolute;
+            inset: -1px;
+            border-radius: 14px;
+            pointer-events: none;
+            z-index: 5;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), inset 0 0 80px rgba(0,0,0,0.32);
         }
 
         #gameCanvas {
-            border: 4px solid #4a4a6a;
-            border-radius: 8px 8px 0 0;
-            box-shadow: 0 0 30px rgba(255, 0, 0, 0.2);
-            background: #0a0a14;
+            border: 4px solid #303747;
+            border-bottom: 0;
+            border-radius: 12px 12px 0 0;
+            box-shadow:
+                0 0 0 1px rgba(255,255,255,0.08),
+                0 0 44px rgba(177, 43, 53, 0.24);
+            background: #080b11;
         }
 
         /* Bottom Bar */
         #bottomBar {
             width: 968px;
-            height: 120px;
-            background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 50%, #0a0a1e 100%);
-            border: 4px solid #4a4a6a;
-            border-top: 2px solid #6a6a8a;
-            border-radius: 0 0 8px 8px;
+            min-height: 124px;
+            background:
+                linear-gradient(180deg, rgba(41, 47, 60, 0.96) 0%, rgba(17, 20, 30, 0.98) 52%, rgba(7, 9, 15, 0.98) 100%);
+            border: 4px solid #303747;
+            border-top: 1px solid rgba(255,255,255,0.16);
+            border-radius: 0 0 12px 12px;
             display: flex;
             align-items: center;
-            padding: 10px;
-            gap: 14px;
+            padding: 12px 14px;
+            gap: 16px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), inset 0 18px 40px rgba(255,255,255,0.025);
         }
 
         #statusPanel {
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            color: white;
+            gap: 8px;
+            color: var(--ink);
             font-size: 13px;
-            min-width: 230px;
+            min-width: 238px;
+            padding: 10px 12px;
+            background: rgba(0,0,0,0.26);
+            border: 1px solid var(--line);
+            border-radius: 8px;
         }
 
         #statusPanel .row {
@@ -65,93 +133,175 @@
             gap: 8px;
         }
 
+        #statusPanel .label {
+            min-width: 34px;
+            color: #aeb4c2;
+            font-size: 11px;
+            font-weight: 900;
+        }
+
         #roleBadge {
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-weight: bold;
+            padding: 5px 11px;
+            border-radius: 999px;
+            font-weight: 800;
             font-size: 13px;
+            letter-spacing: 0;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
         }
 
         #roleBadge.rio {
-            background: rgba(74, 222, 128, 0.2);
-            border: 1px solid #4ade80;
-            color: #4ade80;
+            background: rgba(89, 217, 142, 0.16);
+            border: 1px solid rgba(89, 217, 142, 0.82);
+            color: #9ff0bd;
         }
 
         #roleBadge.villain {
-            background: rgba(239, 68, 68, 0.2);
-            border: 1px solid #ef4444;
-            color: #ef4444;
+            background: rgba(239, 68, 68, 0.18);
+            border: 1px solid rgba(239, 68, 68, 0.82);
+            color: #ff9b9b;
         }
 
         #hpBarOuter {
-            width: 150px;
-            height: 16px;
-            background: #222;
-            border: 1px solid #555;
-            border-radius: 8px;
+            width: 152px;
+            height: 15px;
+            background: #090b10;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 999px;
             overflow: hidden;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.65);
         }
 
         #hpBarInner {
             height: 100%;
             width: 100%;
-            background: #4ade80;
+            background: linear-gradient(90deg, #2ecf6f, #b8f77a);
             transition: width 0.15s, background 0.15s;
+            box-shadow: 0 0 12px currentColor;
+        }
+
+        #resourceBarOuter {
+            width: 152px;
+            height: 12px;
+            background: #090b10;
+            border: 1px solid rgba(255,255,255,0.16);
+            border-radius: 999px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.65);
+        }
+
+        #resourceBarInner {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #67e8f9, #59d98e);
+            transition: width 0.15s, background 0.15s;
+        }
+
+        #resourceNum {
+            min-width: 26px;
+            color: #d8dde7;
+            font-size: 11px;
+            font-weight: 900;
+            text-align: right;
         }
 
         #objectiveText {
             flex: 1;
-            color: #ffd866;
-            font-size: 16px;
+            color: #ffe7a3;
+            font-size: 17px;
+            font-weight: 800;
             text-align: center;
-            padding: 8px;
+            padding: 13px 16px;
             line-height: 1.4;
-            text-shadow: 0 0 8px rgba(0,0,0,0.8);
+            text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+            background:
+                linear-gradient(90deg, transparent 0%, rgba(246, 196, 83, 0.13) 12%, rgba(246, 196, 83, 0.08) 88%, transparent 100%);
+            border-top: 1px solid rgba(246,196,83,0.24);
+            border-bottom: 1px solid rgba(246,196,83,0.18);
+            min-height: 58px;
+            display: grid;
+            place-items: center;
+        }
+
+        #objectiveText small {
+            color: #aeb4c2;
+            font-size: 12px;
+            font-weight: 800;
         }
 
         #weaponIcon {
-            width: 44px;
-            height: 44px;
+            width: 46px;
+            height: 46px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(0,0,0,0.4);
-            border: 2px solid #555;
-            border-radius: 6px;
+            background:
+                radial-gradient(circle at 50% 35%, rgba(255,255,255,0.18), transparent 55%),
+                rgba(0,0,0,0.42);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 8px;
+            box-shadow: inset 0 0 18px rgba(0,0,0,0.44);
+        }
+
+        #weaponIcon.villain {
+            border-color: rgba(239, 68, 68, 0.42);
+            background:
+                radial-gradient(circle at 50% 35%, rgba(239,68,68,0.26), transparent 58%),
+                rgba(0,0,0,0.48);
+            color: #ffb4b4;
         }
 
         #weaponIcon img {
-            width: 34px;
-            height: 34px;
+            width: 36px;
+            height: 36px;
             object-fit: contain;
+            filter: drop-shadow(0 3px 4px rgba(0,0,0,0.55));
         }
 
         #minimapContainer {
             flex-shrink: 0;
+            padding: 5px;
+            background: rgba(0,0,0,0.32);
+            border: 1px solid var(--line);
+            border-radius: 8px;
         }
 
         #minimap {
-            border: 2px solid #6a6a8a;
-            border-radius: 4px;
+            display: block;
+            border: 1px solid rgba(148, 163, 184, 0.55);
+            border-radius: 6px;
             background: rgba(0, 0, 0, 0.8);
+            box-shadow: 0 0 14px rgba(103, 232, 249, 0.12);
         }
 
         #helpText {
-            color: #888;
+            color: #aeb4c2;
             font-size: 11px;
             text-align: center;
             line-height: 1.5;
             min-width: 130px;
+            padding: 8px 6px;
+            border-left: 1px solid rgba(255,255,255,0.1);
         }
 
         #helpText span {
             display: inline-block;
-            padding: 1px 5px;
+            padding: 2px 6px;
             margin: 1px;
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 3px;
-            color: #ccc;
+            background: linear-gradient(180deg, #242a35, #10131a);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 4px;
+            color: #f5f7fb;
+            box-shadow: 0 2px 0 rgba(0,0,0,0.45);
+        }
+
+        #helpText .rio-help,
+        #helpText .villain-help {
+            display: none;
+        }
+
+        body.role-rio #helpText .rio-help,
+        body.role-villain #helpText .villain-help {
+            display: block;
         }
 
         /* Overlays */
@@ -160,27 +310,33 @@
             top: 12px;
             left: 50%;
             transform: translateX(-50%);
-            color: #fff;
-            font-size: 22px;
-            font-weight: bold;
-            padding: 6px 24px;
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 8px;
+            color: #f8fafc;
+            font-size: 20px;
+            font-weight: 900;
+            padding: 7px 24px;
+            background: rgba(5, 8, 12, 0.74);
+            border-radius: 999px;
             z-index: 10;
-            border: 1px solid #4a4a6a;
+            border: 1px solid rgba(255,255,255,0.16);
+            box-shadow: 0 10px 28px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.14);
+            backdrop-filter: blur(10px);
+            transition: transform 0.25s ease;
         }
 
         #opponentTag {
             position: absolute;
             top: 12px;
             right: 12px;
-            color: #ff6b6b;
-            font-size: 14px;
-            padding: 6px 12px;
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 8px;
+            color: #ffb4b4;
+            font-size: 13px;
+            font-weight: 800;
+            padding: 8px 12px;
+            background: rgba(5, 8, 12, 0.76);
+            border-radius: 999px;
             z-index: 10;
-            border: 1px solid #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.78);
+            box-shadow: 0 10px 28px rgba(0,0,0,0.32), 0 0 18px rgba(239,68,68,0.12);
+            backdrop-filter: blur(10px);
         }
 
         #countdown {
@@ -189,10 +345,11 @@
             left: 50%;
             transform: translate(-50%, -50%);
             font-size: 120px;
-            color: #ff4444;
-            text-shadow: 0 0 30px red, 0 0 60px red;
+            color: #ffefef;
+            text-shadow: 0 0 20px #ef4444, 0 0 48px #ef4444, 0 8px 30px rgba(0,0,0,0.8);
             z-index: 50;
             display: none;
+            font-weight: 900;
         }
 
         #warningText {
@@ -200,9 +357,10 @@
             top: 28%;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 26px;
-            color: #ffcc00;
-            text-shadow: 0 0 10px orange;
+            font-size: 24px;
+            font-weight: 900;
+            color: #ffe7a3;
+            text-shadow: 0 0 14px rgba(246,196,83,0.8), 0 4px 18px rgba(0,0,0,0.86);
             z-index: 50;
             display: none;
             text-align: center;
@@ -214,16 +372,19 @@
             top: 18%;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 20px;
-            padding: 12px 24px;
-            background: rgba(0, 0, 0, 0.85);
-            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 900;
+            padding: 13px 24px;
+            background: rgba(8, 10, 14, 0.9);
+            border-radius: 999px;
             z-index: 60;
             display: none;
             text-align: center;
-            border: 2px solid #ffd866;
+            border: 1px solid #ffd866;
             color: #ffd866;
             max-width: 80%;
+            box-shadow: 0 18px 40px rgba(0,0,0,0.36), 0 0 28px rgba(246,196,83,0.14);
+            backdrop-filter: blur(12px);
         }
 
         .screen {
@@ -232,102 +393,151 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(5, 5, 15, 0.95);
+            background:
+                linear-gradient(180deg, rgba(8, 10, 16, 0.94), rgba(5, 6, 10, 0.985)),
+                radial-gradient(circle at 50% 28%, rgba(154, 38, 47, 0.24), transparent 42%);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: white;
+            color: var(--ink);
             z-index: 100;
             text-align: center;
             padding: 20px;
+            overflow: hidden;
+            backdrop-filter: blur(4px);
+        }
+
+        .screen::before {
+            content: "";
+            position: absolute;
+            inset: 28px;
+            pointer-events: none;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            box-shadow: inset 0 0 80px rgba(0,0,0,0.36);
+        }
+
+        .screen::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                linear-gradient(90deg, transparent 0 18%, rgba(246,196,83,0.08) 18% 18.4%, transparent 18.4% 100%),
+                repeating-linear-gradient(0deg, transparent 0 26px, rgba(255,255,255,0.025) 26px 27px);
+            opacity: 0.45;
         }
 
         .screen h1 {
-            font-size: 44px;
-            margin-bottom: 16px;
-            text-shadow: 0 0 20px red;
+            position: relative;
+            z-index: 1;
+            font-size: 50px;
+            margin-bottom: 18px;
+            font-weight: 950;
+            line-height: 1.05;
+            letter-spacing: 0;
+            text-shadow: 0 0 24px rgba(239, 68, 68, 0.78), 0 7px 28px rgba(0,0,0,0.86);
         }
 
         #victoryScreen h1 {
-            text-shadow: 0 0 20px gold;
+            text-shadow: 0 0 24px rgba(246,196,83,0.9), 0 7px 28px rgba(0,0,0,0.86);
         }
 
         .screen p {
+            position: relative;
+            z-index: 1;
             font-size: 16px;
             margin-bottom: 18px;
-            max-width: 560px;
+            max-width: 620px;
             line-height: 1.6;
-            color: #ddd;
+            color: #d8dde7;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.7);
         }
 
         .select-group {
+            position: relative;
+            z-index: 1;
             display: flex;
-            gap: 14px;
+            gap: 12px;
             margin: 10px 0 24px;
             flex-wrap: wrap;
             justify-content: center;
         }
 
         .select-label {
-            color: #aaa;
+            position: relative;
+            z-index: 1;
+            color: #aeb4c2;
             font-size: 14px;
             margin-bottom: 6px;
-            letter-spacing: 2px;
+            font-weight: 900;
+            letter-spacing: 0;
         }
 
         .opt-btn {
-            padding: 14px 22px;
+            padding: 14px 18px;
             font-size: 17px;
-            background: #2a2a40;
-            color: #ccc;
-            border: 2px solid #444;
-            border-radius: 10px;
+            font-weight: 900;
+            background:
+                linear-gradient(180deg, rgba(46, 54, 69, 0.94), rgba(17, 20, 30, 0.98));
+            color: #dde3ee;
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s;
-            min-width: 120px;
+            min-width: 124px;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.09);
         }
 
         .opt-btn:hover {
-            border-color: #888;
+            border-color: rgba(246,196,83,0.66);
             transform: translateY(-2px);
         }
 
         .opt-btn.selected {
-            border-color: #ffd866;
-            background: #3a3a55;
+            border-color: #f6c453;
+            background:
+                linear-gradient(180deg, rgba(78, 66, 38, 0.98), rgba(24, 23, 23, 0.98));
             color: #fff;
-            box-shadow: 0 0 14px rgba(255, 216, 102, 0.5);
+            box-shadow: 0 0 0 1px rgba(246,196,83,0.28), 0 0 22px rgba(246, 196, 83, 0.22), inset 0 1px 0 rgba(255,255,255,0.12);
         }
 
         .opt-btn small {
             display: block;
             font-size: 11px;
-            color: #999;
+            color: #aeb4c2;
             margin-top: 4px;
+            font-weight: 700;
         }
 
         button.primary {
-            padding: 15px 50px;
-            font-size: 22px;
-            background: #e74c3c;
+            position: relative;
+            z-index: 1;
+            padding: 15px 52px;
+            font-size: 21px;
+            font-weight: 950;
+            background: linear-gradient(180deg, #f05a4f, #b82736);
             color: white;
-            border: none;
+            border: 1px solid rgba(255,255,255,0.2);
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s;
             margin: 6px;
+            box-shadow: 0 16px 34px rgba(184, 39, 54, 0.34), inset 0 1px 0 rgba(255,255,255,0.22);
         }
 
         button.primary:hover {
-            background: #c0392b;
-            transform: scale(1.05);
+            filter: brightness(1.08);
+            transform: translateY(-2px);
         }
 
         button.primary:disabled {
-            background: #555;
+            background: linear-gradient(180deg, #414855, #252a33);
+            color: #8d94a1;
             cursor: not-allowed;
             transform: none;
+            box-shadow: none;
         }
 
         .hidden {
@@ -336,10 +546,14 @@
 
         /* Keypad */
         #keypadScreen {
-            background: rgba(5, 5, 15, 0.92);
+            background:
+                linear-gradient(180deg, rgba(5, 8, 14, 0.94), rgba(4, 5, 9, 0.99)),
+                radial-gradient(circle at 50% 30%, rgba(103,232,249,0.14), transparent 34%);
         }
 
         #keypad {
+            position: relative;
+            z-index: 1;
             display: grid;
             grid-template-columns: repeat(3, 70px);
             gap: 10px;
@@ -349,32 +563,39 @@
         #keypad button {
             width: 70px;
             height: 70px;
-            font-size: 26px;
-            background: #2a2a40;
+            font-size: 25px;
+            font-weight: 900;
+            background: linear-gradient(180deg, #29313e, #10141c);
             color: #fff;
-            border: 2px solid #555;
-            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.16);
+            border-radius: 8px;
             cursor: pointer;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.12);
         }
 
         #keypad button:hover {
-            border-color: #ffd866;
+            border-color: #67e8f9;
         }
 
         #keypadDisplay {
+            position: relative;
+            z-index: 1;
             font-size: 44px;
             letter-spacing: 14px;
-            color: #ffd866;
-            background: #111;
-            border: 2px solid #555;
+            color: #c8fbff;
+            background: #070a0f;
+            border: 1px solid rgba(103,232,249,0.42);
             border-radius: 8px;
             padding: 10px 20px;
             min-width: 240px;
             text-align: center;
+            box-shadow: inset 0 0 20px rgba(103,232,249,0.08), 0 0 24px rgba(103,232,249,0.12);
         }
 
         #keypadHint {
-            color: #888;
+            position: relative;
+            z-index: 1;
+            color: #9aa0ad;
             font-size: 14px;
             margin-top: 10px;
         }
@@ -406,21 +627,23 @@
         #joystickBase {
             width: 120px;
             height: 120px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 3px solid rgba(255, 255, 255, 0.4);
+            background: radial-gradient(circle, rgba(255,255,255,0.18), rgba(0,0,0,0.42));
+            border: 2px solid rgba(255, 255, 255, 0.34);
             border-radius: 50%;
             position: relative;
+            box-shadow: 0 16px 32px rgba(0,0,0,0.34), inset 0 0 24px rgba(255,255,255,0.08);
         }
 
         #joystickKnob {
             width: 50px;
             height: 50px;
-            background: rgba(255, 255, 255, 0.6);
+            background: linear-gradient(180deg, rgba(255,255,255,0.88), rgba(163,174,196,0.74));
             border-radius: 50%;
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.38);
         }
 
         #actionButtons {
@@ -437,8 +660,8 @@
             width: 64px;
             height: 64px;
             border-radius: 50%;
-            border: 3px solid rgba(255, 255, 255, 0.5);
-            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.48);
+            background: rgba(5, 8, 12, 0.72);
             color: white;
             font-size: 26px;
             display: flex;
@@ -448,6 +671,7 @@
             user-select: none;
             -webkit-user-select: none;
             touch-action: manipulation;
+            box-shadow: 0 12px 26px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.16);
         }
 
         .action-btn:active {
@@ -456,7 +680,7 @@
         }
 
         .action-btn.attack {
-            background: rgba(231, 76, 60, 0.6);
+            background: linear-gradient(180deg, rgba(239,68,68,0.78), rgba(116, 20, 33, 0.82));
             border-color: #e74c3c;
             width: 74px;
             height: 74px;
@@ -464,8 +688,13 @@
         }
 
         .action-btn.hide {
-            background: rgba(52, 152, 219, 0.6);
-            border-color: #3498db;
+            background: linear-gradient(180deg, rgba(103,232,249,0.48), rgba(15, 46, 72, 0.82));
+            border-color: #67e8f9;
+        }
+
+        body.role-villain #btnHide {
+            background: linear-gradient(180deg, rgba(239,68,68,0.7), rgba(90, 18, 31, 0.86));
+            border-color: #ef4444;
         }
 
         @media (max-width: 1000px) {
@@ -477,7 +706,7 @@
             }
 
             #gameContainer { transform-origin: top center; }
-            #mobileControls { display: block; }
+            body.controls-active #mobileControls { display: block; }
             .mobile-only { display: inline; }
             .desktop-only { display: none; }
             #helpText { display: none; }
@@ -488,7 +717,7 @@
                 height: auto;
                 min-height: 100px;
                 flex-wrap: wrap;
-                padding: 6px;
+                padding: 8px;
                 gap: 8px;
             }
 
@@ -508,11 +737,13 @@
             z-index: 1000;
             text-decoration: none;
             color: white;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 6px 12px;
-            border-radius: 15px;
+            background: rgba(5, 8, 12, 0.72);
+            padding: 7px 12px;
+            border-radius: 999px;
             font-size: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            box-shadow: 0 10px 24px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
         }
     </style>
 </head>
@@ -532,19 +763,23 @@
         <div id="bottomBar">
             <div id="statusPanel">
                 <div class="row">
-                    <span id="roleBadge" class="rio">😎 리오</span>
+                    <span id="roleBadge" class="rio">리오</span>
                     <span id="weaponIcon"><span style="font-size:20px">✋</span></span>
                 </div>
                 <div class="row">
-                    ❤️ <div id="hpBarOuter"><div id="hpBarInner"></div></div>
+                    <span class="label">HP</span><div id="hpBarOuter"><div id="hpBarInner"></div></div>
                     <span id="hpNum">100</span>
                 </div>
-                <div class="row" style="color:#aaa;font-size:11px;">
-                    ⏱️ <span id="timeNum">0</span>초 &nbsp; 🏫 <span id="floorNum">4</span>층
+                <div class="row">
+                    <span class="label" id="resourceLabel">STA</span><div id="resourceBarOuter"><div id="resourceBarInner"></div></div>
+                    <span id="resourceNum">100</span>
+                </div>
+                <div class="row" style="color:#aeb4c2;font-size:11px;font-weight:700;">
+                    <span id="roleMeta">시간 <span id="timeNum">0</span>초 · <span id="floorNum">4</span>층</span>
                 </div>
             </div>
 
-            <div id="objectiveText">1층으로 내려가세요!</div>
+            <div id="objectiveText">현재 층 목표를 찾으세요</div>
 
             <div id="minimapContainer">
                 <canvas id="minimap"></canvas>
@@ -552,32 +787,33 @@
 
             <div id="helpText">
                 <span>WASD</span> 이동<br>
-                <span>SPACE</span> 공격<br>
-                <span>H</span> 숨기 (리오)
+                <span>SPACE</span> 공격
+                <div class="rio-help"><span>SHIFT</span> 달리기<br><span>H</span> 숨기</div>
+                <div class="villain-help"><span>SHIFT</span> 달리기</div>
             </div>
         </div>
 
         <!-- Start Screen -->
         <div id="startScreen" class="screen">
-            <h1>😎 리오의 공포학교</h1>
+            <h1>리오의 공포학교</h1>
             <p>
-                평화롭던 학교에 빌런 👹 이 나타났어요!<br>
-                <strong>리오</strong>는 4층에서 시작해 1층 로비를 거쳐 운동장으로 탈출해야 합니다.<br>
-                로비 문을 열려면 1층 <strong>교무실</strong>에서 4자리 비밀번호를 찾아야 해요.<br>
-                <strong>빌런</strong>은 리오의 탈출을 막는 것이 목표!
+                평화롭던 학교에 빌런이 나타났어요!<br>
+                <strong>리오</strong>는 각 층의 목표를 해결해야 아래층 계단을 열 수 있습니다.<br>
+                4층 전기실, 3층 교실 열쇠, 2층 보안카드, 1층 교무실 단서를 챙기세요.<br>
+                <strong>빌런</strong>은 돌진과 타격으로 리오의 탈출을 막는 것이 목표!
             </p>
 
             <div class="select-label">역할 선택</div>
             <div class="select-group" id="roleSelect">
-                <div class="opt-btn" data-role="rio">😎 리오<small>탈출하라!</small></div>
-                <div class="opt-btn" data-role="villain">👹 빌런<small>막아라!</small></div>
+                <div class="opt-btn" data-role="rio">리오<small>1 · 탈출</small></div>
+                <div class="opt-btn" data-role="villain">빌런<small>2 · 추격</small></div>
             </div>
 
             <div class="select-label">난이도 선택</div>
             <div class="select-group" id="diffSelect">
-                <div class="opt-btn" data-diff="easy">🟢 쉬움<small>상대 느림</small></div>
-                <div class="opt-btn" data-diff="normal">🟡 보통<small>상대 보통</small></div>
-                <div class="opt-btn" data-diff="hard">🔴 어려움<small>상대 빠름</small></div>
+                <div class="opt-btn" data-diff="easy">쉬움<small>3 · 상대 느림</small></div>
+                <div class="opt-btn" data-diff="normal">보통<small>4 · 상대 보통</small></div>
+                <div class="opt-btn" data-diff="hard">어려움<small>5 · 상대 빠름</small></div>
             </div>
 
             <button class="primary" id="startBtn" onclick="startGame()" disabled>게임 시작</button>
@@ -638,14 +874,25 @@
         minimapCanvas.width = 240;
         minimapCanvas.height = 130;
 
+        // Offscreen layer for the darkness/vision overlay. Carving holes with
+        // destination-out must happen on its own layer, otherwise it punches
+        // transparent holes straight through the opaque game canvas and reveals
+        // the dark page background instead of the world underneath.
+        const lightCanvas = document.createElement('canvas');
+        lightCanvas.width = canvas.width;
+        lightCanvas.height = canvas.height;
+        const lightCtx = lightCanvas.getContext('2d');
+
         const TILE_SIZE = 32;
         const MAP_WIDTH = 44;
         const MAP_HEIGHT = 25;
+        const ROOM_RANGES = [[1, 10], [12, 21], [23, 32], [34, 42]];
 
         // Tile types
         const FLOOR = 0, WALL = 1, DESK = 2, LOCKER = 3, DOOR = 4, BLACKBOARD = 5,
             TOILET = 6, PLANT = 7, WINDOW = 8, STAIRS_DOWN = 9, STAIRS_UP = 10,
-            NOTE = 11, EXIT = 12, STAFF_DESK = 13;
+            NOTE = 11, EXIT = 12, STAFF_DESK = 13, POWER_SWITCH = 14, KEY_ITEM = 15, SECURITY_CARD = 16,
+            LIGHT_SWITCH = 17;
 
         // Blocking tiles for movement / pathfinding
         const BLOCKING = new Set([WALL, DESK, LOCKER, BLACKBOARD, TOILET, PLANT, WINDOW, STAFF_DESK]);
@@ -656,14 +903,41 @@
         const DOWN_STAIR = { x: 41, y: 12 };
         const EXIT_POS = { x: 41, y: 12 };   // floor 1 lobby exit (replaces down stair)
         const NOTE_POS = { x: 27, y: 5 };    // floor 1 staff room note
+        const FLOOR_OBJECTIVES = {
+            4: { tile: POWER_SWITCH, x: 38, y: 19, name: '전기실 스위치', doneText: '전기실 스위치를 내렸습니다', lockedText: '4층 전기실 스위치를 먼저 내려야 합니다' },
+            3: { tile: KEY_ITEM, x: 16, y: 5, name: '교실 열쇠', doneText: '계단 열쇠를 찾았습니다', lockedText: '3층 교실 열쇠가 필요합니다' },
+            2: { tile: SECURITY_CARD, x: 27, y: 19, name: '보안카드', doneText: '보안카드를 획득했습니다', lockedText: '2층 보안카드가 필요합니다' },
+            1: { tile: NOTE, x: NOTE_POS.x, y: NOTE_POS.y, name: '비밀번호 단서', doneText: '비밀번호를 확인했습니다', lockedText: '1층 교무실에서 비밀번호를 찾아야 합니다' }
+        };
 
         // Difficulty -> opponent speed multiplier
+        // mult/aiDash apply to the AI opponent. The rio*/villainFind* fields only
+        // matter when the villain is the player (Rio is AI): they control how well
+        // the AI Rio hides and how easily the villain can flush it out.
         const DIFFICULTY = {
-            easy: { name: '쉬움', mult: 0.72 },
-            normal: { name: '보통', mult: 1.0 },
-            hard: { name: '어려움', mult: 1.35 }
+            easy:   { name: '쉬움', mult: 0.9, aiDash: false, aiDashDistance: 0,
+                      rioHideChance: 0.5, rioHideMin: 50, rioHideMax: 150, rioHideCooldown: 400, villainFindRange: 2.8 },
+            normal: { name: '보통', mult: 1.0, aiDash: false, aiDashDistance: 0,
+                      rioHideChance: 0.78, rioHideMin: 75, rioHideMax: 250, rioHideCooldown: 290, villainFindRange: 2.1 },
+            hard:   { name: '어려움', mult: 1.1, aiDash: false, aiDashDistance: 0,
+                      rioHideChance: 1.0, rioHideMin: 90, rioHideMax: 360, rioHideCooldown: 220, villainFindRange: 1.5 }
         };
+        function diffCfg() { return DIFFICULTY[difficulty] || DIFFICULTY.normal; }
         const BASE_SPEED = 3.0;
+        const VILLAIN_ATTACK_RANGE = TILE_SIZE * 2.05;
+        const VILLAIN_ATTACK_ARC = Math.PI * 0.72;
+        const RIO_MAX_STAMINA = 100;
+        const RIO_SPRINT_MULT = 1.6;
+        const RIO_EXHAUST_MULT = 0.82;
+        const VILLAIN_SPRINT_MULT = 1.24;
+        const VILLAIN_EXHAUST_MULT = 0.92;
+        const VILLAIN_DASH_COOLDOWN = 210;
+        const VILLAIN_DASH_DISTANCE = 116;
+        const RIO_DARK_VISION_RADIUS = TILE_SIZE * 3.15;
+        const VILLAIN_DARK_VISION_RADIUS = TILE_SIZE * 6.4;
+        const LIT_VISION_RADIUS = TILE_SIZE * 10.5;
+        const FOOTSTEP_WALK_RADIUS = TILE_SIZE * 8.5;
+        const FOOTSTEP_SPRINT_RADIUS = TILE_SIZE * 13;
 
         // Weapon definitions (Rio pickups)
         const WEAPONS = {
@@ -691,18 +965,191 @@
         let villain = null;
         let password = '0000';
         let hasPassword = false;
+        let floorObjectives = {};
         let surviveTime = 0;
         let lastTime = 0;
         let countdownTime = 3;
         let countdownInterval = null;
         let attackEffects = [];
         let attackAnimations = [];
+        let footstepEffects = [];
 
         const keys = {};
+        let joystickBase = null;
+        let joystickKnob = null;
+        let joystickActive = false, joystickTouchId = null, joystickCenter = { x: 0, y: 0 };
+        const joystickMaxDistance = 35;
 
         function humanEntity() { return role === 'rio' ? rio : villain; }
         function opponentEntity() { return role === 'rio' ? villain : rio; }
         function activeFloor() { return humanEntity().floor; }
+        function showVillainPresence(floor) {
+            return villain && villain.isAlive && villain.floor === floor && (villain.isActive || gameState === 'countdown');
+        }
+
+        function resetInputState() {
+            for (const k in keys) keys[k] = false;
+            if (joystickKnob) {
+                joystickKnob.style.transform = 'translate(-50%, -50%)';
+            }
+            joystickActive = false;
+            joystickTouchId = null;
+        }
+
+        function syncRoleClass() {
+            document.body.classList.toggle('role-rio', role === 'rio');
+            document.body.classList.toggle('role-villain', role === 'villain');
+        }
+
+        function objectiveForFloor(floor) {
+            return FLOOR_OBJECTIVES[floor] || null;
+        }
+
+        function isFloorObjectiveDone(floor) {
+            if (floor === 1) return hasPassword;
+            return !!floorObjectives[floor];
+        }
+
+        function completedObjectiveCount() {
+            let total = 0;
+            for (let f = 1; f <= 4; f++) if (isFloorObjectiveDone(f)) total++;
+            return total;
+        }
+
+        function completeFloorObjective(floor) {
+            const obj = objectiveForFloor(floor);
+            if (!obj || isFloorObjectiveDone(floor)) return;
+            if (floor === 1) hasPassword = true;
+            else floorObjectives[floor] = true;
+            const suffix = floor === 1 ? ': ' + password : '';
+            showToast(obj.doneText + suffix, floor === 1 ? '#59d98e' : '#f6c453');
+        }
+
+        function roomIdAtTile(tx, ty) {
+            const upper = ty >= 1 && ty <= 10;
+            const lower = ty >= 14 && ty <= 23;
+            if (!upper && !lower) return null;
+            for (let i = 0; i < ROOM_RANGES.length; i++) {
+                const [x0, x1] = ROOM_RANGES[i];
+                if (tx >= x0 && tx <= x1) return (upper ? 'upper' : 'lower') + i;
+            }
+            return null;
+        }
+
+        function lightZoneAtTile(tx, ty) {
+            if (ty >= 11 && ty <= 13 && tx > 0 && tx < MAP_WIDTH - 1) return 'corridor';
+            return roomIdAtTile(tx, ty);
+        }
+
+        function lightZoneAtPosition(ent) {
+            return lightZoneAtTile(Math.floor(ent.x / TILE_SIZE), Math.floor(ent.y / TILE_SIZE));
+        }
+
+        function createFloorLights(lightSwitches) {
+            const lights = { corridor: false };
+            for (const sw of lightSwitches) lights[sw.zone] = false;
+            return lights;
+        }
+
+        function isLightOn(floor, zone) {
+            if (!zone || !floors[floor] || !floors[floor].lights) return false;
+            return !!floors[floor].lights[zone];
+        }
+
+        function isPositionLit(floor, x, y) {
+            return isLightOn(floor, lightZoneAtTile(Math.floor(x / TILE_SIZE), Math.floor(y / TILE_SIZE)));
+        }
+
+        function lightSwitchAt(floor, tx, ty) {
+            const f = floors[floor];
+            if (!f || !f.lightSwitches) return null;
+            return f.lightSwitches.find(sw => sw.x === tx && sw.y === ty) || null;
+        }
+
+        function nearestLightSwitch(ent, maxDistance = TILE_SIZE * 1.15) {
+            const f = floors[ent.floor];
+            if (!f || !f.lightSwitches) return null;
+            let best = null;
+            for (const sw of f.lightSwitches) {
+                const pos = { x: sw.x * TILE_SIZE + 16, y: sw.y * TILE_SIZE + 16 };
+                const d = distance(ent, pos);
+                if (d <= maxDistance && (!best || d < best.distance)) best = { ...sw, distance: d };
+            }
+            return best;
+        }
+
+        function lightSwitchForZone(floor, zone, from) {
+            const f = floors[floor];
+            if (!zone || !f || !f.lightSwitches) return null;
+            let best = null;
+            for (const sw of f.lightSwitches) {
+                if (sw.zone !== zone) continue;
+                const pos = { x: sw.x * TILE_SIZE + 16, y: sw.y * TILE_SIZE + 16 };
+                const d = from ? distance(from, pos) : 0;
+                if (!best || d < best.distance) best = { ...sw, distance: d };
+            }
+            return best;
+        }
+
+        function lightSwitchGoalFor(ent) {
+            const zone = lightZoneAtPosition(ent);
+            const wantsOn = ent === rio;
+            if (!zone || isLightOn(ent.floor, zone) === wantsOn) return null;
+            const sw = lightSwitchForZone(ent.floor, zone, ent);
+            return sw ? { x: sw.x * TILE_SIZE + 16, y: sw.y * TILE_SIZE + 16, switch: sw } : null;
+        }
+
+        function operateLightSwitch(ent) {
+            const tx = Math.floor(ent.x / TILE_SIZE), ty = Math.floor(ent.y / TILE_SIZE);
+            const sw = lightSwitchAt(ent.floor, tx, ty) || nearestLightSwitch(ent);
+            if (!sw) return false;
+            const wantsOn = ent === rio;
+            if (isLightOn(ent.floor, sw.zone) === wantsOn) return false;
+            floors[ent.floor].lights[sw.zone] = wantsOn;
+            if (ent === humanEntity()) {
+                const area = sw.zone === 'corridor' ? '복도' : '교실';
+                showToast(area + ' 불을 ' + (wantsOn ? '켰습니다' : '껐습니다'), wantsOn ? '#fde68a' : '#ff9b9b');
+            }
+            return true;
+        }
+
+        function visionRadiusFor(viewer, target) {
+            const viewerLit = isPositionLit(viewer.floor, viewer.x, viewer.y);
+            const targetLit = isPositionLit(target.floor, target.x, target.y);
+            if (viewerLit || targetLit) return LIT_VISION_RADIUS;
+            return viewer === villain ? VILLAIN_DARK_VISION_RADIUS : RIO_DARK_VISION_RADIUS;
+        }
+
+        function canEntitySee(viewer, target) {
+            if (!viewer || !target || viewer.floor !== target.floor) return false;
+            const map = floors[viewer.floor].map;
+            if (distance(viewer, target) > visionRadiusFor(viewer, target)) return false;
+            return hasLineOfSight(map, viewer, target);
+        }
+
+        function footstepRadiusFor(ent) {
+            return (ent.noiseLevel || 1) > 1.2 ? FOOTSTEP_SPRINT_RADIUS : FOOTSTEP_WALK_RADIUS;
+        }
+
+        function canHearFootsteps(listener, mover) {
+            if (!listener || !mover || listener.floor !== mover.floor || mover.isHiding || mover.noiseTimer <= 0) return false;
+            return distance(listener, mover) <= footstepRadiusFor(mover);
+        }
+
+        function canHumanSeeEntity(ent) {
+            const human = humanEntity();
+            if (!human || !ent || ent.floor !== human.floor) return false;
+            if (ent === human) return true;
+            if (gameState === 'countdown' && ent === villain && role === 'rio') return true;
+            if (ent === rio && rio.isHiding) {
+                const spot = rio.hidingSpot || rio;
+                return role === 'villain' &&
+                    villain.floor === rio.floor &&
+                    distance(villain, spot) <= TILE_SIZE * diffCfg().villainFindRange &&
+                    hasLineOfSight(floors[villain.floor].map, villain, spot);
+            }
+            return canEntitySee(human, ent);
+        }
 
         // ============================================================
         //  Map generation
@@ -728,13 +1175,12 @@
             for (let y = 11; y <= 13; y++)
                 for (let x = 1; x < MAP_WIDTH - 1; x++) map[y][x] = FLOOR;
 
-            // Rooms: upper interior rows 1..9 (sep row 10), lower interior 15..23 (sep row 14)
-            // Room column ranges, partitions at x = 11,22,33
-            const roomRanges = [[1, 10], [12, 21], [23, 32], [34, 42]];
             const isStaffRoom = (idx) => floorNum === 1 && idx === 2; // upper room #2 = 교무실
 
-            for (let r = 0; r < roomRanges.length; r++) {
-                const [x0, x1] = roomRanges[r];
+            // Rooms: upper interior rows 1..9 (sep row 10), lower interior 15..23 (sep row 14)
+            // Room column ranges, partitions at x = 11,22,33
+            for (let r = 0; r < ROOM_RANGES.length; r++) {
+                const [x0, x1] = ROOM_RANGES[r];
                 buildRoom(map, x0, x1, 1, 9, 'upper', floorNum, isStaffRoom(r));
                 buildRoom(map, x0, x1, 15, 23, 'lower', floorNum, false);
             }
@@ -745,8 +1191,9 @@
             if (floorNum === 1) {
                 map[EXIT_POS.y][EXIT_POS.x] = EXIT;
                 map[EXIT_POS.y - 1][EXIT_POS.x] = EXIT; // double-height lobby door
-                map[NOTE_POS.y][NOTE_POS.x] = NOTE;
             }
+            const lightSwitches = placeLightSwitches(map);
+            placeFloorObjective(map, floorNum);
 
             // Items
             const weapons = [];
@@ -770,7 +1217,42 @@
                 }
             }
 
-            return { map, weapons, foods };
+            return { map, weapons, foods, lightSwitches, lights: createFloorLights(lightSwitches) };
+        }
+
+        function placeLightSwitches(map) {
+            const switches = [];
+            const addSwitch = (x, y, zone) => {
+                if (x <= 0 || x >= MAP_WIDTH - 1 || y <= 0 || y >= MAP_HEIGHT - 1) return;
+                if ([WALL, WINDOW, DOOR, STAIRS_DOWN, STAIRS_UP, EXIT].includes(map[y][x])) return;
+                map[y][x] = LIGHT_SWITCH;
+                switches.push({ x, y, zone });
+            };
+
+            addSwitch(3, 12, 'corridor');
+            addSwitch(40, 12, 'corridor');
+
+            for (let r = 0; r < ROOM_RANGES.length; r++) {
+                const [x0] = ROOM_RANGES[r];
+                const doorX = x0 + 1;
+                addSwitch(doorX, 9, 'upper' + r);
+                addSwitch(doorX, 15, 'lower' + r);
+            }
+            return switches;
+        }
+
+        function placeFloorObjective(map, floorNum) {
+            const obj = objectiveForFloor(floorNum);
+            if (!obj) return;
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    const tx = obj.x + dx, ty = obj.y + dy;
+                    if (tx > 0 && tx < MAP_WIDTH - 1 && ty > 0 && ty < MAP_HEIGHT - 1 && ![WALL, WINDOW, DOOR, STAIRS_DOWN, STAIRS_UP, EXIT].includes(map[ty][tx])) {
+                        map[ty][tx] = FLOOR;
+                    }
+                }
+            }
+            map[obj.y][obj.x] = obj.tile;
         }
 
         function buildRoom(map, x0, x1, y0, y1, position, floorNum, isStaff) {
@@ -778,15 +1260,15 @@
             for (let y = y0; y <= y1; y++)
                 for (let x = x0; x <= x1; x++) map[y][x] = FLOOR;
 
-            // Door connecting room to corridor (separator row 10 for upper, 14 for lower)
-            const doorX = Math.floor((x0 + x1) / 2);
+            // Doors connecting room to corridor (separator row 10 for upper, 14 for lower)
+            const doorXs = [x0 + 1, x1 - 1].filter((x, idx, arr) => x > x0 && x < x1 && arr.indexOf(x) === idx);
             const sepY = position === 'upper' ? 10 : 14;
-            map[sepY][doorX] = DOOR;
+            for (const doorX of doorXs) map[sepY][doorX] = DOOR;
 
             if (isStaff) {
                 // Staff room: blackboard + a couple staff desks along sides, keep center open for note
                 for (let x = x0 + 1; x <= x1 - 1; x += 2) {
-                    if (map[y0][x] === FLOOR && x !== doorX) map[y0][x] = STAFF_DESK;
+                    if (map[y0][x] === FLOOR && !doorXs.includes(x)) map[y0][x] = STAFF_DESK;
                 }
                 map[y1 - 1][x0 + 1] = STAFF_DESK;
                 map[y1 - 1][x1 - 1] = STAFF_DESK;
@@ -803,7 +1285,7 @@
             const dEnd = position === 'upper' ? y1 - 1 : y1 - 1;
             for (let y = dStart; y <= dEnd; y += 2) {
                 for (let x = x0 + 1; x <= x1 - 1; x += 2) {
-                    if (x === doorX) continue;
+                    if (doorXs.includes(x) || doorXs.some(dx => Math.abs(dx - x) <= 1)) continue;
                     if (map[y][x] === FLOOR) map[y][x] = DESK;
                 }
             }
@@ -830,6 +1312,81 @@
             return positions;
         }
 
+        function getPatrolPointNear(map, origin, minTiles = 1, maxTiles = 4) {
+            if (!origin) return null;
+            for (let i = 0; i < 40; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const radius = (minTiles + Math.random() * (maxTiles - minTiles)) * TILE_SIZE;
+                const x = origin.x + Math.cos(angle) * radius;
+                const y = origin.y + Math.sin(angle) * radius;
+                if (isWalkable(map, x, y, 26)) return { x, y };
+            }
+
+            const ox = Math.floor(origin.x / TILE_SIZE);
+            const oy = Math.floor(origin.y / TILE_SIZE);
+            for (let r = minTiles; r <= maxTiles; r++) {
+                for (let dy = -r; dy <= r; dy++) {
+                    for (let dx = -r; dx <= r; dx++) {
+                        if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+                        const x = (ox + dx) * TILE_SIZE + 16;
+                        const y = (oy + dy) * TILE_SIZE + 16;
+                        if (isWalkable(map, x, y, 26)) return { x, y };
+                    }
+                }
+            }
+            return origin;
+        }
+
+        function getCorridorPatrolPoint(map) {
+            for (let i = 0; i < 30; i++) {
+                const x = Math.floor(Math.random() * (MAP_WIDTH - 6)) + 3;
+                const y = 11 + Math.floor(Math.random() * 3);
+                const px = x * TILE_SIZE + 16;
+                const py = y * TILE_SIZE + 16;
+                if (isWalkable(map, px, py, 26)) return { x: px, y: py };
+            }
+            return { x: 22 * TILE_SIZE + 16, y: 12 * TILE_SIZE + 16 };
+        }
+
+        function getRoomPatrolPoint(map, avoid = null) {
+            for (let i = 0; i < 80; i++) {
+                const [x0, x1] = ROOM_RANGES[Math.floor(Math.random() * ROOM_RANGES.length)];
+                const upper = Math.random() < 0.5;
+                const y0 = upper ? 1 : 15;
+                const y1 = upper ? 9 : 23;
+                const x = Math.floor(Math.random() * (x1 - x0 - 1)) + x0 + 1;
+                const y = Math.floor(Math.random() * (y1 - y0 - 1)) + y0 + 1;
+                const px = x * TILE_SIZE + 16;
+                const py = y * TILE_SIZE + 16;
+                if (map[y][x] !== FLOOR || !isWalkable(map, px, py, 26)) continue;
+                if (avoid && distance({ x: px, y: py }, avoid) < TILE_SIZE * 7) continue;
+                return { x: px, y: py };
+            }
+            return null;
+        }
+
+        function getWidePatrolPoint(map, avoid = null) {
+            if (Math.random() < 0.72) {
+                const roomPoint = getRoomPatrolPoint(map, avoid);
+                if (roomPoint) return roomPoint;
+            }
+            for (let i = 0; i < 90; i++) {
+                const useCorridor = i % 3 === 0;
+                const x = useCorridor
+                    ? Math.floor(Math.random() * (MAP_WIDTH - 6)) + 3
+                    : Math.floor(Math.random() * (MAP_WIDTH - 2)) + 1;
+                const y = useCorridor
+                    ? 11 + Math.floor(Math.random() * 3)
+                    : Math.floor(Math.random() * (MAP_HEIGHT - 2)) + 1;
+                const px = x * TILE_SIZE + 16;
+                const py = y * TILE_SIZE + 16;
+                if (map[y][x] !== FLOOR || !isWalkable(map, px, py, 26)) continue;
+                if (avoid && distance({ x: px, y: py }, avoid) < TILE_SIZE * 7) continue;
+                return { x: px, y: py };
+            }
+            return getRoomPatrolPoint(map, avoid) || getCorridorPatrolPoint(map);
+        }
+
         // ============================================================
         //  Entities / movement helpers
         // ============================================================
@@ -842,7 +1399,11 @@
                 isAlive: true, direction: { x: 0, y: 1 },
                 stunTimer: 0, isHiding: false, hidingSpot: null,
                 stairCD: 0, path: null, pathCD: 0, lastKnown: null,
-                wanderTarget: null, hideRegenTimer: 0
+                wanderTarget: null, hideRegenTimer: 0,
+                stamina: RIO_MAX_STAMINA, maxStamina: RIO_MAX_STAMINA,
+                exhaustedTimer: 0, noiseTimer: 0, noiseLevel: 0, stepCD: 0,
+                dashCooldown: 0, dashTimer: 0,
+                aiHideCooldown: 0, aiHideTimer: 0, aiHideTarget: null
             };
         }
 
@@ -883,6 +1444,24 @@
 
         function distance(a, b) { return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2); }
 
+        function emitFootstep(ent, intensity = 1) {
+            if (ent !== rio || ent.isHiding || gameState !== 'playing') return;
+            ent.noiseTimer = Math.max(ent.noiseTimer, intensity > 1.2 ? 38 : 24);
+            ent.noiseLevel = Math.max(ent.noiseLevel || 0, intensity);
+            if (ent.stepCD > 0) return;
+            ent.stepCD = intensity > 1.2 ? 9 : 16;
+            const spread = intensity > 1.2 ? 18 : 11;
+            footstepEffects.push({
+                x: ent.x + (Math.random() - 0.5) * spread,
+                y: ent.y + (Math.random() - 0.5) * spread,
+                floor: ent.floor,
+                timer: 34,
+                maxTimer: 34,
+                intensity
+            });
+            if (footstepEffects.length > 36) footstepEffects.shift();
+        }
+
         function hasLineOfSight(map, from, to) {
             const dx = to.x - from.x, dy = to.y - from.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
@@ -903,6 +1482,36 @@
                         return { x: tx * TILE_SIZE + 16, y: ty * TILE_SIZE + 16 };
                 }
             return null;
+        }
+
+        function findBestHidingSpot(map, ent, threat, maxTiles = 8) {
+            let best = null;
+            const maxDist = maxTiles * TILE_SIZE;
+            for (let y = 1; y < MAP_HEIGHT - 1; y++) {
+                for (let x = 1; x < MAP_WIDTH - 1; x++) {
+                    if (!HIDE_TILES.has(map[y][x])) continue;
+                    const hide = { x: x * TILE_SIZE + 16, y: y * TILE_SIZE + 16 };
+                    const directDist = distance(ent, hide);
+                    if (directDist > maxDist) continue;
+
+                    const approaches = [
+                        { x: x - 1, y }, { x: x + 1, y }, { x, y: y - 1 }, { x, y: y + 1 }
+                    ];
+                    for (const a of approaches) {
+                        if (a.x < 1 || a.x >= MAP_WIDTH - 1 || a.y < 1 || a.y >= MAP_HEIGHT - 1) continue;
+                        const ax = a.x * TILE_SIZE + 16, ay = a.y * TILE_SIZE + 16;
+                        if (!isWalkable(map, ax, ay, ent.size)) continue;
+                        const path = findPath(map, ent.x, ent.y, ax, ay);
+                        const pathCost = path ? path.length : directDist / TILE_SIZE;
+                        const threatDist = threat ? distance(threat, hide) / TILE_SIZE : 0;
+                        const score = pathCost - Math.min(threatDist, 10) * 0.55;
+                        if (!best || score < best.score) {
+                            best = { hide, approach: { x: ax, y: ay }, path, score };
+                        }
+                    }
+                }
+            }
+            return best;
         }
 
         // A* on a given floor map
@@ -963,8 +1572,10 @@
             const mx = (dx / len) * ent.speed * speedMul;
             const my = (dy / len) * ent.speed * speedMul;
             const np = smartMove(map, ent, mx, my);
+            const moved = Math.abs(np.x - ent.x) + Math.abs(np.y - ent.y) > 0.1;
             ent.x = np.x; ent.y = np.y;
             ent.direction = { x: dx / len, y: dy / len };
+            if (moved && ent === rio) emitFootstep(ent, speedMul > 1.05 ? 1.25 : 0.85);
             return true;
         }
 
@@ -975,14 +1586,26 @@
             if (ent.stairCD > 0) { ent.stairCD--; return; }
             const map = floors[ent.floor].map;
             const tile = getTile(map, ent.x, ent.y);
+            operateLightSwitch(ent);
 
-            if (tile === STAIRS_DOWN) { changeFloor(ent, -1); return; }
+            const objective = objectiveForFloor(ent.floor);
+            if (ent === rio && objective && tile === objective.tile && !isFloorObjectiveDone(ent.floor)) {
+                completeFloorObjective(ent.floor);
+            }
+            if (tile === STAIRS_DOWN) {
+                if (ent === rio && !isFloorObjectiveDone(ent.floor)) {
+                    showToast(objectiveForFloor(ent.floor).lockedText, '#f6c453');
+                    ent.x -= ent.direction.x * 24;
+                    ent.y -= ent.direction.y * 24;
+                    ent.path = null;
+                    ent.pathCD = 0;
+                    return;
+                }
+                changeFloor(ent, -1);
+                return;
+            }
             if (tile === STAIRS_UP) { changeFloor(ent, +1); return; }
             if (tile === EXIT && ent === rio) { handleExit(); return; }
-            if (tile === NOTE && ent === rio && !hasPassword) {
-                hasPassword = true;
-                showToast('🔑 비밀번호 획득: ' + password, '#4ade80');
-            }
         }
 
         function changeFloor(ent, dir) {
@@ -1062,29 +1685,169 @@
             }
         }
 
-        function villainAttack() {
+        function villainAttack(manual = false) {
             if (villain.attackCooldown > 0 || !villain.isActive || !villain.isAlive) return;
-            if (rio.floor !== villain.floor || !rio.isAlive || rio.isHiding) return;
-            if (distance(villain, rio) > TILE_SIZE * 1.4) return;
+            const sameFloor = rio.floor === villain.floor;
+            if (sameFloor && rio.isAlive) {
+                const dx = rio.x - villain.x, dy = rio.y - villain.y;
+                const len = Math.sqrt(dx * dx + dy * dy) || 1;
+                villain.direction = { x: dx / len, y: dy / len };
+            }
+            // Villain player searches a hidden AI Rio out of its spot when close
+            // enough with line of sight, then the attack below lands normally.
+            if (role === 'villain' && sameFloor && rio.isAlive && rio.isHiding) {
+                const spot = rio.hidingSpot || rio;
+                const found = distance(villain, spot) <= TILE_SIZE * diffCfg().villainFindRange &&
+                    hasLineOfSight(floors[villain.floor].map, villain, spot);
+                if (found) {
+                    exitRioHiding();
+                    showToast('리오를 찾았다!', '#ff9b9b');
+                }
+            }
+            if (!sameFloor || !rio.isAlive || rio.isHiding) {
+                if (!manual) return;
+                villain.attackCooldown = 28;
+                attackAnimations.push({
+                    kind: 'claw',
+                    x: villain.x,
+                    y: villain.y,
+                    direction: { x: villain.direction.x, y: villain.direction.y },
+                    timer: 14,
+                    maxTimer: 14,
+                    floor: villain.floor
+                });
+                if (!sameFloor) showToast('리오가 다른 층에 있습니다', '#f6c453');
+                else if (rio.isHiding) showToast('리오가 숨어 있습니다', '#f6c453');
+                return;
+            }
+
+            const d = distance(villain, rio);
+            if (d > VILLAIN_ATTACK_RANGE) {
+                if (!manual) return;
+                villain.attackCooldown = 28;
+                attackAnimations.push({
+                    kind: 'claw',
+                    x: villain.x,
+                    y: villain.y,
+                    direction: { x: villain.direction.x, y: villain.direction.y },
+                    timer: 14,
+                    maxTimer: 14,
+                    floor: villain.floor
+                });
+                showToast('조금 더 가까이 붙으세요', '#f6c453');
+                return;
+            }
+            const map = floors[villain.floor].map;
+            if (!hasLineOfSight(map, villain, rio)) {
+                if (!manual) return;
+                villain.attackCooldown = 28;
+                attackAnimations.push({
+                    kind: 'claw',
+                    x: villain.x,
+                    y: villain.y,
+                    direction: { x: villain.direction.x, y: villain.direction.y },
+                    timer: 14,
+                    maxTimer: 14,
+                    floor: villain.floor
+                });
+                showToast('벽 너머로는 공격할 수 없습니다', '#f6c453');
+                return;
+            }
+
             villain.attackCooldown = 28;
+            attackAnimations.push({
+                kind: 'claw',
+                x: villain.x,
+                y: villain.y,
+                direction: { x: villain.direction.x, y: villain.direction.y },
+                timer: 14,
+                maxTimer: 14,
+                floor: villain.floor
+            });
+
             rio.hp -= villain.attackDamage;
             rio.stunTimer = 14;
+            const kx = rio.x - villain.x, ky = rio.y - villain.y, kl = Math.sqrt(kx * kx + ky * ky) || 1;
+            const kp = smartMove(floors[rio.floor].map, rio, (kx / kl) * 14, (ky / kl) * 14);
+            rio.x = kp.x; rio.y = kp.y;
             attackEffects.push({ x: rio.x, y: rio.y - 22, timer: 20, emoji: '💥', text: '-' + villain.attackDamage, floor: rio.floor });
             if (rio.hp <= 0) { rio.isAlive = false; endGame(role === 'villain'); }
+        }
+
+        function villainDash(manual = false, target = null) {
+            if (!villain.isActive || !villain.isAlive) return false;
+            const dashConfig = DIFFICULTY[difficulty] || DIFFICULTY.normal;
+            if (!manual && !dashConfig.aiDash) return false;
+            if (villain.dashCooldown > 0) {
+                if (manual) showToast('돌진 재충전 중입니다', '#f6c453');
+                return false;
+            }
+            const map = floors[villain.floor].map;
+            let dx = villain.direction.x, dy = villain.direction.y;
+            if (target) {
+                dx = target.x - villain.x;
+                dy = target.y - villain.y;
+            }
+            const len = Math.sqrt(dx * dx + dy * dy) || 1;
+            dx /= len; dy /= len;
+            villain.direction = { x: dx, y: dy };
+            const steps = 8;
+            const dashDistance = manual ? VILLAIN_DASH_DISTANCE : dashConfig.aiDashDistance;
+            const step = dashDistance / steps;
+            let moved = false;
+            for (let i = 0; i < steps; i++) {
+                const before = { x: villain.x, y: villain.y };
+                const np = smartMove(map, villain, dx * step, dy * step);
+                villain.x = np.x; villain.y = np.y;
+                if (Math.abs(before.x - villain.x) + Math.abs(before.y - villain.y) > 0.1) moved = true;
+                else break;
+            }
+            villain.dashCooldown = VILLAIN_DASH_COOLDOWN;
+            villain.dashTimer = 16;
+            attackEffects.push({ x: villain.x, y: villain.y - 30, timer: 18, emoji: '↯', text: '돌진', floor: villain.floor });
+            if (rio.floor === villain.floor && rio.isAlive && !rio.isHiding && distance(villain, rio) <= VILLAIN_ATTACK_RANGE) {
+                villainAttack(false);
+            }
+            return moved;
+        }
+
+        function enterRioHiding(spot) {
+            if (!spot || rio.isHiding) return false;
+            rio.preHide = { x: rio.x, y: rio.y };
+            rio.isHiding = true;
+            rio.hidingSpot = spot;
+            rio.aiHideTimer = 0;
+            rio.path = null;
+            rio.aiHideTarget = null;
+            villain.lastKnown = null;
+            villain.wanderTarget = null;
+            villain.path = null;
+            villain.pathCD = 0;
+            return true;
+        }
+
+        function exitRioHiding() {
+            if (!rio.isHiding) return false;
+            if (rio.preHide && isWalkable(floors[rio.floor].map, rio.preHide.x, rio.preHide.y, rio.size)) {
+                rio.x = rio.preHide.x;
+                rio.y = rio.preHide.y;
+            }
+            rio.isHiding = false;
+            rio.hidingSpot = null;
+            rio.preHide = null;
+            rio.aiHideTimer = 0;
+            rio.aiHideCooldown = role === 'villain' ? diffCfg().rioHideCooldown : 220;
+            return true;
         }
 
         function tryHide() {
             if (role !== 'rio') return; // only Rio hides
             if (rio.isHiding) {
-                if (rio.preHide && isWalkable(floors[rio.floor].map, rio.preHide.x, rio.preHide.y, rio.size)) {
-                    rio.x = rio.preHide.x; rio.y = rio.preHide.y;
-                }
-                rio.isHiding = false; rio.hidingSpot = null; rio.preHide = null;
+                exitRioHiding();
             } else {
                 const spot = isNearHidingSpot(floors[rio.floor].map, rio);
                 if (spot) {
-                    rio.preHide = { x: rio.x, y: rio.y };
-                    rio.isHiding = true; rio.hidingSpot = spot;
+                    enterRioHiding(spot);
                 }
             }
         }
@@ -1096,28 +1859,64 @@
             if (!ent.isAlive) return;
             if (ent.stunTimer > 0) { ent.stunTimer--; }
             if (ent.attackCooldown > 0) ent.attackCooldown--;
+            if (ent.exhaustedTimer > 0) ent.exhaustedTimer--;
+            if (ent.noiseTimer > 0) ent.noiseTimer--;
+            if (ent.stepCD > 0) ent.stepCD--;
+            if (ent.noiseLevel > 0) ent.noiseLevel = Math.max(0, ent.noiseLevel - 0.035);
+            if (ent.dashCooldown > 0) ent.dashCooldown--;
 
             if (ent.isHiding) {
                 ent.x = ent.hidingSpot.x; ent.y = ent.hidingSpot.y;
                 ent.hideRegenTimer++;
                 if (ent.hideRegenTimer >= 120) { ent.hideRegenTimer = 0; ent.hp = Math.min(ent.maxHp, ent.hp + 1); }
+                if (ent === rio) ent.stamina = Math.min(ent.maxStamina, ent.stamina + 0.6);
                 return;
             } else ent.hideRegenTimer = 0;
 
-            let dx = 0, dy = 0;
-            if (keys['w'] || keys['arrowup']) dy = -1;
-            if (keys['s'] || keys['arrowdown']) dy = 1;
-            if (keys['a'] || keys['arrowleft']) dx = -1;
-            if (keys['d'] || keys['arrowright']) dx = 1;
+            const up = !!(keys['w'] || keys['arrowup']);
+            const down = !!(keys['s'] || keys['arrowdown']);
+            const left = !!(keys['a'] || keys['arrowleft']);
+            const right = !!(keys['d'] || keys['arrowright']);
+            let dx = (right ? 1 : 0) - (left ? 1 : 0);
+            let dy = (down ? 1 : 0) - (up ? 1 : 0);
+            let speedMul = 1;
+            if (ent === rio) {
+                const wantsSprint = role === 'rio' && !!keys['shift'] && ent.stamina > 0 && ent.exhaustedTimer <= 0 && (dx !== 0 || dy !== 0);
+                if (wantsSprint) {
+                    speedMul = RIO_SPRINT_MULT;
+                    ent.stamina = Math.max(0, ent.stamina - 1.05);
+                    ent.noiseTimer = 36;
+                    if (ent.stamina <= 0) ent.exhaustedTimer = 70;
+                } else {
+                    const regen = ent.exhaustedTimer > 0 ? 0.22 : 0.46;
+                    ent.stamina = Math.min(ent.maxStamina, ent.stamina + regen);
+                    if (ent.exhaustedTimer > 0) speedMul = RIO_EXHAUST_MULT;
+                }
+            } else if (ent === villain && role === 'villain') {
+                const wantsSprint = !!keys['shift'] && ent.stamina > 0 && ent.exhaustedTimer <= 0 && (dx !== 0 || dy !== 0);
+                if (wantsSprint) {
+                    speedMul = VILLAIN_SPRINT_MULT;
+                    ent.stamina = Math.max(0, ent.stamina - 0.78);
+                    if (ent.stamina <= 0) ent.exhaustedTimer = 55;
+                } else {
+                    const regen = ent.exhaustedTimer > 0 ? 0.24 : 0.52;
+                    ent.stamina = Math.min(ent.maxStamina, ent.stamina + regen);
+                    if (ent.exhaustedTimer > 0) speedMul = VILLAIN_EXHAUST_MULT;
+                }
+            }
 
             if (dx !== 0 || dy !== 0) {
                 const len = Math.sqrt(dx * dx + dy * dy);
                 ent.direction = { x: dx / len, y: dy / len };
                 if (dx !== 0 && dy !== 0) { dx *= 0.707; dy *= 0.707; }
                 const map = floors[ent.floor].map;
-                const nx = ent.x + dx * ent.speed, ny = ent.y + dy * ent.speed;
+                const nx = ent.x + dx * ent.speed * speedMul, ny = ent.y + dy * ent.speed * speedMul;
+                const beforeX = ent.x, beforeY = ent.y;
                 if (isWalkable(map, nx, ent.y, ent.size)) ent.x = nx;
                 if (isWalkable(map, ent.x, ny, ent.size)) ent.y = ny;
+                if (ent === rio && Math.abs(ent.x - beforeX) + Math.abs(ent.y - beforeY) > 0.1) {
+                    emitFootstep(ent, speedMul > 1.05 ? 1.65 : 1);
+                }
             }
 
             autoPickups(ent);
@@ -1130,6 +1929,8 @@
         function updateVillainAI() {
             if (!villain.isActive || !villain.isAlive) return;
             if (villain.attackCooldown > 0) villain.attackCooldown--;
+            if (villain.dashCooldown > 0) villain.dashCooldown--;
+            if (villain.dashTimer > 0) villain.dashTimer--;
             if (villain.stunTimer > 0) { villain.stunTimer--; return; }
             if (villain.pathCD > 0) villain.pathCD--;
 
@@ -1152,22 +1953,73 @@
             }
 
             // Same floor as Rio
-            const canSee = !rio.isHiding && rio.isAlive && hasLineOfSight(map, villain, rio);
+            const canSee = !rio.isHiding && rio.isAlive && canEntitySee(villain, rio);
             if (canSee) villain.lastKnown = { x: rio.x, y: rio.y };
+            if (!rio.isHiding && rio.noiseTimer > 0 && rio.isAlive && canHearFootsteps(villain, rio)) {
+                villain.lastKnown = { x: rio.x, y: rio.y };
+            }
 
             let goal = villain.lastKnown;
-            if (rio.isHiding && (!villain.lastKnown || distance(villain, villain.lastKnown) < 20)) {
-                // lost target: wander
-                if (!villain.wanderTarget || Math.random() < 0.03 || !villain.path) {
-                    const p = getFloorPositions(map, 1)[0];
-                    if (p) { villain.wanderTarget = { x: p.x * TILE_SIZE + 16, y: p.y * TILE_SIZE + 16 }; villain.path = findPath(map, villain.x, villain.y, villain.wanderTarget.x, villain.wanderTarget.y); }
+            if (rio.isHiding) {
+                villain.lastKnown = null;
+                const lightGoal = lightSwitchGoalFor(villain);
+                if (lightGoal) {
+                    if (villain.pathCD === 0 || !villain.path || villain.path.length === 0) {
+                        villain.path = findPath(map, villain.x, villain.y, lightGoal.x, lightGoal.y);
+                        villain.pathCD = 18;
+                    }
+                    followPath(map, villain, (spd / villain.speed) * 0.62);
+                    operateLightSwitch(villain);
+                    return;
                 }
-                followPath(map, villain, (spd / villain.speed) * 0.6);
+                const needsNewPatrol = !villain.wanderTarget ||
+                    distance(villain, villain.wanderTarget) < 18 ||
+                    Math.random() < 0.025 ||
+                    !villain.path ||
+                    villain.path.length === 0;
+                if (needsNewPatrol) {
+                    const avoidHiddenSpot = rio.hidingSpot || { x: rio.x, y: rio.y };
+                    villain.wanderTarget = getWidePatrolPoint(map, avoidHiddenSpot);
+                    if (villain.wanderTarget) {
+                        villain.path = findPath(map, villain.x, villain.y, villain.wanderTarget.x, villain.wanderTarget.y);
+                        villain.pathCD = 18;
+                    }
+                }
+                followPath(map, villain, (spd / villain.speed) * 0.58);
+                operateLightSwitch(villain);
                 return;
             }
-            if (!goal) goal = { x: rio.x, y: rio.y };
+            if (!goal) {
+                const lightGoal = lightSwitchGoalFor(villain);
+                if (lightGoal) {
+                    if (villain.pathCD === 0 || !villain.path || villain.path.length === 0) {
+                        villain.path = findPath(map, villain.x, villain.y, lightGoal.x, lightGoal.y);
+                        villain.pathCD = 18;
+                    }
+                    followPath(map, villain, (spd / villain.speed) * 0.66);
+                    operateLightSwitch(villain);
+                    return;
+                }
+                const needsNewPatrol = !villain.wanderTarget ||
+                    distance(villain, villain.wanderTarget) < 18 ||
+                    Math.random() < 0.018 ||
+                    !villain.path ||
+                    villain.path.length === 0;
+                if (needsNewPatrol) {
+                    villain.wanderTarget = getWidePatrolPoint(map);
+                    villain.path = findPath(map, villain.x, villain.y, villain.wanderTarget.x, villain.wanderTarget.y);
+                    villain.pathCD = 24;
+                }
+                followPath(map, villain, (spd / villain.speed) * 0.62);
+                operateLightSwitch(villain);
+                return;
+            }
 
             const dist = distance(villain, rio);
+            const dashConfig = DIFFICULTY[difficulty] || DIFFICULTY.normal;
+            if (dashConfig.aiDash && canSee && dist > VILLAIN_ATTACK_RANGE * 1.25 && dist < TILE_SIZE * 7 && villain.dashCooldown <= 0) {
+                villainDash(false, rio);
+            }
             if (canSee && dist < TILE_SIZE * 10) {
                 // direct chase
                 const dx = rio.x - villain.x, dy = rio.y - villain.y, len = Math.sqrt(dx * dx + dy * dy) || 1;
@@ -1181,6 +2033,7 @@
                 }
                 followPath(map, villain, spd / villain.speed);
             }
+            operateLightSwitch(villain);
             villainAttack();
         }
 
@@ -1192,23 +2045,76 @@
             if (rio.attackCooldown > 0) rio.attackCooldown--;
             if (rio.stunTimer > 0) { rio.stunTimer--; return; }
             if (rio.pathCD > 0) rio.pathCD--;
+            if (rio.aiHideCooldown > 0) rio.aiHideCooldown--;
+            if (rio.noiseTimer > 0) rio.noiseTimer--;
+            if (rio.stepCD > 0) rio.stepCD--;
+            if (rio.noiseLevel > 0) rio.noiseLevel = Math.max(0, rio.noiseLevel - 0.035);
 
             const map = floors[rio.floor].map;
             autoPickups(rio);
 
+            const sameFloorThreat = villain.isActive && villain.isAlive && villain.floor === rio.floor;
+            const threatDist = sameFloorThreat ? distance(rio, villain) : Infinity;
+            const threatSeesRio = sameFloorThreat && !rio.isHiding && canEntitySee(villain, rio);
+            const dangerClose = sameFloorThreat && threatDist < TILE_SIZE * 5.2;
+
+            if (rio.isHiding) {
+                rio.aiHideTimer++;
+                rio.stamina = Math.min(rio.maxStamina, rio.stamina + 0.45);
+                const cfg = diffCfg();
+                const safeToLeave = !sameFloorThreat || threatDist > TILE_SIZE * 8 || rio.aiHideTimer > cfg.rioHideMax;
+                if (safeToLeave && rio.aiHideTimer > cfg.rioHideMin) {
+                    exitRioHiding();
+                }
+                return;
+            }
+
             // Determine sub-goal
             let goal;
-            if (rio.floor > 1) goal = { x: DOWN_STAIR.x * TILE_SIZE + 16, y: DOWN_STAIR.y * TILE_SIZE + 16 };
-            else if (!hasPassword) goal = { x: NOTE_POS.x * TILE_SIZE + 16, y: NOTE_POS.y * TILE_SIZE + 16 };
+            const objective = objectiveForFloor(rio.floor);
+            const lightGoal = lightSwitchGoalFor(rio);
+            if (lightGoal && !dangerClose) {
+                goal = lightGoal;
+            } else if (objective && !isFloorObjectiveDone(rio.floor)) {
+                goal = { x: objective.x * TILE_SIZE + 16, y: objective.y * TILE_SIZE + 16 };
+            } else if (rio.floor > 1) goal = { x: DOWN_STAIR.x * TILE_SIZE + 16, y: DOWN_STAIR.y * TILE_SIZE + 16 };
             else goal = { x: EXIT_POS.x * TILE_SIZE + 16, y: EXIT_POS.y * TILE_SIZE + 16 };
 
             // Flee villain if it is close on same floor
-            const villainClose = villain.isActive && villain.isAlive && villain.floor === rio.floor &&
-                distance(rio, villain) < TILE_SIZE * 4 && hasLineOfSight(map, rio, villain);
+            const villainClose = sameFloorThreat && threatDist < TILE_SIZE * 4.8 && canEntitySee(rio, villain);
 
-            if (villainClose) {
+            const wantsHide = (villainClose || threatSeesRio || dangerClose) && rio.aiHideCooldown <= 0;
+            if (wantsHide && !rio.aiHideTarget && Math.random() >= diffCfg().rioHideChance) {
+                // Sometimes Rio commits to running instead of hiding, which makes
+                // it easier for the villain to catch on lower difficulties.
+                rio.aiHideCooldown = 70;
+            } else if (wantsHide) {
+                const immediateSpot = isNearHidingSpot(map, rio);
+                if (immediateSpot && threatDist > TILE_SIZE * 1.35) {
+                    enterRioHiding(immediateSpot);
+                    return;
+                }
+                if (!rio.aiHideTarget || !rio.aiHideTarget.hide || distance(rio, rio.aiHideTarget.approach) < 12) {
+                    rio.aiHideTarget = findBestHidingSpot(map, rio, villain, 9);
+                }
+                if (rio.aiHideTarget) {
+                    if (distance(rio, rio.aiHideTarget.approach) < 18) {
+                        enterRioHiding(rio.aiHideTarget.hide);
+                        return;
+                    }
+                    if (rio.pathCD === 0 || !rio.path || rio.path.length === 0) {
+                        rio.path = findPath(map, rio.x, rio.y, rio.aiHideTarget.approach.x, rio.aiHideTarget.approach.y);
+                        rio.pathCD = 12;
+                    }
+                    followPath(map, rio, 1.18);
+                    checkFloorTransition(rio);
+                    return;
+                }
+            }
+
+            if (villainClose || (dangerClose && threatSeesRio)) {
                 // If armed, occasionally fight back; otherwise flee
-                if (rio.weapon && distance(rio, villain) < WEAPONS[rio.weapon].range && Math.random() < 0.5) {
+                if (rio.weapon && threatDist < WEAPONS[rio.weapon].range && rio.hp > 45 && Math.random() < 0.38) {
                     const dx = villain.x - rio.x, dy = villain.y - rio.y, l = Math.sqrt(dx * dx + dy * dy) || 1;
                     rio.direction = { x: dx / l, y: dy / l };
                     rioAttack();
@@ -1221,15 +2127,19 @@
                     let vy = (fy / fl) * 0.65 + (gy / gl) * 0.35;
                     const vl = Math.sqrt(vx * vx + vy * vy) || 1;
                     const np = smartMove(map, rio, (vx / vl) * rio.speed * 1.1, (vy / vl) * rio.speed * 1.1);
+                    const moved = Math.abs(np.x - rio.x) + Math.abs(np.y - rio.y) > 0.1;
                     rio.x = np.x; rio.y = np.y;
                     rio.direction = { x: vx / vl, y: vy / vl };
+                    if (moved) emitFootstep(rio, 1.25);
                 }
                 rio.path = null;
+                rio.aiHideTarget = null;
                 checkFloorTransition(rio);
                 return;
             }
 
             // Navigate toward goal
+            rio.aiHideTarget = null;
             if (rio.pathCD === 0 || !rio.path || rio.path.length === 0) {
                 rio.path = findPath(map, rio.x, rio.y, goal.x, goal.y);
                 rio.pathCD = 22;
@@ -1243,6 +2153,7 @@
         // ============================================================
         function updateEffects() {
             attackEffects = attackEffects.filter(e => { e.timer--; return e.timer > 0; });
+            footstepEffects = footstepEffects.filter(e => { e.timer--; return e.timer > 0; });
             attackAnimations = attackAnimations.filter(a => {
                 a.timer--; a.angle = -45 + 90 * (1 - a.timer / a.maxTimer); return a.timer > 0;
             });
@@ -1265,28 +2176,37 @@
                 for (let x = 0; x < MAP_WIDTH; x++) {
                     const tile = map[y][x];
                     const px = x * TILE_SIZE, py = y * TILE_SIZE;
-                    ctx.fillStyle = '#d4c4a8';
-                    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-                    ctx.strokeStyle = '#c4b498';
-                    ctx.strokeRect(px, py, TILE_SIZE, TILE_SIZE);
-                    drawTile(tile, px, py);
+                    drawFloorBase(px, py, x, y, af, tile);
+                    drawTile(tile, px, py, x, y, af);
                 }
             }
+            drawFloorSignage(af);
+            drawZoneLightLayer(af);
 
             // items
             for (const w of floors[af].weapons) {
                 if (!w.isPickedUp) {
-                    ctx.shadowColor = '#ffff00'; ctx.shadowBlur = 10;
+                    drawPickupGlow(w.x, w.y, '#f6c453');
                     const img = weaponImages[w.type];
-                    if (img.complete) ctx.drawImage(img, w.x - 18, w.y - 18, 36, 36);
-                    ctx.shadowBlur = 0;
+                    ctx.save();
+                    ctx.shadowColor = '#f6c453';
+                    ctx.shadowBlur = 14;
+                    if (img.complete) ctx.drawImage(img, w.x - 18, w.y - 19, 38, 38);
+                    ctx.restore();
                 }
             }
-            ctx.font = '24px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.font = '22px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             for (const food of floors[af].foods) {
                 if (!food.isPickedUp) {
-                    ctx.shadowColor = '#00ff00'; ctx.shadowBlur = 8;
-                    ctx.fillText(food.type, food.x, food.y); ctx.shadowBlur = 0;
+                    drawPickupGlow(food.x, food.y, '#59d98e');
+                    ctx.save();
+                    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                    roundedRect(food.x - 15, food.y - 15, 30, 30, 15);
+                    ctx.fill();
+                    ctx.shadowColor = '#59d98e';
+                    ctx.shadowBlur = 10;
+                    ctx.fillText(food.type, food.x, food.y + 1);
+                    ctx.restore();
                 }
             }
 
@@ -1294,15 +2214,22 @@
             if (role === 'rio' && rio.floor === af && !rio.isHiding && rio.isAlive) {
                 const spot = isNearHidingSpot(map, rio);
                 if (spot) {
-                    ctx.strokeStyle = 'rgba(255,255,0,0.5)'; ctx.lineWidth = 3; ctx.setLineDash([5, 5]);
-                    ctx.strokeRect(Math.floor(spot.x / TILE_SIZE) * TILE_SIZE, Math.floor(spot.y / TILE_SIZE) * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                    const hx = Math.floor(spot.x / TILE_SIZE) * TILE_SIZE;
+                    const hy = Math.floor(spot.y / TILE_SIZE) * TILE_SIZE;
+                    ctx.fillStyle = 'rgba(246, 196, 83, 0.08)';
+                    roundedRect(hx + 2, hy + 2, TILE_SIZE - 4, TILE_SIZE - 4, 6);
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(246,196,83,0.72)'; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
+                    roundedRect(hx + 3, hy + 3, TILE_SIZE - 6, TILE_SIZE - 6, 6);
+                    ctx.stroke();
                     ctx.setLineDash([]); ctx.lineWidth = 1;
                 }
             }
 
             // entities on this floor
-            if (rio.floor === af) drawRio();
-            if (villain.floor === af && villain.isActive) drawVillain();
+            if (role === 'villain' && villain.floor === af && villain.isActive && villain.isAlive) drawVillainRange();
+            if (rio.floor === af && canHumanSeeEntity(rio)) drawRio();
+            if (showVillainPresence(af) && canHumanSeeEntity(villain)) drawVillain();
 
             // effects on this floor
             ctx.font = '24px Arial';
@@ -1320,107 +2247,607 @@
             }
             for (const a of attackAnimations) {
                 if (a.floor !== af) continue;
-                ctx.save();
-                ctx.translate(a.x + a.offsetX, a.y + a.offsetY);
-                ctx.rotate(a.angle * Math.PI / 180);
-                ctx.globalAlpha = a.timer / a.maxTimer;
-                if (a.image && a.image.complete) ctx.drawImage(a.image, -15, -15, 30, 30);
-                ctx.restore();
+                if (a.kind === 'claw') {
+                    drawClawAttack(a);
+                } else {
+                    ctx.save();
+                    ctx.translate(a.x + a.offsetX, a.y + a.offsetY);
+                    ctx.rotate(a.angle * Math.PI / 180);
+                    ctx.globalAlpha = a.timer / a.maxTimer;
+                    if (a.image && a.image.complete) ctx.drawImage(a.image, -15, -15, 30, 30);
+                    ctx.restore();
+                }
             }
             ctx.globalAlpha = 1;
 
             // off-screen villain arrow (Rio view, same floor)
-            if (role === 'rio' && villain.isActive && villain.isAlive && villain.floor === af) {
+            if (role === 'rio' && villain.isActive && villain.isAlive && villain.floor === af && canHumanSeeEntity(villain)) {
                 drawOffscreenArrow(villain, camX, camY);
             }
 
             ctx.restore();
+            drawLightingOverlay(camX, camY, af);
+            drawFootstepEffects(camX, camY, af);
+            drawHiddenVillainFace(camX, camY, af);
         }
 
-        function drawTile(tile, px, py) {
-            switch (tile) {
-                case WALL:
-                    ctx.fillStyle = '#5d4e37'; ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-                    ctx.fillStyle = '#4d3e27'; ctx.fillRect(px + 3, py + 3, TILE_SIZE - 6, TILE_SIZE - 6); break;
-                case DESK:
-                    ctx.fillStyle = '#8b7355'; ctx.fillRect(px + 5, py + 5, TILE_SIZE - 10, TILE_SIZE - 10);
-                    ctx.fillStyle = '#6b5335'; ctx.fillRect(px + 8, py + 8, TILE_SIZE - 16, TILE_SIZE - 16); break;
-                case STAFF_DESK:
-                    ctx.fillStyle = '#7a5a3a'; ctx.fillRect(px + 3, py + 6, TILE_SIZE - 6, TILE_SIZE - 12);
-                    ctx.fillStyle = '#aaa'; ctx.fillRect(px + 6, py + 9, 8, 6); break;
-                case LOCKER:
-                    ctx.fillStyle = '#4a6fa5'; ctx.fillRect(px + 2, py + 2, TILE_SIZE - 4, TILE_SIZE - 4);
-                    ctx.fillStyle = '#3a5f95';
-                    ctx.fillRect(px + 5, py + 5, (TILE_SIZE - 10) / 2 - 2, TILE_SIZE - 10);
-                    ctx.fillRect(px + TILE_SIZE / 2 + 2, py + 5, (TILE_SIZE - 10) / 2 - 2, TILE_SIZE - 10); break;
-                case DOOR:
-                    ctx.fillStyle = '#c4a574'; ctx.fillRect(px + 3, py, TILE_SIZE - 6, TILE_SIZE);
-                    ctx.fillStyle = '#b49564'; ctx.fillRect(px + TILE_SIZE - 12, py + TILE_SIZE / 2 - 3, 4, 6); break;
-                case BLACKBOARD:
-                    ctx.fillStyle = '#2d5a3d'; ctx.fillRect(px + 2, py + 5, TILE_SIZE - 4, TILE_SIZE - 10);
-                    ctx.strokeStyle = '#8b7355'; ctx.lineWidth = 3;
-                    ctx.strokeRect(px + 2, py + 5, TILE_SIZE - 4, TILE_SIZE - 10); ctx.lineWidth = 1; break;
-                case TOILET:
-                    ctx.fillStyle = '#e8e8e8'; ctx.fillRect(px + 6, py + 5, TILE_SIZE - 12, TILE_SIZE - 8); break;
-                case PLANT:
-                    ctx.fillStyle = '#8b4513'; ctx.fillRect(px + 10, py + 19, 12, 11);
-                    ctx.fillStyle = '#228b22'; ctx.beginPath(); ctx.arc(px + 16, py + 13, 11, 0, Math.PI * 2); ctx.fill(); break;
-                case WINDOW:
-                    ctx.fillStyle = '#5d4e37'; ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-                    ctx.fillStyle = '#2a3a4a'; ctx.fillRect(px + 3, py + 3, TILE_SIZE - 6, TILE_SIZE - 6);
-                    ctx.fillStyle = '#4d3e27'; ctx.fillRect(px + TILE_SIZE / 2 - 1, py, 2, TILE_SIZE); break;
-                case STAIRS_DOWN:
-                    drawStairs(px, py, '#444', '⬇'); break;
-                case STAIRS_UP:
-                    drawStairs(px, py, '#445', '⬆'); break;
-                case EXIT:
-                    ctx.fillStyle = hasPassword ? '#1a5a2a' : '#5a3a1a';
-                    ctx.fillRect(px + 2, py, TILE_SIZE - 4, TILE_SIZE);
-                    ctx.font = '20px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                    ctx.fillText(hasPassword ? '🟢' : '🚪', px + 16, py + 16);
-                    ctx.font = '24px Arial'; break;
-                case NOTE:
-                    ctx.fillStyle = '#d4c4a8'; ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-                    ctx.font = '22px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                    ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 12;
-                    ctx.fillText('📋', px + 16, py + 16); ctx.shadowBlur = 0; ctx.font = '24px Arial'; break;
+        // In Rio's view, a villain that is on this floor but not clearly seen
+        // shows only its glowing red eyes/nose/mouth in the dark. Drawn after the
+        // lighting overlay so the features pierce the darkness. No range or line
+        // of sight gate: as long as it is on screen, the face is always shown so
+        // Rio can track the villain even from far away.
+        function drawHiddenVillainFace(camX, camY, af) {
+            if (role !== 'rio') return;
+            if (!showVillainPresence(af) || !villain.isAlive || villain.floor !== af) return;
+            if (canHumanSeeEntity(villain)) return; // already fully drawn
+            const sx = villain.x - camX, sy = villain.y - camY;
+            if (sx < -40 || sx > canvas.width + 40 || sy < -40 || sy > canvas.height + 40) return;
+            const closeness = Math.max(0, 1 - distance(rio, villain) / (TILE_SIZE * 18));
+            drawVillainFaceFeatures(sx, sy, 0.45 + closeness * 0.45);
+        }
+
+        function drawVillainFaceFeatures(x, y, alpha) {
+            // Match drawVillainAvatar's face exactly: two rectangular eyes and a
+            // straight-line mouth (the character has no separate nose).
+            const enraged = villain.hp < villain.maxHp * 0.4;
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+            ctx.fillStyle = enraged ? '#fff1f1' : '#ff4949';
+            ctx.shadowColor = '#ef4444';
+            ctx.shadowBlur = enraged ? 16 : 10;
+            ctx.fillRect(x - 8, y - 10, 5, 3);
+            ctx.fillRect(x + 3, y - 10, 5, 3);
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x - 4, y + 1); ctx.lineTo(x + 4, y + 3);
+            ctx.stroke();
+            ctx.lineWidth = 1;
+            ctx.restore();
+        }
+
+        function tileNoise(x, y, salt = 0) {
+            const v = Math.sin((x + 1) * 127.1 + (y + 1) * 311.7 + (salt + 1) * 74.7) * 43758.5453;
+            return v - Math.floor(v);
+        }
+
+        function roundedRect(x, y, w, h, r) {
+            const rr = Math.min(r, w / 2, h / 2);
+            ctx.beginPath();
+            ctx.moveTo(x + rr, y);
+            ctx.lineTo(x + w - rr, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+            ctx.lineTo(x + w, y + h - rr);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+            ctx.lineTo(x + rr, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+            ctx.lineTo(x, y + rr);
+            ctx.quadraticCurveTo(x, y, x + rr, y);
+        }
+
+        function drawFloorBase(px, py, tx, ty, floorNum, tile) {
+            const corridor = ty >= 11 && ty <= 13;
+            const n = tileNoise(tx, ty, floorNum);
+            const base = corridor
+                ? (n > 0.5 ? '#252b35' : '#202630')
+                : (n > 0.5 ? '#2e2a2a' : '#29272b');
+            ctx.fillStyle = base;
+            ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+            ctx.strokeStyle = corridor ? 'rgba(145,158,181,0.18)' : 'rgba(201,177,126,0.13)';
+            ctx.strokeRect(px + 0.5, py + 0.5, TILE_SIZE - 1, TILE_SIZE - 1);
+
+            if (tile === FLOOR && corridor && tx % 6 === 0) {
+                ctx.fillStyle = 'rgba(246,196,83,0.08)';
+                ctx.fillRect(px, py + 13, TILE_SIZE, 4);
+            }
+            if (tile === FLOOR && n > 0.88) {
+                ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+                ctx.beginPath();
+                ctx.moveTo(px + 8, py + 9);
+                ctx.lineTo(px + 16 + n * 8, py + 17);
+                ctx.lineTo(px + 22, py + 24);
+                ctx.stroke();
             }
         }
 
-        function drawStairs(px, py, color, arrow) {
-            ctx.fillStyle = color; ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-            ctx.fillStyle = '#666';
-            for (let i = 0; i < 4; i++) ctx.fillRect(px + 2, py + 4 + i * 7, TILE_SIZE - 4, 4);
-            ctx.font = '16px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#fff'; ctx.fillText(arrow, px + 16, py + 16); ctx.font = '24px Arial';
+        function drawZoneLightLayer(floorNum) {
+            ctx.save();
+            for (let y = 1; y < MAP_HEIGHT - 1; y++) {
+                for (let x = 1; x < MAP_WIDTH - 1; x++) {
+                    const zone = lightZoneAtTile(x, y);
+                    if (!zone) continue;
+                    const px = x * TILE_SIZE, py = y * TILE_SIZE;
+                    if (isLightOn(floorNum, zone)) {
+                        ctx.fillStyle = zone === 'corridor' ? 'rgba(253,224,128,0.12)' : 'rgba(253,224,128,0.18)';
+                        ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    }
+                }
+            }
+
+            for (const sw of floors[floorNum].lightSwitches || []) {
+                if (!isLightOn(floorNum, sw.zone)) continue;
+                const cx = sw.x * TILE_SIZE + 16, cy = sw.y * TILE_SIZE + 16;
+                const radius = sw.zone === 'corridor' ? 235 : 190;
+                const g = ctx.createRadialGradient(cx, cy, 8, cx, cy, radius);
+                g.addColorStop(0, 'rgba(253,224,128,0.3)');
+                g.addColorStop(0.45, 'rgba(253,224,128,0.14)');
+                g.addColorStop(1, 'rgba(253,224,128,0)');
+                ctx.fillStyle = g;
+                ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+            }
+            ctx.restore();
+        }
+
+        function drawFloorSignage(floorNum) {
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 15px Segoe UI, sans-serif';
+            const y = 12 * TILE_SIZE + 16;
+            const signs = [
+                { x: 7 * TILE_SIZE + 16, text: floorNum + 'F' },
+                { x: 20 * TILE_SIZE + 16, text: 'CLASS' },
+                { x: 35 * TILE_SIZE + 16, text: floorNum === 1 ? 'LOBBY' : 'STAIR' }
+            ];
+            for (const s of signs) {
+                ctx.fillStyle = 'rgba(6,9,14,0.58)';
+                roundedRect(s.x - 34, y - 12, 68, 24, 5);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(246,196,83,0.26)';
+                ctx.stroke();
+                ctx.fillStyle = '#d7dfec';
+                ctx.fillText(s.text, s.x, y + 1);
+            }
+            if (floorNum === 1) {
+                ctx.font = 'bold 13px Segoe UI, sans-serif';
+                ctx.fillStyle = 'rgba(6,9,14,0.7)';
+                roundedRect(NOTE_POS.x * TILE_SIZE - 28, NOTE_POS.y * TILE_SIZE - 15, 88, 24, 5);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(103,232,249,0.28)';
+                ctx.stroke();
+                ctx.fillStyle = '#c8fbff';
+                ctx.fillText('교무실', NOTE_POS.x * TILE_SIZE + 16, NOTE_POS.y * TILE_SIZE - 3);
+            }
+            ctx.restore();
+        }
+
+        function drawPickupGlow(x, y, color) {
+            const pulse = 0.5 + Math.sin(Date.now() / 260 + x * 0.03 + y * 0.02) * 0.5;
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.globalAlpha = 0.45 + pulse * 0.25;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.ellipse(x, y + 13, 18 + pulse * 3, 6, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = 0.18;
+            const g = ctx.createRadialGradient(x, y, 2, x, y, 30);
+            g.addColorStop(0, color);
+            g.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(x, y, 30, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawTile(tile, px, py, tx, ty, floorNum) {
+            switch (tile) {
+                case WALL:
+                    ctx.fillStyle = '#39414b'; ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    ctx.fillStyle = tileNoise(tx, ty, floorNum) > 0.5 ? '#2b323d' : '#303844';
+                    ctx.fillRect(px + 2, py + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+                    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+                    ctx.beginPath();
+                    ctx.moveTo(px + 2, py + 12); ctx.lineTo(px + TILE_SIZE - 2, py + 12);
+                    ctx.moveTo(px + 2, py + 22); ctx.lineTo(px + TILE_SIZE - 2, py + 22);
+                    ctx.moveTo(px + 13, py + 2); ctx.lineTo(px + 13, py + 12);
+                    ctx.moveTo(px + 22, py + 12); ctx.lineTo(px + 22, py + 22);
+                    ctx.stroke();
+                    break;
+                case DESK:
+                    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+                    roundedRect(px + 6, py + 10, TILE_SIZE - 10, TILE_SIZE - 8, 5); ctx.fill();
+                    ctx.fillStyle = '#9b6f42';
+                    roundedRect(px + 5, py + 5, TILE_SIZE - 10, TILE_SIZE - 13, 5); ctx.fill();
+                    ctx.fillStyle = '#c29056';
+                    roundedRect(px + 7, py + 6, TILE_SIZE - 14, 9, 4); ctx.fill();
+                    ctx.fillStyle = '#62452d';
+                    ctx.fillRect(px + 8, py + 21, 4, 7); ctx.fillRect(px + 20, py + 21, 4, 7);
+                    break;
+                case STAFF_DESK:
+                    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                    roundedRect(px + 4, py + 9, TILE_SIZE - 6, TILE_SIZE - 10, 5); ctx.fill();
+                    ctx.fillStyle = '#7f5637';
+                    roundedRect(px + 3, py + 6, TILE_SIZE - 6, TILE_SIZE - 12, 5); ctx.fill();
+                    ctx.fillStyle = '#ded6c8'; ctx.fillRect(px + 7, py + 9, 9, 6);
+                    ctx.fillStyle = '#35506a'; ctx.fillRect(px + 19, py + 10, 6, 9);
+                    break;
+                case LOCKER:
+                    ctx.fillStyle = 'rgba(0,0,0,0.32)';
+                    roundedRect(px + 4, py + 5, TILE_SIZE - 5, TILE_SIZE - 3, 4); ctx.fill();
+                    ctx.fillStyle = '#456b8d';
+                    roundedRect(px + 3, py + 2, TILE_SIZE - 6, TILE_SIZE - 4, 4); ctx.fill();
+                    ctx.fillStyle = '#2f4d68';
+                    ctx.fillRect(px + 15, py + 4, 2, TILE_SIZE - 8);
+                    ctx.fillStyle = '#93b4c9';
+                    for (let i = 0; i < 3; i++) {
+                        ctx.fillRect(px + 7, py + 8 + i * 4, 5, 1);
+                        ctx.fillRect(px + 20, py + 8 + i * 4, 5, 1);
+                    }
+                    ctx.fillRect(px + 11, py + 19, 2, 4);
+                    ctx.fillRect(px + 24, py + 19, 2, 4);
+                    break;
+                case DOOR:
+                    ctx.fillStyle = '#1b1110'; ctx.fillRect(px + 1, py, TILE_SIZE - 2, TILE_SIZE);
+                    ctx.fillStyle = '#9d6a3d';
+                    roundedRect(px + 5, py + 1, TILE_SIZE - 10, TILE_SIZE - 2, 3); ctx.fill();
+                    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+                    ctx.fillRect(px + 8, py + 5, TILE_SIZE - 16, 7);
+                    ctx.fillStyle = '#f6c453';
+                    ctx.beginPath(); ctx.arc(px + TILE_SIZE - 10, py + TILE_SIZE / 2, 2.5, 0, Math.PI * 2); ctx.fill();
+                    break;
+                case BLACKBOARD:
+                    ctx.fillStyle = '#6e5438';
+                    roundedRect(px + 1, py + 5, TILE_SIZE - 2, TILE_SIZE - 10, 4); ctx.fill();
+                    ctx.fillStyle = '#1f5137';
+                    roundedRect(px + 4, py + 8, TILE_SIZE - 8, TILE_SIZE - 16, 3); ctx.fill();
+                    ctx.strokeStyle = 'rgba(255,255,255,0.32)';
+                    ctx.beginPath();
+                    ctx.moveTo(px + 8, py + 14); ctx.lineTo(px + 15, py + 12); ctx.lineTo(px + 21, py + 15);
+                    ctx.stroke();
+                    break;
+                case TOILET:
+                    ctx.fillStyle = 'rgba(0,0,0,0.26)';
+                    ctx.beginPath(); ctx.ellipse(px + 17, py + 21, 10, 5, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#d7e4e8';
+                    roundedRect(px + 8, py + 6, 16, 12, 5); ctx.fill();
+                    ctx.beginPath(); ctx.ellipse(px + 16, py + 21, 10, 7, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#9bb5bd';
+                    ctx.beginPath(); ctx.ellipse(px + 16, py + 21, 5, 3, 0, 0, Math.PI * 2); ctx.fill();
+                    break;
+                case PLANT:
+                    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+                    ctx.beginPath(); ctx.ellipse(px + 16, py + 27, 10, 4, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#8b4c2d'; roundedRect(px + 10, py + 20, 12, 10, 3); ctx.fill();
+                    ctx.fillStyle = '#2d7d46';
+                    for (let i = 0; i < 5; i++) {
+                        ctx.beginPath();
+                        ctx.ellipse(px + 16 + Math.cos(i) * 5, py + 14 + Math.sin(i * 2) * 3, 4, 10, i, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    ctx.fillStyle = '#65b96f'; ctx.beginPath(); ctx.arc(px + 16, py + 12, 6, 0, Math.PI * 2); ctx.fill();
+                    break;
+                case WINDOW:
+                    ctx.fillStyle = '#303844'; ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    ctx.fillStyle = '#142739'; roundedRect(px + 3, py + 3, TILE_SIZE - 6, TILE_SIZE - 6, 3); ctx.fill();
+                    ctx.fillStyle = 'rgba(103,232,249,0.18)';
+                    ctx.fillRect(px + 5, py + 5, TILE_SIZE - 10, TILE_SIZE - 10);
+                    ctx.strokeStyle = 'rgba(184, 230, 242, 0.38)';
+                    ctx.beginPath();
+                    ctx.moveTo(px + 16, py + 4); ctx.lineTo(px + 16, py + TILE_SIZE - 4);
+                    ctx.moveTo(px + 4, py + 16); ctx.lineTo(px + TILE_SIZE - 4, py + 16);
+                    ctx.stroke();
+                    ctx.fillStyle = 'rgba(255,255,255,0.22)';
+                    ctx.fillRect(px + 7, py + 6, 8, 2);
+                    break;
+                case STAIRS_DOWN:
+                    drawStairs(px, py, '#313849', '⬇', floorNum > 1 && !isFloorObjectiveDone(floorNum)); break;
+                case STAIRS_UP:
+                    drawStairs(px, py, '#273747', '⬆'); break;
+                case EXIT:
+                    ctx.fillStyle = '#141820';
+                    ctx.fillRect(px + 1, py, TILE_SIZE - 2, TILE_SIZE);
+                    ctx.strokeStyle = hasPassword ? '#59d98e' : '#f6c453';
+                    ctx.lineWidth = 2;
+                    roundedRect(px + 5, py + 2, TILE_SIZE - 10, TILE_SIZE - 4, 4);
+                    ctx.stroke();
+                    ctx.fillStyle = hasPassword ? 'rgba(89,217,142,0.28)' : 'rgba(246,196,83,0.18)';
+                    ctx.fill();
+                    ctx.font = 'bold 9px Segoe UI, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(hasPassword ? 'OPEN' : 'LOCK', px + 16, py + 16);
+                    ctx.lineWidth = 1;
+                    break;
+                case NOTE:
+                    ctx.fillStyle = '#29272b'; ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    ctx.save();
+                    ctx.translate(px + 16, py + 16);
+                    ctx.rotate(-0.08);
+                    ctx.shadowColor = '#f6c453'; ctx.shadowBlur = 16;
+                    ctx.fillStyle = '#efe0b9';
+                    roundedRect(-10, -13, 20, 26, 3); ctx.fill();
+                    ctx.shadowBlur = 0;
+                    ctx.strokeStyle = '#8a6f3a'; ctx.stroke();
+                    ctx.fillStyle = '#7b5f31';
+                    ctx.fillRect(-6, -6, 12, 2); ctx.fillRect(-6, -1, 10, 2); ctx.fillRect(-6, 4, 12, 2);
+                    ctx.restore();
+                    break;
+                case POWER_SWITCH:
+                    drawObjectiveTile(px, py, '#67e8f9', 'switch');
+                    break;
+                case LIGHT_SWITCH:
+                    drawLightSwitchTile(px, py, floorNum, tx, ty);
+                    break;
+                case KEY_ITEM:
+                    drawObjectiveTile(px, py, '#f6c453', 'key');
+                    break;
+                case SECURITY_CARD:
+                    drawObjectiveTile(px, py, '#9ff0bd', 'card');
+                    break;
+            }
+        }
+
+        function drawLightSwitchTile(px, py, floorNum, tx, ty) {
+            const sw = lightSwitchAt(floorNum, tx, ty);
+            const on = sw && isLightOn(floorNum, sw.zone);
+            ctx.save();
+            ctx.fillStyle = on ? 'rgba(253,224,128,0.16)' : 'rgba(6,9,14,0.42)';
+            ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+            ctx.shadowColor = on ? '#fde68a' : 'transparent';
+            ctx.shadowBlur = on ? 14 : 0;
+            ctx.fillStyle = on ? '#facc15' : '#475569';
+            roundedRect(px + 10, py + 7, 12, 18, 3);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = on ? '#fff7c2' : '#94a3b8';
+            ctx.lineWidth = 2;
+            roundedRect(px + 8, py + 5, 16, 22, 4);
+            ctx.stroke();
+            ctx.strokeStyle = on ? '#713f12' : '#cbd5e1';
+            ctx.beginPath();
+            if (on) {
+                ctx.moveTo(px + 16, py + 19);
+                ctx.lineTo(px + 20, py + 11);
+            } else {
+                ctx.moveTo(px + 16, py + 12);
+                ctx.lineTo(px + 12, py + 20);
+            }
+            ctx.stroke();
+            ctx.fillStyle = on ? '#fff7c2' : '#64748b';
+            ctx.beginPath();
+            ctx.arc(px + 16, py + 4, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawObjectiveTile(px, py, color, kind) {
+            ctx.save();
+            ctx.fillStyle = '#29272b';
+            ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 16;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            roundedRect(px + 5, py + 5, TILE_SIZE - 10, TILE_SIZE - 10, 5);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            if (kind === 'switch') {
+                ctx.fillStyle = '#0f1720';
+                roundedRect(px + 11, py + 7, 10, 18, 4); ctx.fill();
+                ctx.strokeStyle = '#c8fbff'; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.moveTo(px + 16, py + 20); ctx.lineTo(px + 22, py + 11); ctx.stroke();
+            } else if (kind === 'key') {
+                ctx.strokeStyle = '#ffe7a3'; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.arc(px + 12, py + 15, 5, 0, Math.PI * 2); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(px + 17, py + 15); ctx.lineTo(px + 26, py + 15); ctx.moveTo(px + 22, py + 15); ctx.lineTo(px + 22, py + 20); ctx.stroke();
+            } else {
+                ctx.fillStyle = '#dff9e8';
+                roundedRect(px + 8, py + 10, 16, 12, 3); ctx.fill();
+                ctx.fillStyle = '#1f8f63';
+                ctx.fillRect(px + 11, py + 14, 10, 2);
+            }
+            ctx.restore();
+        }
+
+        function drawStairs(px, py, color, arrow, locked = false) {
+            ctx.fillStyle = color; roundedRect(px + 1, py + 1, TILE_SIZE - 2, TILE_SIZE - 2, 4); ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.16)';
+            for (let i = 0; i < 5; i++) ctx.fillRect(px + 4 + i, py + 5 + i * 5, TILE_SIZE - 8 - i * 2, 3);
+            ctx.font = locked ? 'bold 8px Segoe UI, sans-serif' : 'bold 15px Arial';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillStyle = locked ? '#f6c453' : '#e8eef8';
+            ctx.fillText(locked ? 'LOCK' : arrow, px + 16, py + 17);
+            ctx.font = '24px Arial';
         }
 
         function drawRio() {
-            if (!rio.isAlive) { ctx.font = '26px Arial'; ctx.globalAlpha = 0.3; ctx.fillText('💀', rio.x, rio.y); ctx.globalAlpha = 1; return; }
-            ctx.font = '28px Arial';
-            if (rio.isHiding) {
-                ctx.globalAlpha = 0.4; ctx.fillText(rio.emoji, rio.x, rio.y); ctx.globalAlpha = 1;
-                ctx.font = '12px Arial'; ctx.fillStyle = '#4ade80'; ctx.fillText('🫣 숨는중', rio.x, rio.y - 24); return;
+            if (!rio.isAlive) {
+                ctx.save();
+                ctx.globalAlpha = 0.35;
+                drawGroundShadow(rio.x, rio.y + 12, 18, 6);
+                ctx.font = '26px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('KO', rio.x, rio.y);
+                ctx.restore();
+                return;
             }
-            ctx.fillText(rio.emoji, rio.x, rio.y);
+            ctx.save();
+            if (rio.isHiding) {
+                if (role === 'villain') {
+                    const spot = rio.hidingSpot || rio;
+                    if (villain.floor !== rio.floor || distance(villain, spot) > TILE_SIZE * 1.45) {
+                        ctx.restore();
+                        return;
+                    }
+                    ctx.globalAlpha = 0.7;
+                    drawGroundShadow(spot.x, spot.y + 12, 14, 5, 'rgba(89,217,142,0.18)');
+                    ctx.font = 'bold 18px Segoe UI, sans-serif';
+                    ctx.fillStyle = '#9ff0bd';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('?', spot.x, spot.y - 8);
+                    ctx.restore();
+                    return;
+                }
+                ctx.globalAlpha = 0.38;
+                drawRioAvatar(rio);
+                ctx.globalAlpha = 1;
+                ctx.font = 'bold 12px Segoe UI, sans-serif'; ctx.fillStyle = '#9ff0bd'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('숨는중', rio.x, rio.y - 30);
+                ctx.restore();
+                return;
+            }
+            drawRioAvatar(rio);
             if (rio.weapon) {
                 const img = weaponImages[rio.weapon];
-                if (img && img.complete) ctx.drawImage(img, rio.x + 12, rio.y - 22, 24, 24);
+                if (img && img.complete) {
+                    ctx.save();
+                    const angle = Math.atan2(rio.direction.y, rio.direction.x);
+                    ctx.translate(rio.x + rio.direction.x * 18 + 12, rio.y + rio.direction.y * 12 - 12);
+                    ctx.rotate(angle + Math.PI / 4);
+                    ctx.shadowColor = 'rgba(246,196,83,0.8)';
+                    ctx.shadowBlur = 8;
+                    ctx.drawImage(img, -12, -12, 25, 25);
+                    ctx.restore();
+                }
             }
             if (rio.hp < rio.maxHp) drawHPBar(rio.x, rio.y - 28, rio.hp, rio.maxHp, 40);
+            ctx.restore();
         }
 
         function drawVillain() {
             if (!villain.isAlive) return;
             const enraged = villain.hp < villain.maxHp * 0.4;
-            const shake = enraged ? (Math.random() - 0.5) * 8 : (Math.random() - 0.5) * 3;
-            ctx.fillStyle = 'rgba(255,0,0,0.18)';
-            ctx.beginPath(); ctx.arc(villain.x, villain.y, enraged ? 46 : 34, 0, Math.PI * 2); ctx.fill();
-            ctx.shadowColor = 'red'; ctx.shadowBlur = enraged ? 35 : 20;
-            ctx.font = enraged ? '36px Arial' : '32px Arial';
-            ctx.fillText(villain.emoji, villain.x + shake, villain.y + shake);
-            ctx.shadowBlur = 0;
+            const shake = enraged ? (Math.random() - 0.5) * 3.6 : (Math.random() - 0.5) * 1.1;
+            ctx.save();
+            drawVillainAvatar(villain, shake, enraged);
             if (villain.hp < villain.maxHp) drawHPBar(villain.x, villain.y - 32, villain.hp, villain.maxHp, 48, '#ff4444');
+            ctx.restore();
+        }
+
+        function drawGroundShadow(x, y, w, h, color = 'rgba(0,0,0,0.42)') {
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.ellipse(x, y, w, h, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawRioAvatar(ent) {
+            const bob = Math.sin(Date.now() / 220) * (gameState === 'playing' ? 0.8 : 0);
+            const x = ent.x, y = ent.y + bob;
+            drawGroundShadow(x, y + 17, 17, 6);
+
+            if (ent === humanEntity()) {
+                ctx.strokeStyle = 'rgba(89,217,142,0.56)';
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(x, y + 2, 20, 0, Math.PI * 2); ctx.stroke();
+            }
+
+            ctx.fillStyle = '#233044';
+            roundedRect(x - 10, y + 10, 7, 11, 3); ctx.fill();
+            roundedRect(x + 3, y + 10, 7, 11, 3); ctx.fill();
+            ctx.fillStyle = '#39b77c';
+            roundedRect(x - 13, y - 1, 26, 22, 9); ctx.fill();
+            ctx.fillStyle = '#1f8f63';
+            roundedRect(x - 8, y + 5, 16, 12, 6); ctx.fill();
+            ctx.fillStyle = '#f0bd92';
+            ctx.beginPath(); ctx.arc(x, y - 10, 12, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#2f211e';
+            ctx.beginPath();
+            ctx.moveTo(x - 10, y - 15);
+            ctx.quadraticCurveTo(x - 2, y - 25, x + 11, y - 15);
+            ctx.quadraticCurveTo(x + 4, y - 19, x - 10, y - 15);
+            ctx.fill();
+            ctx.fillStyle = '#0a0c10';
+            roundedRect(x - 9, y - 12, 8, 5, 2); ctx.fill();
+            roundedRect(x + 1, y - 12, 8, 5, 2); ctx.fill();
+            ctx.strokeStyle = '#0a0c10';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(x - 1, y - 10); ctx.lineTo(x + 1, y - 10); ctx.stroke();
+            ctx.strokeStyle = '#7c3f2d';
+            ctx.beginPath(); ctx.arc(x, y - 4, 4, 0.1, Math.PI - 0.1); ctx.stroke();
+            ctx.lineWidth = 1;
+        }
+
+        function drawVillainAvatar(ent, shake, enraged) {
+            const x = ent.x + shake, y = ent.y + shake;
+            const aura = enraged ? 52 : 40;
+            const g = ctx.createRadialGradient(x, y, 4, x, y, aura);
+            g.addColorStop(0, enraged ? 'rgba(239,68,68,0.34)' : 'rgba(239,68,68,0.22)');
+            g.addColorStop(1, 'rgba(239,68,68,0)');
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(x, y, aura, 0, Math.PI * 2); ctx.fill();
+            drawGroundShadow(x, y + 17, 20, 7, 'rgba(0,0,0,0.55)');
+
+            ctx.fillStyle = '#120c12';
+            ctx.beginPath();
+            ctx.moveTo(x, y - 24);
+            ctx.quadraticCurveTo(x - 21, y - 8, x - 15, y + 20);
+            ctx.lineTo(x + 15, y + 20);
+            ctx.quadraticCurveTo(x + 21, y - 8, x, y - 24);
+            ctx.fill();
+            ctx.fillStyle = '#2b1118';
+            ctx.beginPath(); ctx.arc(x, y - 8, 13, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#0b080b';
+            ctx.beginPath();
+            ctx.moveTo(x - 7, y - 19); ctx.lineTo(x - 18, y - 28); ctx.lineTo(x - 12, y - 13);
+            ctx.moveTo(x + 7, y - 19); ctx.lineTo(x + 18, y - 28); ctx.lineTo(x + 12, y - 13);
+            ctx.fill();
+            ctx.fillStyle = enraged ? '#fff1f1' : '#ff4949';
+            ctx.shadowColor = '#ef4444';
+            ctx.shadowBlur = enraged ? 16 : 10;
+            ctx.fillRect(x - 8, y - 10, 5, 3);
+            ctx.fillRect(x + 3, y - 10, 5, 3);
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x - 4, y + 1); ctx.lineTo(x + 4, y + 3);
+            ctx.stroke();
+            ctx.lineWidth = 1;
+        }
+
+        function drawVillainRange() {
+            const targetVisible = rio.floor === villain.floor && rio.isAlive && !rio.isHiding && canHumanSeeEntity(rio);
+            const angle = targetVisible
+                ? Math.atan2(rio.y - villain.y, rio.x - villain.x)
+                : Math.atan2(villain.direction.y, villain.direction.x);
+            const halfArc = VILLAIN_ATTACK_ARC * 0.32;
+            ctx.save();
+            ctx.strokeStyle = 'rgba(239,68,68,0.42)';
+            ctx.fillStyle = 'rgba(239,68,68,0.08)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([8, 8]);
+            ctx.beginPath();
+            ctx.moveTo(villain.x, villain.y);
+            ctx.arc(villain.x, villain.y, VILLAIN_ATTACK_RANGE, angle - halfArc, angle + halfArc);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+        }
+
+        function drawClawAttack(a) {
+            const progress = 1 - a.timer / a.maxTimer;
+            const alpha = a.timer / a.maxTimer;
+            const dir = a.direction || { x: 0, y: 1 };
+            const angle = Math.atan2(dir.y, dir.x);
+            const reach = 26 + progress * 20;
+            ctx.save();
+            ctx.translate(a.x, a.y);
+            ctx.rotate(angle);
+            ctx.globalAlpha = alpha;
+            ctx.shadowColor = '#ef4444';
+            ctx.shadowBlur = 18;
+            ctx.strokeStyle = 'rgba(255, 120, 120, 0.95)';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            for (let i = -1; i <= 1; i++) {
+                ctx.beginPath();
+                ctx.arc(reach * 0.42, i * 7, reach, -VILLAIN_ATTACK_ARC * 0.32, VILLAIN_ATTACK_ARC * 0.32);
+                ctx.stroke();
+            }
+            ctx.globalAlpha = alpha * 0.28;
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.moveTo(10, -25);
+            ctx.quadraticCurveTo(reach + 28, 0, 10, 25);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
         }
 
         function drawOffscreenArrow(target, camX, camY) {
@@ -1434,21 +2861,146 @@
             if (Math.abs(dx) > Math.abs(dy)) { ix = dx > 0 ? maxX : margin; iy = cy + (dy / dx) * (ix - cx); iy = Math.max(margin, Math.min(maxY, iy)); }
             else { iy = dy > 0 ? maxY : margin; ix = cx + (dx / dy) * (iy - cy); ix = Math.max(margin, Math.min(maxX, ix)); }
             ctx.save(); ctx.translate(ix, iy); ctx.rotate(angle);
-            ctx.fillStyle = 'rgba(255,0,0,0.9)';
+            ctx.shadowColor = '#ef4444';
+            ctx.shadowBlur = 12;
+            ctx.fillStyle = 'rgba(239,68,68,0.95)';
             ctx.beginPath(); ctx.moveTo(20, 0); ctx.lineTo(-12, -12); ctx.lineTo(-6, 0); ctx.lineTo(-12, 12); ctx.closePath(); ctx.fill();
             ctx.restore();
             const d = Math.floor(distance(rio, villain) / TILE_SIZE);
-            ctx.font = 'bold 14px Arial'; ctx.fillStyle = '#ff0000'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
+            ctx.font = 'bold 14px Arial'; ctx.fillStyle = '#ffd4d4'; ctx.strokeStyle = '#000'; ctx.lineWidth = 4;
             ctx.strokeText('👹 ' + d + '칸', ix - 25, iy - 20); ctx.fillText('👹 ' + d + '칸', ix - 25, iy - 20);
             ctx.restore();
         }
 
         function drawHPBar(x, y, hp, maxHp, width, color = '#4ade80') {
             const h = 6, r = Math.max(0, hp / maxHp);
-            ctx.fillStyle = '#333'; ctx.fillRect(x - width / 2, y, width, h);
+            ctx.save();
+            ctx.fillStyle = 'rgba(0,0,0,0.62)';
+            roundedRect(x - width / 2 - 1, y - 1, width + 2, h + 2, 4);
+            ctx.fill();
             ctx.fillStyle = r > 0.5 ? color : r > 0.25 ? '#f59e0b' : '#ef4444';
-            ctx.fillRect(x - width / 2, y, width * r, h);
-            ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.strokeRect(x - width / 2, y, width, h);
+            roundedRect(x - width / 2, y, width * r, h, 4);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.72)'; ctx.lineWidth = 1;
+            roundedRect(x - width / 2, y, width, h, 4);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawLightingOverlay(camX, camY, af) {
+            const human = humanEntity();
+            const hx = human.x - camX, hy = human.y - camY;
+            const humanIsVillain = human === villain;
+
+            // Build the darkness on its own layer, then carve the visible holes
+            // into that layer. Compositing it over the world afterwards lets the
+            // carved areas reveal the game instead of the page background.
+            const lctx = lightCtx;
+            lctx.setTransform(1, 0, 0, 1, 0, 0);
+            lctx.globalCompositeOperation = 'source-over';
+            lctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Constant darkness regardless of where the human stands; only lit
+            // zones get carved open below, so a single light brightens just its
+            // own room/corridor instead of the whole screen.
+            lctx.fillStyle = humanIsVillain ? 'rgba(0,0,0,0.78)' : 'rgba(0,0,0,0.9)';
+            lctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const cutCircleMask = (cx, cy, clearRadius, featherRadius, strength = 1) => {
+                lctx.fillStyle = 'rgba(0,0,0,' + strength + ')';
+                lctx.beginPath();
+                lctx.arc(cx, cy, clearRadius, 0, Math.PI * 2);
+                lctx.fill();
+
+                const g = lctx.createRadialGradient(cx, cy, clearRadius, cx, cy, featherRadius);
+                g.addColorStop(0, 'rgba(0,0,0,' + (strength * 0.82) + ')');
+                g.addColorStop(0.72, 'rgba(0,0,0,' + (strength * 0.24) + ')');
+                g.addColorStop(1, 'rgba(0,0,0,0)');
+                lctx.fillStyle = g;
+                lctx.fillRect(cx - featherRadius, cy - featherRadius, featherRadius * 2, featherRadius * 2);
+            };
+
+            lctx.globalCompositeOperation = 'destination-out';
+            for (let y = 1; y < MAP_HEIGHT - 1; y++) {
+                for (let x = 1; x < MAP_WIDTH - 1; x++) {
+                    const zone = lightZoneAtTile(x, y);
+                    if (!zone || !isLightOn(af, zone)) continue;
+                    const px = x * TILE_SIZE - camX;
+                    const py = y * TILE_SIZE - camY;
+                    if (px > canvas.width || py > canvas.height || px + TILE_SIZE < 0 || py + TILE_SIZE < 0) continue;
+                    lctx.fillStyle = zone === 'corridor' ? 'rgba(0,0,0,0.74)' : 'rgba(0,0,0,0.88)';
+                    lctx.fillRect(px, py, TILE_SIZE + 1, TILE_SIZE + 1);
+                }
+            }
+
+            // Personal dark-vision around the human. The lit room itself is already
+            // revealed by the per-tile carve above, so this stays a small local
+            // circle and never balloons to fill the screen.
+            if (humanIsVillain) cutCircleMask(hx, hy, 70, 260, 0.92);
+            else cutCircleMask(hx, hy, 58, 190, 0.92);
+            if (showVillainPresence(af) && canHumanSeeEntity(villain)) {
+                cutCircleMask(villain.x - camX, villain.y - camY, 24, 150, 0.36);
+            }
+            lctx.globalCompositeOperation = 'source-over';
+
+            // Lay the carved darkness over the world, then add coloured glows.
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.drawImage(lightCanvas, 0, 0);
+
+            if (showVillainPresence(af) && canHumanSeeEntity(villain)) {
+                const vx = villain.x - camX, vy = villain.y - camY;
+                const rg = ctx.createRadialGradient(vx, vy, 8, vx, vy, 150);
+                rg.addColorStop(0, 'rgba(239,68,68,0.2)');
+                rg.addColorStop(0.45, 'rgba(239,68,68,0.09)');
+                rg.addColorStop(1, 'rgba(239,68,68,0)');
+                ctx.fillStyle = rg;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            const edge = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            edge.addColorStop(0, 'rgba(0,0,0,0.28)');
+            edge.addColorStop(0.24, 'rgba(0,0,0,0)');
+            edge.addColorStop(0.8, 'rgba(0,0,0,0)');
+            edge.addColorStop(1, 'rgba(0,0,0,0.32)');
+            ctx.fillStyle = edge;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.restore();
+        }
+
+        function drawFootstepEffects(camX, camY, af) {
+            if (!footstepEffects.length) return;
+            const human = humanEntity();
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            for (const e of footstepEffects) {
+                if (e.floor !== af) continue;
+                const source = { x: e.x, y: e.y };
+                const audibleRadius = e.intensity > 1.2 ? FOOTSTEP_SPRINT_RADIUS : FOOTSTEP_WALK_RADIUS;
+                const heardByVillain = role === 'villain' && villain.floor === af && distance(villain, source) <= audibleRadius;
+                const ownNoise = role === 'rio' && human.floor === af && distance(human, source) <= TILE_SIZE * 4.2 && e.intensity > 1.2;
+                if (!heardByVillain && !ownNoise) continue;
+
+                const sx = e.x - camX, sy = e.y - camY;
+                if (sx < -80 || sx > canvas.width + 80 || sy < -80 || sy > canvas.height + 80) continue;
+
+                const life = e.timer / e.maxTimer;
+                const strong = e.intensity > 1.2;
+                const color = heardByVillain ? '239,68,68' : '246,196,83';
+                ctx.globalAlpha = life;
+                ctx.fillStyle = 'rgba(' + color + ',' + (strong ? 0.85 : 0.6) + ')';
+
+                ctx.save();
+                ctx.translate(sx, sy);
+                ctx.rotate((tileNoise(Math.floor(e.x), Math.floor(e.y), e.maxTimer) - 0.5) * 1.2);
+                ctx.beginPath();
+                ctx.ellipse(-5, -3, 3, 7, -0.25, 0, Math.PI * 2);
+                ctx.ellipse(6, 4, 3, 7, -0.25, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+            ctx.globalAlpha = 1;
+            ctx.restore();
         }
 
         function drawMinimap() {
@@ -1456,33 +3008,50 @@
             const map = floors[af].map;
             const sx = minimapCanvas.width / (MAP_WIDTH * TILE_SIZE);
             const sy = minimapCanvas.height / (MAP_HEIGHT * TILE_SIZE);
-            minimapCtx.fillStyle = 'rgba(0,0,0,0.9)';
+            minimapCtx.fillStyle = '#070a0f';
             minimapCtx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
             for (let y = 0; y < MAP_HEIGHT; y++)
                 for (let x = 0; x < MAP_WIDTH; x++) {
                     const t = map[y][x];
                     let c;
-                    if (t === WALL) c = '#5d4e37';
-                    else if (t === WINDOW) c = '#3a5a6a';
-                    else if (t === DESK || t === LOCKER || t === STAFF_DESK) c = '#666';
-                    else if (t === STAIRS_DOWN || t === STAIRS_UP) c = '#88c';
-                    else if (t === EXIT) c = '#4a4';
-                    else if (t === NOTE) c = '#fd0';
-                    else c = '#4a4a5a';
+                    if (t === WALL) c = '#303844';
+                    else if (t === WINDOW) c = '#1e5c70';
+                    else if (t === DESK || t === LOCKER || t === STAFF_DESK) c = '#8b6b45';
+                    else if (t === STAIRS_DOWN || t === STAIRS_UP) c = '#6d7bf6';
+                    else if (t === EXIT) c = hasPassword ? '#59d98e' : '#b98437';
+                    else if (t === NOTE) c = '#f6c453';
+                    else if (t === POWER_SWITCH) c = '#67e8f9';
+                    else if (t === LIGHT_SWITCH) {
+                        const sw = lightSwitchAt(af, x, y);
+                        c = sw && isLightOn(af, sw.zone) ? '#fde68a' : '#64748b';
+                    }
+                    else if (t === KEY_ITEM) c = '#f6c453';
+                    else if (t === SECURITY_CARD) c = '#9ff0bd';
+                    else if (t === DOOR) c = '#9d6a3d';
+                    else c = y >= 11 && y <= 13 ? '#262d39' : '#2b282d';
                     minimapCtx.fillStyle = c;
                     minimapCtx.fillRect(x * TILE_SIZE * sx, y * TILE_SIZE * sy, TILE_SIZE * sx + 0.5, TILE_SIZE * sy + 0.5);
                 }
             // entities on this floor
-            if (villain.floor === af && villain.isActive && villain.isAlive) {
-                minimapCtx.fillStyle = 'rgba(255,0,0,0.9)';
+            if (showVillainPresence(af) && canHumanSeeEntity(villain)) {
+                minimapCtx.fillStyle = 'rgba(239,68,68,0.28)';
+                minimapCtx.beginPath(); minimapCtx.arc(villain.x * sx, villain.y * sy, 8, 0, Math.PI * 2); minimapCtx.fill();
+                minimapCtx.fillStyle = '#ef4444';
                 minimapCtx.beginPath(); minimapCtx.arc(villain.x * sx, villain.y * sy, 4, 0, Math.PI * 2); minimapCtx.fill();
             }
-            if (rio.floor === af && rio.isAlive) {
-                minimapCtx.fillStyle = '#4ade80';
+            if (rio.floor === af && rio.isAlive && canHumanSeeEntity(rio) && !(role === 'villain' && rio.isHiding)) {
+                minimapCtx.fillStyle = '#59d98e';
                 minimapCtx.beginPath(); minimapCtx.arc(rio.x * sx, rio.y * sy, 4, 0, Math.PI * 2); minimapCtx.fill();
-                minimapCtx.strokeStyle = '#fff'; minimapCtx.lineWidth = 1; minimapCtx.stroke();
+                minimapCtx.strokeStyle = '#f8fafc'; minimapCtx.lineWidth = 1.5; minimapCtx.stroke();
+            } else if (role === 'villain' && rio.floor === af && rio.isAlive && rio.isHiding && canHumanSeeEntity(rio)) {
+                const spot = rio.hidingSpot || rio;
+                minimapCtx.fillStyle = '#9ff0bd';
+                minimapCtx.font = 'bold 9px Segoe UI, sans-serif';
+                minimapCtx.textAlign = 'center';
+                minimapCtx.textBaseline = 'middle';
+                minimapCtx.fillText('?', spot.x * sx, spot.y * sy);
             }
-            minimapCtx.strokeStyle = '#6a6a8a'; minimapCtx.lineWidth = 2;
+            minimapCtx.strokeStyle = 'rgba(148,163,184,0.72)'; minimapCtx.lineWidth = 2;
             minimapCtx.strokeRect(0, 0, minimapCanvas.width, minimapCanvas.height);
         }
 
@@ -1490,48 +3059,93 @@
         //  UI
         // ============================================================
         function updateUI() {
+            syncRoleClass();
             const human = humanEntity();
             const badge = document.getElementById('roleBadge');
             badge.className = role;
-            badge.textContent = role === 'rio' ? '😎 리오' : '👹 빌런';
+            badge.textContent = role === 'rio' ? '리오' : '빌런';
 
             document.getElementById('hpNum').textContent = Math.max(0, Math.round(human.hp));
             const hpRatio = Math.max(0, human.hp / human.maxHp);
             const inner = document.getElementById('hpBarInner');
             inner.style.width = (hpRatio * 100) + '%';
-            inner.style.background = hpRatio > 0.5 ? '#4ade80' : hpRatio > 0.25 ? '#f59e0b' : '#ef4444';
+            if (role === 'villain') {
+                inner.style.background = hpRatio > 0.5
+                    ? 'linear-gradient(90deg, #7f1d1d, #ef4444)'
+                    : hpRatio > 0.25
+                        ? 'linear-gradient(90deg, #b45309, #f97316)'
+                        : 'linear-gradient(90deg, #450a0a, #dc2626)';
+            } else {
+                inner.style.background = hpRatio > 0.5
+                    ? 'linear-gradient(90deg, #2ecf6f, #b8f77a)'
+                    : hpRatio > 0.25
+                        ? 'linear-gradient(90deg, #f59e0b, #f6c453)'
+                        : 'linear-gradient(90deg, #991b1b, #ef4444)';
+            }
 
             document.getElementById('timeNum').textContent = surviveTime;
             document.getElementById('floorNum').textContent = activeFloor();
             document.getElementById('floorBanner').textContent = activeFloor() + '층';
+            const sameFloor = rio.floor === villain.floor;
+            const gap = sameFloor ? Math.floor(distance(rio, villain) / TILE_SIZE) : null;
+            const progress = completedObjectiveCount();
+            const resourceLabel = document.getElementById('resourceLabel');
+            const resourceInner = document.getElementById('resourceBarInner');
+            const resourceNum = document.getElementById('resourceNum');
+            if (role === 'rio') {
+                const stamina = Math.max(0, Math.round(rio.stamina));
+                resourceLabel.textContent = 'STA';
+                resourceInner.style.width = stamina + '%';
+                resourceInner.style.background = rio.exhaustedTimer > 0
+                    ? 'linear-gradient(90deg, #991b1b, #f97316)'
+                    : 'linear-gradient(90deg, #67e8f9, #59d98e)';
+                resourceNum.textContent = stamina;
+            } else {
+                const stamina = Math.max(0, Math.round(villain.stamina));
+                resourceLabel.textContent = 'RUN';
+                resourceInner.style.width = stamina + '%';
+                resourceInner.style.background = villain.exhaustedTimer > 0
+                    ? 'linear-gradient(90deg, #7f1d1d, #f97316)'
+                    : 'linear-gradient(90deg, #ef4444, #f6c453)';
+                resourceNum.textContent = stamina;
+            }
+            document.getElementById('roleMeta').innerHTML = role === 'rio'
+                ? '생존 <span id="timeNum">' + surviveTime + '</span>초 · <span id="floorNum">' + activeFloor() + '</span>층 · 목표 ' + progress + '/4'
+                : '추격 <span id="timeNum">' + surviveTime + '</span>초 · <span id="floorNum">' + activeFloor() + '</span>층 · ' + (sameFloor ? '거리 ' + gap + '칸' : '리오 ' + rio.floor + '층');
 
-            // weapon icon (Rio)
             const wi = document.getElementById('weaponIcon');
+            wi.className = role === 'villain' ? 'villain' : '';
             if (role === 'rio' && rio.weapon) {
                 wi.innerHTML = '<img src="' + WEAPONS[rio.weapon].image + '">';
             } else if (role === 'rio') {
-                wi.innerHTML = '<span style="font-size:20px">✋</span>';
+                wi.innerHTML = '<span style="font-size:12px;font-weight:900;color:#d8dde7">맨손</span>';
             } else {
-                wi.innerHTML = '<span style="font-size:20px">👊</span>';
+                wi.innerHTML = '<span style="font-size:12px;font-weight:900;color:#ffb4b4">타격</span>';
             }
+            const hideBtn = document.getElementById('btnHide');
+            if (hideBtn) hideBtn.textContent = role === 'villain' ? '⇧' : '🫣';
 
             // objective
             const obj = document.getElementById('objectiveText');
+            const floorObjective = objectiveForFloor(role === 'rio' ? rio.floor : activeFloor());
             if (role === 'rio') {
-                if (rio.floor > 1) obj.innerHTML = '⬇️ 1층으로 내려가세요! <small>(현재 ' + rio.floor + '층)</small>';
-                else if (!hasPassword) obj.innerHTML = '📋 교무실에서 비밀번호를 찾으세요!';
-                else obj.innerHTML = '🚪 로비 출구로 탈출! <span style="color:#4ade80">[' + password + ']</span>';
+                if (floorObjective && !isFloorObjectiveDone(rio.floor)) {
+                    obj.innerHTML = floorObjective.name + '를 찾으세요 <small>완료 후 계단 사용 가능</small>';
+                } else if (rio.floor > 1) obj.innerHTML = '계단으로 내려가세요 <small>현재 ' + rio.floor + '층 목표 완료</small>';
+                else obj.innerHTML = '로비 출구로 탈출 <span style="color:#9ff0bd">[' + password + ']</span>';
             } else {
-                obj.innerHTML = '👹 리오의 탈출을 막으세요!<br><small>리오: ' + rio.floor + '층 ' + (hasPassword ? '· 비밀번호 획득됨!' : '') + '</small>';
+                obj.innerHTML = sameFloor
+                    ? '리오를 추격해 타격하세요 <small>거리 ' + gap + '칸 · 사거리 2칸</small>'
+                    : '리오가 있는 층으로 이동하세요 <small>리오: ' + rio.floor + '층 · 목표 ' + progress + '/4</small>';
             }
 
             // opponent tag
             const tag = document.getElementById('opponentTag');
             if (role === 'rio') {
-                tag.textContent = '👹 빌런: ' + (villain.floor === rio.floor ? '같은 층!' : villain.floor + '층');
+                tag.textContent = '빌런: ' + (villain.floor === rio.floor ? '같은 층' : villain.floor + '층');
                 tag.style.borderColor = villain.floor === rio.floor ? '#ef4444' : '#888';
             } else {
-                tag.textContent = '😎 리오: ' + rio.floor + '층';
+                tag.textContent = '리오: ' + rio.floor + '층';
                 tag.style.borderColor = villain.floor === rio.floor ? '#4ade80' : '#888';
             }
         }
@@ -1573,6 +3187,9 @@
         }
         function openKeypad() {
             gameState = 'keypad';
+            resetInputState();
+            document.body.classList.remove('controls-active');
+            fitToScreen();
             keypadInput = '';
             document.getElementById('keypadDisplay').textContent = '____';
             document.getElementById('keypadHint').textContent = '힌트: ' + password;
@@ -1580,7 +3197,14 @@
         }
         function closeKeypad() {
             document.getElementById('keypadScreen').classList.add('hidden');
-            if (gameState === 'keypad') { gameState = 'playing'; lastTime = Date.now(); requestAnimationFrame(gameLoop); }
+            if (gameState === 'keypad') {
+                resetInputState();
+                gameState = 'playing';
+                document.body.classList.add('controls-active');
+                fitToScreen();
+                lastTime = Date.now();
+                requestAnimationFrame(gameLoop);
+            }
         }
         function keypadPress(l) {
             if (l === '⌫') keypadInput = keypadInput.slice(0, -1);
@@ -1605,32 +3229,42 @@
         //  Game flow
         // ============================================================
         function initGame() {
+            resetInputState();
             floors = {};
             for (let f = 1; f <= 4; f++) floors[f] = generateFloor(f);
 
             password = String(Math.floor(1000 + Math.random() * 9000));
             hasPassword = false;
+            floorObjectives = { 1: false, 2: false, 3: false, 4: false };
             surviveTime = 0;
             attackEffects = [];
             attackAnimations = [];
+            footstepEffects = [];
 
             const oppMult = DIFFICULTY[difficulty].mult;
             // human entity gets BASE_SPEED, opponent gets BASE_SPEED * mult
             const rioSpeed = role === 'rio' ? BASE_SPEED : BASE_SPEED * oppMult;
             const villainSpeed = role === 'villain' ? BASE_SPEED : BASE_SPEED * oppMult;
 
-            // Rio starts mid-left, villain spawns behind (far left) so the chase runs
-            // left -> right toward the down-stairs, consistent with how floors connect.
-            rio = createEntity(8, 12, '😎', 100, rioSpeed);
+            const rioStart = { x: 5, y: 5 };  // always a classroom: walls block immediate villain sight
+            const villainStart = role === 'rio'
+                ? { x: 15, y: 12 }                  // visible corridor position, but no initial line of sight
+                : { x: Math.floor(MAP_WIDTH / 2), y: 12 };  // corridor center for the villain player
+
+            rio = createEntity(rioStart.x, rioStart.y, '😎', 100, rioSpeed);
             rio.floor = 4;
-            villain = createEntity(2, 12, '👹', 200, villainSpeed);
+            villain = createEntity(villainStart.x, villainStart.y, '👹', 200, villainSpeed);
             villain.floor = 4;
             villain.isActive = false;
             villain.attackDamage = 16;
+            villain.dashCooldown = 0;
+            villain.dashTimer = 0;
         }
 
         function startGame() {
             if (!role || !difficulty) return;
+            resetInputState();
+            syncRoleClass();
             document.getElementById('startScreen').classList.add('hidden');
             document.getElementById('gameOverScreen').classList.add('hidden');
             document.getElementById('victoryScreen').classList.add('hidden');
@@ -1642,6 +3276,8 @@
 
             countdownTime = 3;
             gameState = 'countdown';
+            document.body.classList.add('controls-active');
+            fitToScreen();
             const cd = document.getElementById('countdown');
             const wt = document.getElementById('warningText');
             cd.style.display = 'block'; wt.style.display = 'block';
@@ -1667,6 +3303,9 @@
         function endGame(humanWon) {
             if (gameState === 'gameover' || gameState === 'victory') return;
             gameState = humanWon ? 'victory' : 'gameover';
+            resetInputState();
+            document.body.classList.remove('controls-active');
+            fitToScreen();
             if (countdownInterval) clearInterval(countdownInterval);
             document.getElementById('countdown').style.display = 'none';
             document.getElementById('warningText').style.display = 'none';
@@ -1704,6 +3343,9 @@
             document.getElementById('gameOverScreen').classList.add('hidden');
             document.getElementById('startScreen').classList.remove('hidden');
             gameState = 'start';
+            resetInputState();
+            document.body.classList.remove('controls-active');
+            fitToScreen();
         }
 
         function gameLoop() {
@@ -1734,43 +3376,87 @@
         // ============================================================
         //  Input
         // ============================================================
+        function selectRole(nextRole) {
+            role = nextRole;
+            document.querySelectorAll('#roleSelect .opt-btn').forEach(btn => {
+                btn.classList.toggle('selected', btn.dataset.role === nextRole);
+            });
+            syncRoleClass();
+            checkReady();
+        }
+
+        function selectDifficulty(nextDifficulty) {
+            difficulty = nextDifficulty;
+            document.querySelectorAll('#diffSelect .opt-btn').forEach(btn => {
+                btn.classList.toggle('selected', btn.dataset.diff === nextDifficulty);
+            });
+            checkReady();
+        }
+
+        function handleScreenKeyDown(e) {
+            const key = e.key.toLowerCase();
+            if (gameState === 'start') {
+                if (key === '1') { selectRole('rio'); return true; }
+                if (key === '2') { selectRole('villain'); return true; }
+                if (key === '3') { selectDifficulty('easy'); return true; }
+                if (key === '4') { selectDifficulty('normal'); return true; }
+                if (key === '5') { selectDifficulty('hard'); return true; }
+                if ((key === 'enter' || key === ' ') && role && difficulty) { startGame(); return true; }
+                return false;
+            }
+
+            if (gameState === 'gameover' || gameState === 'victory') {
+                if (key === 'enter' || key === ' ') {
+                    backToStart();
+                    return true;
+                }
+                return false;
+            }
+
+            if (gameState === 'keypad') {
+                if (/^[0-9]$/.test(key)) { keypadPress(key); return true; }
+                if (key === 'backspace' || key === 'delete') { keypadPress('⌫'); return true; }
+                if (key === 'enter') { keypadPress('↵'); return true; }
+                if (key === 'escape') { closeKeypad(); return true; }
+                return false;
+            }
+
+            return false;
+        }
+
         document.addEventListener('keydown', (e) => {
-            keys[e.key.toLowerCase()] = true;
+            if (handleScreenKeyDown(e)) {
+                e.preventDefault();
+                return;
+            }
             if (gameState !== 'playing') return;
+            keys[e.key.toLowerCase()] = true;
             if (e.key === ' ') {
                 e.preventDefault();
-                if (role === 'rio') rioAttack(); else villainAttack();
+                if (role === 'rio') rioAttack(); else villainAttack(true);
             }
             if (e.key.toLowerCase() === 'h') tryHide();
         });
         document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+        window.addEventListener('blur', resetInputState);
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) resetInputState();
+        });
 
         // Selection buttons
         document.querySelectorAll('#roleSelect .opt-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('#roleSelect .opt-btn').forEach(b => b.classList.remove('selected'));
-                btn.classList.add('selected');
-                role = btn.dataset.role;
-                checkReady();
-            });
+            btn.addEventListener('click', () => selectRole(btn.dataset.role));
         });
         document.querySelectorAll('#diffSelect .opt-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('#diffSelect .opt-btn').forEach(b => b.classList.remove('selected'));
-                btn.classList.add('selected');
-                difficulty = btn.dataset.diff;
-                checkReady();
-            });
+            btn.addEventListener('click', () => selectDifficulty(btn.dataset.diff));
         });
         function checkReady() {
             document.getElementById('startBtn').disabled = !(role && difficulty);
         }
 
         // ---------------- Mobile controls ----------------
-        const joystickBase = document.getElementById('joystickBase');
-        const joystickKnob = document.getElementById('joystickKnob');
-        let joystickActive = false, joystickTouchId = null, joystickCenter = { x: 0, y: 0 };
-        const joystickMaxDistance = 35;
+        joystickBase = document.getElementById('joystickBase');
+        joystickKnob = document.getElementById('joystickKnob');
 
         function getJoystickCenter() {
             const r = joystickBase.getBoundingClientRect();
@@ -1809,11 +3495,19 @@
         }
         document.getElementById('btnAttack').addEventListener('touchstart', (e) => {
             e.preventDefault();
-            if (gameState === 'playing') { if (role === 'rio') rioAttack(); else villainAttack(); }
+            if (gameState === 'playing') { if (role === 'rio') rioAttack(); else villainAttack(true); }
         }, { passive: false });
         document.getElementById('btnHide').addEventListener('touchstart', (e) => {
             e.preventDefault();
-            if (gameState === 'playing') tryHide();
+            if (gameState === 'playing') { if (role === 'villain') keys['shift'] = true; else tryHide(); }
+        }, { passive: false });
+        document.getElementById('btnHide').addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (role === 'villain') keys['shift'] = false;
+        }, { passive: false });
+        document.getElementById('btnHide').addEventListener('touchcancel', (e) => {
+            e.preventDefault();
+            if (role === 'villain') keys['shift'] = false;
         }, { passive: false });
         document.getElementById('gameContainer').addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
@@ -1823,9 +3517,25 @@
         // the map is fully visible, then compensate the layout box so no extra gap
         // or horizontal scroll remains.
         const gameContainer = document.getElementById('gameContainer');
+        const bottomBar = document.getElementById('bottomBar');
         function fitToScreen() {
             gameContainer.style.transform = 'none';
             gameContainer.style.marginBottom = '';
+            gameContainer.style.width = '';
+            gameContainer.style.height = '';
+            canvas.style.display = '';
+            bottomBar.style.display = '';
+
+            const mobileMenu = window.innerWidth <= 1000 &&
+                (gameState === 'start' || gameState === 'keypad' || gameState === 'gameover' || gameState === 'victory');
+            if (mobileMenu) {
+                gameContainer.style.width = '100vw';
+                gameContainer.style.height = '100vh';
+                canvas.style.display = 'none';
+                bottomBar.style.display = 'none';
+                return;
+            }
+
             const fullW = gameContainer.offsetWidth;
             const fullH = gameContainer.offsetHeight;
             const availW = window.innerWidth - 6;
