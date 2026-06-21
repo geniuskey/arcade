@@ -1656,6 +1656,7 @@
                     cd.style.display = 'none'; wt.style.display = 'none';
                     villain.isActive = true;
                     gameState = 'playing';
+                    lastTime = Date.now();
                 }
             }, 1000);
 
@@ -1706,16 +1707,20 @@
         }
 
         function gameLoop() {
-            if (gameState !== 'playing') return;
+            // Keep the loop alive during the pre-game countdown so the map stays
+            // visible behind the overlay; only run gameplay updates once playing.
+            if (gameState !== 'playing' && gameState !== 'countdown') return;
 
-            const now = Date.now();
-            if (now - lastTime >= 1000) { surviveTime++; lastTime = now; }
+            if (gameState === 'playing') {
+                const now = Date.now();
+                if (now - lastTime >= 1000) { surviveTime++; lastTime = now; }
 
-            // Update both entities (each on its own floor)
-            if (role === 'rio') { updateHuman(rio); } else { updateRioAI(); }
-            if (role === 'villain') { updateHuman(villain); } else { updateVillainAI(); }
+                // Update both entities (each on its own floor)
+                if (role === 'rio') { updateHuman(rio); } else { updateRioAI(); }
+                if (role === 'villain') { updateHuman(villain); } else { updateVillainAI(); }
 
-            updateEffects();
+                updateEffects();
+            }
 
             ctx.fillStyle = '#0a0a14';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
