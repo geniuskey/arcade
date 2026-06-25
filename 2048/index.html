@@ -281,8 +281,8 @@
 
         .screen {
             background: rgba(2, 0, 16, 0.95);
-            padding: 40px;
-            border-radius: 30px;
+            padding: clamp(20px, 5vw, 36px);
+            border-radius: 24px;
             text-align: center;
             border: 1px solid var(--neon-blue);
             box-shadow: 0 0 50px rgba(0, 243, 255, 0.2);
@@ -290,6 +290,8 @@
             flex-direction: column;
             gap: 20px;
             max-width: 90%;
+            max-height: calc(100vh - 32px);
+            overflow-y: auto;
             pointer-events: auto;
         }
 
@@ -343,6 +345,96 @@
             transition: transform 0.2s;
         }
 
+        .btn.secondary {
+            background: rgba(0, 243, 255, 0.12);
+            border: 1px solid rgba(0, 243, 255, 0.7);
+            color: white;
+            font-size: 16px;
+            padding: 12px 24px;
+        }
+
+        .btn:disabled {
+            cursor: default;
+            opacity: 0.4;
+        }
+
+        .resume-panel {
+            width: min(100%, 340px);
+            margin: 0 auto;
+            padding: 12px 0 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .resume-panel.hidden {
+            display: none;
+        }
+
+        #save-summary {
+            color: rgba(255, 255, 255, 0.72);
+            font-size: 13px;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+
+        .leaderboard {
+            width: min(100%, 360px);
+            margin: 0 auto;
+            text-align: left;
+        }
+
+        .leaderboard-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+
+        .leaderboard-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .leaderboard-row {
+            display: grid;
+            grid-template-columns: 26px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 13px;
+        }
+
+        .leaderboard-rank {
+            color: var(--neon-blue);
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .leaderboard-score {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 16px;
+        }
+
+        .leaderboard-meta {
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 11px;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .empty-leaderboard {
+            color: rgba(255, 255, 255, 0.45);
+            font-size: 13px;
+            padding: 10px 0;
+            text-align: center;
+        }
+
         #hint {
             margin-top: 30px;
             color: rgba(255, 255, 255, 0.3);
@@ -385,7 +477,19 @@
                 <button class="diff-btn" onclick="setDifficulty(6)">6x6</button>
             </div>
             <p style="opacity: 0.7;">Merge identical celestial bodies to reach the ultimate singularity.</p>
+            <div id="resume-panel" class="resume-panel hidden">
+                <div class="stat-label">Saved Run</div>
+                <div id="save-summary">Score 0</div>
+                <button id="continue-btn" class="btn secondary" onclick="continueGame()">CONTINUE</button>
+            </div>
             <button class="btn" onclick="startGame()">INITIALIZE</button>
+            <div class="leaderboard">
+                <div class="leaderboard-heading">
+                    <span class="stat-label">Local Leaderboard</span>
+                    <span id="leaderboard-grid-label" class="stat-label">4x4</span>
+                </div>
+                <ol id="leaderboard-list" class="leaderboard-list"></ol>
+            </div>
         </div>
 
         <div id="game-over-screen" class="screen">
@@ -394,6 +498,13 @@
             <div style="margin: 10px 0;">
                 <div class="stat-label">Final Score</div>
                 <div id="final-score" class="stat-value">0</div>
+            </div>
+            <div class="leaderboard">
+                <div class="leaderboard-heading">
+                    <span class="stat-label">Local Leaderboard</span>
+                    <span id="game-over-leaderboard-grid-label" class="stat-label">4x4</span>
+                </div>
+                <ol id="game-over-leaderboard-list" class="leaderboard-list"></ol>
             </div>
             <button class="btn" onclick="startGame()">REBOOT</button>
         </div>
@@ -406,49 +517,329 @@
         const scoreEl = document.getElementById('score');
         const bestScoreEl = document.getElementById('best-score');
         const finalScoreEl = document.getElementById('final-score');
+        const resumePanel = document.getElementById('resume-panel');
+        const saveSummaryEl = document.getElementById('save-summary');
+        const continueBtn = document.getElementById('continue-btn');
+        const leaderboardListEl = document.getElementById('leaderboard-list');
+        const gameOverLeaderboardListEl = document.getElementById('game-over-leaderboard-list');
+        const leaderboardGridLabelEl = document.getElementById('leaderboard-grid-label');
+        const gameOverLeaderboardGridLabelEl = document.getElementById('game-over-leaderboard-grid-label');
+
+        const GRID_SIZES = [4, 5, 6];
+        const STORAGE_VERSION = 1;
+        const SAVE_KEY_PREFIX = '2048_save_';
+        const BEST_KEY_PREFIX = '2048_best_';
+        const LEADERBOARD_KEY_PREFIX = '2048_leaderboard_';
+        const LEADERBOARD_LIMIT = 5;
 
         let gridSize = 4;
         let board = []; // Stores { value, id }
         let score = 0;
         let gameActive = false;
         let tileIdCounter = 0;
+        let movePending = false;
+        let moveTimer = null;
 
         function setDifficulty(size) {
+            configureGrid(size);
+            updateBestScoreDisplay();
+            renderLeaderboards();
+            updateSavedGameUi();
+            if (gameActive) startGame(); // Restart if size changed
+        }
+
+        function configureGrid(size) {
             gridSize = size;
             document.querySelectorAll('.diff-btn').forEach(btn => {
-                btn.classList.toggle('active', parseInt(btn.innerText) === size);
+                btn.classList.toggle('active', parseInt(btn.innerText, 10) === size);
             });
             document.getElementById('current-diff-display').innerText = `${size}x${size}`;
             container.style.setProperty('--grid-size', size);
             gridBg.className = `grid-${size}`;
-            updateBestScoreDisplay();
-            if (gameActive) startGame(); // Restart if size changed
         }
 
-        function updateBestScoreDisplay() {
-            const best = localStorage.getItem(`2048_best_${gridSize}`) || 0;
-            bestScoreEl.innerText = best;
+        function saveKey(size = gridSize) {
+            return `${SAVE_KEY_PREFIX}${size}`;
         }
 
-        function initBoard() {
-            board = Array(gridSize).fill().map(() => Array(gridSize).fill(null));
-            score = 0;
-            scoreEl.innerText = '0';
+        function bestKey(size = gridSize) {
+            return `${BEST_KEY_PREFIX}${size}`;
+        }
 
-            // Setup Background Grid
+        function leaderboardKey(size = gridSize) {
+            return `${LEADERBOARD_KEY_PREFIX}${size}`;
+        }
+
+        function readJSON(key, fallback) {
+            try {
+                const raw = localStorage.getItem(key);
+                return raw ? JSON.parse(raw) : fallback;
+            } catch (error) {
+                return fallback;
+            }
+        }
+
+        function writeJSON(key, value) {
+            try {
+                localStorage.setItem(key, JSON.stringify(value));
+                return true;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        function removeStorageItem(key) {
+            try {
+                localStorage.removeItem(key);
+            } catch (error) {
+                // Ignore storage failures so the game remains playable.
+            }
+        }
+
+        function clearMoveTimer() {
+            if (moveTimer) {
+                clearTimeout(moveTimer);
+                moveTimer = null;
+            }
+            movePending = false;
+        }
+
+        function formatScore(value) {
+            return Number(value || 0).toLocaleString();
+        }
+
+        function formatSavedAt(timestamp) {
+            const date = new Date(timestamp);
+            if (Number.isNaN(date.getTime())) return 'just now';
+            return date.toLocaleString([], {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function renderBackgroundGrid() {
             gridBg.innerHTML = '';
             for (let i = 0; i < gridSize * gridSize; i++) {
                 const cell = document.createElement('div');
                 cell.className = 'grid-cell';
                 gridBg.appendChild(cell);
             }
+        }
 
+        function normalizeBoard(boardData, size) {
+            if (!Array.isArray(boardData) || boardData.length !== size) return null;
+
+            const seenIds = new Set();
+            const normalized = [];
+            for (const row of boardData) {
+                if (!Array.isArray(row) || row.length !== size) return null;
+
+                const normalizedRow = [];
+                for (const tile of row) {
+                    if (!tile) {
+                        normalizedRow.push(null);
+                        continue;
+                    }
+
+                    const value = Number(tile.value);
+                    const id = Number(tile.id);
+                    const invalidValue = !Number.isFinite(value) || value < 2 || !Number.isInteger(value);
+                    const invalidId = !Number.isFinite(id) || id < 0 || !Number.isInteger(id) || seenIds.has(id);
+                    if (invalidValue || invalidId) return null;
+
+                    seenIds.add(id);
+                    normalizedRow.push({ value, id });
+                }
+                normalized.push(normalizedRow);
+            }
+            return normalized;
+        }
+
+        function normalizeSavedGame(data) {
+            if (!data || data.version !== STORAGE_VERSION || !GRID_SIZES.includes(data.gridSize)) return null;
+            const savedBoard = normalizeBoard(data.board, data.gridSize);
+            if (!savedBoard) return null;
+
+            const maxId = savedBoard.flat().reduce((currentMax, tile) => {
+                return tile ? Math.max(currentMax, tile.id) : currentMax;
+            }, -1);
+            const savedCounter = Number(data.tileIdCounter);
+
+            return {
+                gridSize: data.gridSize,
+                board: savedBoard,
+                score: Math.max(0, Math.floor(Number(data.score) || 0)),
+                tileIdCounter: Number.isFinite(savedCounter) ? Math.max(Math.floor(savedCounter), maxId + 1) : maxId + 1,
+                savedAt: Number.isFinite(Number(data.savedAt)) ? Number(data.savedAt) : Date.now()
+            };
+        }
+
+        function getSavedGame(size = gridSize) {
+            const raw = readJSON(saveKey(size), null);
+            if (!raw) return null;
+
+            const saved = normalizeSavedGame(raw);
+            if (!saved || saved.gridSize !== size) {
+                removeStorageItem(saveKey(size));
+                return null;
+            }
+            return saved;
+        }
+
+        function getLatestSavedGame() {
+            return GRID_SIZES
+                .map(size => getSavedGame(size))
+                .filter(Boolean)
+                .sort((a, b) => b.savedAt - a.savedAt)[0] || null;
+        }
+
+        function serializeBoard() {
+            return board.map(row => row.map(tile => tile ? {
+                value: tile.value,
+                id: tile.id
+            } : null));
+        }
+
+        function getMaxTile(boardData = board) {
+            return boardData.reduce((maxValue, row) => {
+                return row.reduce((rowMax, tile) => tile ? Math.max(rowMax, tile.value) : rowMax, maxValue);
+            }, 0);
+        }
+
+        function saveGameState() {
+            if (!gameActive) return;
+
+            writeJSON(saveKey(), {
+                version: STORAGE_VERSION,
+                gridSize,
+                score,
+                tileIdCounter,
+                board: serializeBoard(),
+                savedAt: Date.now()
+            });
+            updateSavedGameUi();
+        }
+
+        function clearSavedGame(size = gridSize) {
+            removeStorageItem(saveKey(size));
+            updateSavedGameUi();
+        }
+
+        function updateSavedGameUi() {
+            if (!resumePanel || !saveSummaryEl || !continueBtn) return;
+
+            const saved = getSavedGame(gridSize);
+            if (saved && !gameActive) {
+                resumePanel.classList.remove('hidden');
+                continueBtn.disabled = false;
+                saveSummaryEl.innerText = `Score ${formatScore(saved.score)} | Max ${formatScore(getMaxTile(saved.board))} | ${formatSavedAt(saved.savedAt)}`;
+            } else {
+                resumePanel.classList.add('hidden');
+                continueBtn.disabled = true;
+            }
+        }
+
+        function readLeaderboard(size = gridSize) {
+            const raw = readJSON(leaderboardKey(size), []);
+            if (!Array.isArray(raw)) return [];
+
+            return raw
+                .map(entry => ({
+                    score: Math.max(0, Math.floor(Number(entry.score) || 0)),
+                    maxTile: Math.max(0, Math.floor(Number(entry.maxTile) || 0)),
+                    completedAt: Number.isFinite(Number(entry.completedAt)) ? Number(entry.completedAt) : Date.now()
+                }))
+                .filter(entry => entry.score > 0)
+                .sort((a, b) => b.score - a.score || b.maxTile - a.maxTile || a.completedAt - b.completedAt)
+                .slice(0, LEADERBOARD_LIMIT);
+        }
+
+        function writeLeaderboard(entries, size = gridSize) {
+            writeJSON(leaderboardKey(size), entries.slice(0, LEADERBOARD_LIMIT));
+        }
+
+        function addLeaderboardEntry() {
+            if (score <= 0) return;
+
+            const entries = readLeaderboard(gridSize);
+            entries.push({
+                score,
+                maxTile: getMaxTile(),
+                completedAt: Date.now()
+            });
+            entries.sort((a, b) => b.score - a.score || b.maxTile - a.maxTile || a.completedAt - b.completedAt);
+            writeLeaderboard(entries, gridSize);
+        }
+
+        function getBestScore(size = gridSize) {
+            const storedBest = parseInt(localStorage.getItem(bestKey(size)) || 0, 10) || 0;
+            const leaderboardBest = readLeaderboard(size)[0]?.score || 0;
+            return Math.max(storedBest, leaderboardBest);
+        }
+
+        function updateBestScoreDisplay() {
+            bestScoreEl.innerText = formatScore(getBestScore());
+        }
+
+        function renderLeaderboardList(listEl, entries) {
+            if (!listEl) return;
+            listEl.innerHTML = '';
+
+            if (!entries.length) {
+                const empty = document.createElement('li');
+                empty.className = 'empty-leaderboard';
+                empty.innerText = 'No completed runs yet';
+                listEl.appendChild(empty);
+                return;
+            }
+
+            entries.forEach((entry, index) => {
+                const row = document.createElement('li');
+                row.className = 'leaderboard-row';
+
+                const rank = document.createElement('span');
+                rank.className = 'leaderboard-rank';
+                rank.innerText = `#${index + 1}`;
+
+                const scoreNode = document.createElement('span');
+                scoreNode.className = 'leaderboard-score';
+                scoreNode.innerText = formatScore(entry.score);
+
+                const meta = document.createElement('span');
+                meta.className = 'leaderboard-meta';
+                meta.innerText = `Max ${formatScore(entry.maxTile)} | ${formatSavedAt(entry.completedAt)}`;
+
+                row.append(rank, scoreNode, meta);
+                listEl.appendChild(row);
+            });
+        }
+
+        function renderLeaderboards() {
+            const entries = readLeaderboard(gridSize);
+            const label = `${gridSize}x${gridSize}`;
+
+            if (leaderboardGridLabelEl) leaderboardGridLabelEl.innerText = label;
+            if (gameOverLeaderboardGridLabelEl) gameOverLeaderboardGridLabelEl.innerText = label;
+            renderLeaderboardList(leaderboardListEl, entries);
+            renderLeaderboardList(gameOverLeaderboardListEl, entries);
+        }
+
+        function initBoard() {
+            board = Array(gridSize).fill().map(() => Array(gridSize).fill(null));
+            score = 0;
+            scoreEl.innerText = '0';
+            movePending = false;
+
+            renderBackgroundGrid();
             tileContainer.innerHTML = '';
             tileIdCounter = 0;
 
             addRandomTile();
             addRandomTile();
             draw();
+            saveGameState();
         }
 
         function addRandomTile() {
@@ -487,21 +878,18 @@
                             el.innerHTML = `<div class="tile-inner v-${tile.value}">${tile.value}</div>`;
                             tileContainer.appendChild(el);
                         } else {
-                            // Update value if merged
                             const inner = el.querySelector('.tile-inner');
-                            if (parseInt(inner.innerText) !== tile.value) {
+                            if (parseInt(inner.innerText, 10) !== tile.value) {
                                 inner.innerText = tile.value;
                                 inner.className = `tile-inner v-${tile.value} tile-merged`;
                             }
                         }
 
-                        // Update position
                         const percent = 100 / gridSize;
                         el.style.transform = `translate(${c * 100}%, ${r * 100}%)`;
                         el.style.width = `${percent}%`;
                         el.style.height = `${percent}%`;
 
-                        // Handle padding offset (visual)
                         const gap = 10;
                         const offsetC = c * gap;
                         const offsetR = r * gap;
@@ -513,19 +901,17 @@
                 }
             }
 
-            // Remove tiles no longer on board
             Array.from(tileContainer.children).forEach(el => {
-                if (!usedIds.has(parseInt(el.dataset.id))) {
+                if (!usedIds.has(parseInt(el.dataset.id, 10))) {
                     el.remove();
                 }
             });
         }
 
         function move(dir) {
-            if (!gameActive) return;
+            if (!gameActive || movePending) return;
             let moved = false;
 
-            // Helper to get/set board based on orientation
             const getAt = (r, c, d) => {
                 if (d === 'left') return board[r][c];
                 if (d === 'right') return board[r][gridSize - 1 - c];
@@ -552,7 +938,7 @@
                     if (i < row.length - 1 && row[i].value === row[i + 1].value) {
                         newRow.push({
                             value: row[i].value * 2,
-                            id: row[i].id // Keep first ID for animation target
+                            id: row[i].id
                         });
                         score += row[i].value * 2;
                         i++;
@@ -573,13 +959,22 @@
             }
 
             if (moved) {
-                scoreEl.innerText = score;
+                movePending = true;
+                scoreEl.innerText = formatScore(score);
+                if (score > getBestScore()) bestScoreEl.innerText = formatScore(score);
                 draw();
-                // Delay adding new tile slightly for slide animation
-                setTimeout(() => {
+                saveGameState();
+
+                moveTimer = setTimeout(() => {
                     addRandomTile();
                     draw();
-                    if (checkGameOver()) gameOver();
+                    moveTimer = null;
+                    movePending = false;
+                    if (checkGameOver()) {
+                        gameOver();
+                    } else {
+                        saveGameState();
+                    }
                 }, 100);
             }
         }
@@ -597,30 +992,59 @@
 
         function startGame() {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            initBoard();
+            clearMoveTimer();
             gameActive = true;
+            initBoard();
             updateBestScoreDisplay();
+            renderLeaderboards();
+            updateSavedGameUi();
+        }
+
+        function continueGame() {
+            const saved = getSavedGame(gridSize);
+            if (!saved) {
+                updateSavedGameUi();
+                return;
+            }
+
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            clearMoveTimer();
+            configureGrid(saved.gridSize);
+            board = saved.board;
+            score = saved.score;
+            tileIdCounter = saved.tileIdCounter;
+            scoreEl.innerText = formatScore(score);
+            gameActive = true;
+            movePending = false;
+
+            renderBackgroundGrid();
+            tileContainer.innerHTML = '';
+            draw();
+            updateBestScoreDisplay();
+            renderLeaderboards();
+            saveGameState();
+            updateSavedGameUi();
         }
 
         function gameOver() {
             gameActive = false;
-            finalScoreEl.innerText = score;
-            const bestKey = `2048_best_${gridSize}`;
-            const best = parseInt(localStorage.getItem(bestKey) || 0);
-            if (score > best) {
-                localStorage.setItem(bestKey, score);
-                bestScoreEl.innerText = score;
+            clearMoveTimer();
+            finalScoreEl.innerText = formatScore(score);
+            addLeaderboardEntry();
+
+            const currentBest = getBestScore();
+            if (score >= currentBest) {
+                localStorage.setItem(bestKey(), score);
             }
+            updateBestScoreDisplay();
+            clearSavedGame();
+            renderLeaderboards();
             document.getElementById('game-over-screen').classList.add('active');
         }
 
-        // Controls
         window.addEventListener('keydown', e => {
-            if (!gameActive) {
-                if (document.querySelector('.screen.active')) startGame();
-                return;
-            }
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
+            if (!gameActive) return;
 
             if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') move('left');
             if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') move('right');
@@ -628,7 +1052,6 @@
             if (e.key === 'ArrowDown' || e.key.toLowerCase() === 's') move('down');
         });
 
-        // Touch
         let touchStart = null;
         window.addEventListener('touchstart', e => touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY });
         window.addEventListener('touchend', e => {
@@ -643,7 +1066,19 @@
             touchStart = null;
         });
 
-        updateBestScoreDisplay();
+        window.addEventListener('beforeunload', saveGameState);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') saveGameState();
+        });
+
+        const latestSavedGame = getLatestSavedGame();
+        if (latestSavedGame) {
+            setDifficulty(latestSavedGame.gridSize);
+        } else {
+            updateBestScoreDisplay();
+            renderLeaderboards();
+            updateSavedGameUi();
+        }
     </script>
     <script src="../mobile-arcade.js"></script>
     <script>MobileArcade.fit('#game-container');</script>
