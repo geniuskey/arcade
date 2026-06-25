@@ -189,6 +189,75 @@
             transform: scale(1.05);
         }
 
+        #arenaPicker {
+            margin: 8px 0 4px;
+        }
+
+        .arena-title {
+            color: #94a3b8;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            margin-bottom: 10px;
+        }
+
+        #arenaOptions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            width: min(360px, 72vw);
+            margin: 0 auto 2px;
+        }
+
+        #arenaOptions button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            padding: 9px 11px;
+            min-height: 40px;
+            font-size: 14px;
+            line-height: 1.1;
+            background: rgba(15, 23, 42, 0.78);
+            border: 1px solid rgba(148, 163, 184, 0.36);
+            border-radius: 7px;
+            color: #e5e7eb;
+            box-shadow: none;
+            transform: none;
+        }
+
+        #arenaOptions button:hover {
+            border-color: var(--arena-color);
+            filter: none;
+            transform: none;
+        }
+
+        #arenaOptions button.active {
+            color: #ffffff;
+            border-color: var(--arena-color);
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.92));
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--arena-color) 40%, transparent), 0 0 18px color-mix(in srgb, var(--arena-color) 24%, transparent);
+        }
+
+        .arena-swatch {
+            width: 14px;
+            height: 14px;
+            flex: 0 0 auto;
+            border-radius: 50%;
+            background: var(--arena-color);
+            box-shadow: 0 0 12px color-mix(in srgb, var(--arena-color) 70%, transparent);
+        }
+
+        @media (max-width: 520px) {
+            #arenaOptions {
+                width: min(320px, 78vw);
+            }
+
+            #arenaOptions button {
+                font-size: 12px;
+                padding: 8px 9px;
+            }
+        }
         #bossWarning {
             position: absolute;
             top: 50%;
@@ -356,6 +425,10 @@
             <h1 id="overlayTitle">Tank Survival</h1>
             <p id="overlayText">적 탱크, 헬리콥터, 로봇들로부터 살아남으세요!</p>
             <p class="highlight" id="overlayScore"></p>
+            <div id="arenaPicker">
+                <div class="arena-title">장소 선택</div>
+                <div id="arenaOptions"></div>
+            </div>
             <button id="startBtn">START GAME</button>
         </div>
         <div id="controls">WASD: Move Tank | Arrow Keys: Aim Turret | SPACE: Shoot</div>
@@ -384,6 +457,8 @@
         const bossWarning = document.getElementById('bossWarning');
         const startBtn = document.getElementById('startBtn');
         const pauseBtn = document.getElementById('pauseBtn');
+        const arenaPicker = document.getElementById('arenaPicker');
+        const arenaOptions = document.getElementById('arenaOptions');
 
         // Audio Context
         let audioCtx = null;
@@ -560,7 +635,22 @@
             duration: 110,
             messages: ['AWESOME!', 'INCREDIBLE!', 'AMAZING!', 'FANTASTIC!', 'UNSTOPPABLE!', 'LEGENDARY!'],
             message: '',
+            bonus: 0,
             confetti: []
+        };
+
+        let bossExplosion = {
+            active: false,
+            timer: 0,
+            duration: 230,
+            x: 0,
+            y: 0,
+            angle: 0,
+            bursts: [],
+            debris: [],
+            smoke: [],
+            mushroom: [],
+            shockwaves: []
         };
 
         // Input
@@ -593,6 +683,81 @@
             amber: '#fbbf24',
             smoke: 'rgba(15, 23, 42, 0.55)'
         };
+        const battlefields = [
+            {
+                id: 'castle',
+                name: '성 안',
+                swatch: '#94a3b8',
+                floor: ['#3f4651', '#232b35', '#111827'],
+                diagonal: 'rgba(203, 213, 225, 0.1)',
+                grid: 'rgba(203, 213, 225, 0.12)',
+                major: 'rgba(148, 163, 184, 0.14)',
+                craterDark: '#0f172a',
+                craterMid: '#334155',
+                plate: '#64748b',
+                plateLine: '#cbd5e1',
+                scrapeLight: '#e2e8f0',
+                scrapeDark: '#020617',
+                rivet: '#cbd5e1',
+                vignette: 0.38
+            },
+            {
+                id: 'palace',
+                name: '궁 마당',
+                swatch: '#fbbf24',
+                floor: ['#61513b', '#3e3021', '#17110b'],
+                diagonal: 'rgba(251, 191, 36, 0.08)',
+                grid: 'rgba(254, 215, 170, 0.12)',
+                major: 'rgba(251, 191, 36, 0.13)',
+                craterDark: '#1c1208',
+                craterMid: '#92400e',
+                plate: '#b45309',
+                plateLine: '#fde68a',
+                scrapeLight: '#fef3c7',
+                scrapeDark: '#451a03',
+                rivet: '#fbbf24',
+                vignette: 0.34
+            },
+            {
+                id: 'ruins',
+                name: '부서진 건물 안',
+                swatch: '#ef4444',
+                floor: ['#4b3430', '#251c1b', '#0f0b0b'],
+                diagonal: 'rgba(248, 113, 113, 0.08)',
+                grid: 'rgba(148, 163, 184, 0.09)',
+                major: 'rgba(248, 113, 113, 0.1)',
+                craterDark: '#020617',
+                craterMid: '#7f1d1d',
+                plate: '#57534e',
+                plateLine: '#fb923c',
+                scrapeLight: '#fed7aa',
+                scrapeDark: '#020617',
+                rivet: '#fca5a5',
+                vignette: 0.45
+            },
+            {
+                id: 'armory',
+                name: '지하 무기고',
+                swatch: '#22c55e',
+                floor: ['#1f332b', '#13231d', '#07110d'],
+                diagonal: 'rgba(74, 222, 128, 0.09)',
+                grid: 'rgba(34, 197, 94, 0.11)',
+                major: 'rgba(148, 163, 184, 0.11)',
+                craterDark: '#020617',
+                craterMid: '#14532d',
+                plate: '#166534',
+                plateLine: '#86efac',
+                scrapeLight: '#bbf7d0',
+                scrapeDark: '#020617',
+                rivet: '#86efac',
+                vignette: 0.42
+            }
+        ];
+        let selectedBattlefieldId = battlefields[0].id;
+
+        function getBattlefield() {
+            return battlefields.find(field => field.id === selectedBattlefieldId) || battlefields[0];
+        }
 
         function resizeCanvas() {
             const maxWidth = window.innerWidth - 20;
@@ -644,6 +809,7 @@
         let enemyBullets = [];
         let enemies = [];
         let particles = [];
+        let enemyExplosions = [];
         let powerups = [];
         let screenShake = 0;
         let visualFrame = 0;
@@ -670,8 +836,8 @@
                 score: 100
             },
             helicopter: {
-                width: 30,
-                height: 30,
+                width: 24,
+                height: 24,
                 speed: 1.2,
                 hp: 1,
                 color: '#8b5cf6',
@@ -796,12 +962,52 @@
             if (gameRunning) e.preventDefault();
         }, { passive: false });
 
+        function renderBattlefieldOptions() {
+            if (!arenaOptions) return;
+            arenaOptions.innerHTML = '';
+            battlefields.forEach(field => {
+                const button = document.createElement('button');
+                const swatch = document.createElement('span');
+                const label = document.createElement('span');
+
+                button.type = 'button';
+                button.dataset.battlefield = field.id;
+                button.style.setProperty('--arena-color', field.swatch);
+                button.setAttribute('aria-pressed', field.id === selectedBattlefieldId ? 'true' : 'false');
+                button.addEventListener('click', () => selectBattlefield(field.id));
+
+                swatch.className = 'arena-swatch';
+                label.textContent = field.name;
+                button.append(swatch, label);
+                arenaOptions.appendChild(button);
+            });
+            updateBattlefieldButtons();
+        }
+
+        function updateBattlefieldButtons() {
+            if (!arenaOptions) return;
+            arenaOptions.querySelectorAll('button').forEach(button => {
+                const active = button.dataset.battlefield === selectedBattlefieldId;
+                button.classList.toggle('active', active);
+                button.setAttribute('aria-pressed', active ? 'true' : 'false');
+            });
+        }
+
+        function selectBattlefield(id) {
+            if (!battlefields.some(field => field.id === id)) return;
+            selectedBattlefieldId = id;
+            updateBattlefieldButtons();
+            buildBackgroundCache();
+            if (!gameRunning || gamePaused) draw();
+        }
+
         function setOverlay(mode, title, text, scoreText, buttonText) {
             overlayMode = mode;
             document.getElementById('overlayTitle').textContent = title;
             document.getElementById('overlayText').textContent = text;
             document.getElementById('overlayScore').textContent = scoreText || '';
             startBtn.textContent = buttonText;
+            if (arenaPicker) arenaPicker.style.display = mode === 'pause' ? 'none' : 'block';
             overlay.style.display = 'block';
         }
 
@@ -828,11 +1034,15 @@
             enemyBullets = [];
             enemies = [];
             particles = [];
+            enemyExplosions = [];
             powerups = [];
             screenShake = 0;
             visualFrame = 0;
             celebration.active = false;
+            celebration.bonus = 0;
             celebration.confetti = [];
+            resetBossExplosion();
+            buildBackgroundCache();
             pauseBtn.classList.remove('paused');
             pauseBtn.textContent = 'PAUSE';
             hideOverlay();
@@ -869,10 +1079,11 @@
             stageAnnounce.stage = stageNum;
         }
 
-        function triggerCelebration() {
+        function triggerCelebration(bonusScore = 0) {
             celebration.active = true;
             celebration.timer = 0;
             celebration.message = celebration.messages[Math.floor(Math.random() * celebration.messages.length)];
+            celebration.bonus = bonusScore;
             celebration.confetti = [];
 
             // Create confetti particles
@@ -1142,7 +1353,7 @@
 
                         if (enemy.hp <= 0) {
                             score += enemy.score;
-                            createParticles(enemy.x, enemy.y, enemy.color, 10);
+                            triggerEnemyExplosion(enemy);
                             playExplosion();
                             enemies.splice(ei, 1);
                             enemiesRemaining--;
@@ -1285,30 +1496,28 @@
                         bullets.splice(bi, 1);
 
                         if (boss.hp <= 0) {
-                            const defeatedBoss = { x: boss.x, y: boss.y };
-                            score += 1000 * stage;
-                            // Big explosion effect
-                            playExplosion(true);
-                            playCelebration();
+                            const defeatedBoss = {
+                                x: boss.x,
+                                y: boss.y,
+                                width: boss.width,
+                                height: boss.height,
+                                angle: boss.angle
+                            };
+                            const bossBonus = 1000 * stage;
+                            score += bossBonus;
                             enemyBullets = [];
                             bullets = [];
                             particles = particles.filter(p => p.life > 18).slice(-70);
-                            screenShake = Math.max(screenShake, 7);
-                            for (let j = 0; j < 4; j++) {
-                                setTimeout(() => {
-                                    createParticles(
-                                        defeatedBoss.x + (Math.random() - 0.5) * 90,
-                                        defeatedBoss.y + (Math.random() - 0.5) * 90,
-                                        ['#fbbf24', '#ef4444', '#f97316'][Math.floor(Math.random() * 3)],
-                                        14
-                                    );
-                                    if (j < 3) playExplosion();
-                                }, j * 100);
-                            }
-                            triggerCelebration();
+                            triggerBossExplosion(defeatedBoss);
+                            setTimeout(() => {
+                                if (gameRunning) {
+                                    playCelebration();
+                                    triggerCelebration(bossBonus);
+                                }
+                            }, 700);
                             boss = null;
                             bossMode = false;
-                            nextStage();
+                            nextStage(3200);
                         }
                     }
                 });
@@ -1337,6 +1546,8 @@
                 }
                 return true;
             });
+            updateEnemyExplosions();
+            updateBossExplosion();
 
             // Update particles
             particles = particles.filter(p => {
@@ -1377,22 +1588,21 @@
                 });
                 if (celebration.timer >= celebration.duration) {
                     celebration.active = false;
+                    celebration.bonus = 0;
                     celebration.confetti = [];
                 }
             }
         }
 
-        function nextStage() {
-            stage++;
-            player.hp = Math.min(player.maxHp, player.hp + 30);
-
-            // Show next stage announcement after celebration
+        function nextStage(delay = 1500) {
             setTimeout(() => {
                 if (gameRunning && !gamePaused) {
+                    stage++;
+                    player.hp = Math.min(player.maxHp, player.hp + 30);
                     showStageAnnounce(stage);
                     spawnStageEnemies();
                 }
-            }, 1500);
+            }, delay);
         }
 
         function gameOver() {
@@ -1426,6 +1636,352 @@
             };
         }
 
+        function resetBossExplosion() {
+            bossExplosion.active = false;
+            bossExplosion.timer = 0;
+            bossExplosion.duration = 230;
+            bossExplosion.x = 0;
+            bossExplosion.y = 0;
+            bossExplosion.angle = 0;
+            bossExplosion.bursts = [];
+            bossExplosion.debris = [];
+            bossExplosion.smoke = [];
+            bossExplosion.mushroom = [];
+            bossExplosion.shockwaves = [];
+        }
+
+        function triggerBossExplosion(defeatedBoss) {
+            const x = defeatedBoss.x;
+            const y = defeatedBoss.y;
+            const width = defeatedBoss.width || 80;
+            const height = defeatedBoss.height || 80;
+            const angle = defeatedBoss.angle || 0;
+            const capY = clamp(y - 118, 95, canvas.height - 260);
+            const debrisColors = ['#020617', '#111827', '#334155', '#7f1d1d', '#f97316', '#fbbf24'];
+            const redArmorColors = ['#f87171', '#ef4444', '#dc2626', '#b91c1c', '#991b1b'];
+
+            bossExplosion.active = true;
+            bossExplosion.timer = 0;
+            bossExplosion.duration = 230;
+            bossExplosion.x = x;
+            bossExplosion.y = y;
+            bossExplosion.angle = angle;
+            bossExplosion.bursts = [
+                { delay: 0, x: 0, y: 0, radius: 185, color: '#fff7ed', played: true },
+                { delay: 12, x: -46, y: -18, radius: 118, color: '#fde68a', played: false },
+                { delay: 22, x: 52, y: 16, radius: 126, color: '#fb923c', played: false },
+                { delay: 36, x: -18, y: 42, radius: 92, color: '#ef4444', played: false },
+                { delay: 54, x: 26, y: -54, radius: 86, color: '#f97316', played: false }
+            ];
+            bossExplosion.shockwaves = [
+                { delay: 0, radius: 70, maxRadius: 560, life: 96, width: 16 },
+                { delay: 20, radius: 42, maxRadius: 430, life: 86, width: 10 },
+                { delay: 44, radius: 28, maxRadius: 310, life: 70, width: 6 }
+            ];
+            bossExplosion.debris = [];
+            bossExplosion.smoke = [];
+            bossExplosion.mushroom = [];
+
+            for (let i = 0; i < 64; i++) {
+                const localX = (Math.random() - 0.5) * width * 1.08;
+                const localY = (Math.random() - 0.5) * height * 1.08;
+                const origin = localToWorld(x, y, angle, localX, localY);
+                const blastAngle = Math.atan2(origin.y - y, origin.x - x) + (Math.random() - 0.5) * 1.15;
+                const speed = 3.6 + Math.random() * 8.6;
+                const life = 82 + Math.random() * 76;
+                bossExplosion.debris.push({
+                    x: origin.x,
+                    y: origin.y,
+                    dx: Math.cos(blastAngle) * speed,
+                    dy: Math.sin(blastAngle) * speed - Math.random() * 2.2,
+                    gravity: 0.06 + Math.random() * 0.055,
+                    size: 3 + Math.random() * 9,
+                    stretch: 1.4 + Math.random() * 2.8,
+                    color: debrisColors[Math.floor(Math.random() * debrisColors.length)],
+                    life,
+                    maxLife: life,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 0.5
+                });
+            }
+
+            for (let i = 0; i < 32; i++) {
+                const edgeAngle = Math.random() * Math.PI * 2;
+                const localX = Math.cos(edgeAngle) * width * (0.28 + Math.random() * 0.34);
+                const localY = Math.sin(edgeAngle) * height * (0.28 + Math.random() * 0.34);
+                const origin = localToWorld(x, y, angle, localX, localY);
+                const blastAngle = Math.atan2(origin.y - y, origin.x - x) + (Math.random() - 0.5) * 0.62;
+                const speed = 6.2 + Math.random() * 9.4;
+                const life = 96 + Math.random() * 70;
+                bossExplosion.debris.push({
+                    x: origin.x,
+                    y: origin.y,
+                    dx: Math.cos(blastAngle) * speed,
+                    dy: Math.sin(blastAngle) * speed - Math.random() * 2.8,
+                    gravity: 0.058 + Math.random() * 0.048,
+                    size: 6 + Math.random() * 11,
+                    stretch: 1.7 + Math.random() * 2.9,
+                    color: redArmorColors[Math.floor(Math.random() * redArmorColors.length)],
+                    glow: true,
+                    shape: 'armor',
+                    life,
+                    maxLife: life,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 0.62
+                });
+            }
+
+            for (let i = 0; i < 42; i++) {
+                const smokeAngle = Math.random() * Math.PI * 2;
+                const dist = Math.random() * 80;
+                const life = 116 + Math.random() * 86;
+                bossExplosion.smoke.push({
+                    x: x + Math.cos(smokeAngle) * dist,
+                    y: y + Math.sin(smokeAngle) * dist * 0.58,
+                    dx: Math.cos(smokeAngle) * (0.34 + Math.random() * 0.78),
+                    dy: -0.18 - Math.random() * 0.46,
+                    radius: 24 + Math.random() * 40,
+                    grow: 0.34 + Math.random() * 0.4,
+                    delay: Math.floor(Math.random() * 34),
+                    life,
+                    maxLife: life
+                });
+            }
+
+            for (let i = 0; i < 72; i++) {
+                const isCap = i < 42;
+                const spread = isCap ? 210 : 54;
+                const offsetX = (Math.random() - 0.5) * spread;
+                const stemProgress = Math.random();
+                const cloudY = isCap
+                    ? capY + (Math.random() - 0.5) * 72
+                    : y - stemProgress * Math.max(50, y - capY) + (Math.random() - 0.5) * 22;
+                const life = 138 + Math.random() * 96;
+                bossExplosion.mushroom.push({
+                    x: x + offsetX,
+                    y: cloudY,
+                    dx: isCap ? offsetX * 0.004 : (Math.random() - 0.5) * 0.24,
+                    dy: isCap ? -0.04 - Math.random() * 0.18 : -0.34 - Math.random() * 0.34,
+                    radius: (isCap ? 28 : 18) + Math.random() * (isCap ? 42 : 24),
+                    grow: (isCap ? 0.22 : 0.16) + Math.random() * 0.22,
+                    delay: isCap ? 34 + Math.floor(Math.random() * 32) : 16 + Math.floor(Math.random() * 42),
+                    life,
+                    maxLife: life,
+                    tone: 48 + Math.floor(Math.random() * 58)
+                });
+            }
+
+            createParticles(x, y, '#fff7ed', 42);
+            createParticles(x, y, '#fbbf24', 36);
+            createParticles(x, y, '#ef4444', 26);
+            screenShake = Math.max(screenShake, 26);
+            playExplosion(true);
+        }
+
+        function updateBossExplosion() {
+            if (!bossExplosion.active) return;
+
+            bossExplosion.timer++;
+            const t = bossExplosion.timer;
+
+            bossExplosion.bursts.forEach(burst => {
+                if (!burst.played && t >= burst.delay) {
+                    burst.played = true;
+                    createParticles(bossExplosion.x + burst.x, bossExplosion.y + burst.y, burst.color, 24);
+                    screenShake = Math.max(screenShake, Math.max(7, 18 - burst.delay * 0.16));
+                    playExplosion(burst.radius > 90);
+                }
+            });
+
+            bossExplosion.debris = bossExplosion.debris.filter(piece => {
+                piece.x += piece.dx;
+                piece.y += piece.dy;
+                piece.dy += piece.gravity;
+                piece.dx *= 0.986;
+                piece.dy *= 0.992;
+                piece.rotation += piece.rotationSpeed;
+                piece.life--;
+                return piece.life > 0;
+            });
+
+            bossExplosion.smoke = bossExplosion.smoke.filter(cloud => {
+                if (t < cloud.delay) return true;
+                cloud.x += cloud.dx;
+                cloud.y += cloud.dy;
+                cloud.dx *= 0.984;
+                cloud.dy *= 0.992;
+                cloud.radius += cloud.grow;
+                cloud.life--;
+                return cloud.life > 0;
+            });
+
+            bossExplosion.mushroom = bossExplosion.mushroom.filter(cloud => {
+                if (t < cloud.delay) return true;
+                cloud.x += cloud.dx;
+                cloud.y += cloud.dy;
+                cloud.dx *= 0.992;
+                cloud.dy *= 0.995;
+                cloud.radius += cloud.grow;
+                cloud.life--;
+                return cloud.life > 0;
+            });
+
+            bossExplosion.shockwaves = bossExplosion.shockwaves.filter(wave => t - wave.delay <= wave.life);
+
+            if (t < 120) {
+                screenShake = Math.max(screenShake, 4.5 * (1 - t / 140));
+            }
+
+            if (t >= bossExplosion.duration && bossExplosion.debris.length === 0 && bossExplosion.smoke.length === 0 && bossExplosion.mushroom.length === 0) {
+                resetBossExplosion();
+            }
+        }
+
+        function drawBossExplosion() {
+            if (!bossExplosion.active) return;
+
+            const t = bossExplosion.timer;
+            const progress = clamp(t / bossExplosion.duration, 0, 1);
+
+            if (t < 42) {
+                const flashAlpha = t < 8 ? 0.94 : Math.max(0, 0.94 * (1 - (t - 8) / 34));
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.fillStyle = `rgba(255, 255, 255, ${flashAlpha})`;
+                ctx.fillRect(-40, -40, canvas.width + 80, canvas.height + 80);
+                ctx.restore();
+            }
+
+            ctx.save();
+            ctx.translate(bossExplosion.x, bossExplosion.y);
+            ctx.rotate(bossExplosion.angle);
+            ctx.globalAlpha = 0.86 * (1 - progress * 0.38);
+            const scorch = ctx.createRadialGradient(0, 0, 8, 0, 0, 190);
+            scorch.addColorStop(0, 'rgba(2, 6, 23, 0.92)');
+            scorch.addColorStop(0.34, 'rgba(69, 10, 10, 0.6)');
+            scorch.addColorStop(0.72, 'rgba(120, 53, 15, 0.24)');
+            scorch.addColorStop(1, 'rgba(2, 6, 23, 0)');
+            ctx.fillStyle = scorch;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 190, 94, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            bossExplosion.shockwaves.forEach(wave => {
+                const age = t - wave.delay;
+                if (age < 0 || age > wave.life) return;
+                const waveProgress = age / wave.life;
+                const radius = wave.radius + (wave.maxRadius - wave.radius) * waveProgress;
+                ctx.globalAlpha = (1 - waveProgress) * 0.85;
+                ctx.strokeStyle = waveProgress < 0.42 ? '#ffffff' : '#fde68a';
+                ctx.lineWidth = Math.max(1, wave.width * (1 - waveProgress));
+                ctx.beginPath();
+                ctx.arc(bossExplosion.x, bossExplosion.y, radius, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.globalAlpha = (1 - waveProgress) * 0.28;
+                ctx.fillStyle = '#fde68a';
+                ctx.beginPath();
+                ctx.arc(bossExplosion.x, bossExplosion.y, radius * 0.18, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            bossExplosion.bursts.forEach(burst => {
+                const age = t - burst.delay;
+                if (age < 0 || age > 76) return;
+                const burstProgress = age / 76;
+                const eased = Math.sin(Math.min(1, burstProgress) * Math.PI * 0.5);
+                const radius = burst.radius * (0.22 + eased * 1.05);
+                const alpha = Math.max(0, 1 - burstProgress);
+                const gradient = ctx.createRadialGradient(
+                    bossExplosion.x + burst.x,
+                    bossExplosion.y + burst.y,
+                    0,
+                    bossExplosion.x + burst.x,
+                    bossExplosion.y + burst.y,
+                    radius
+                );
+                gradient.addColorStop(0, colorWithAlpha('#ffffff', alpha));
+                gradient.addColorStop(0.18, colorWithAlpha('#fff7ed', alpha * 0.98));
+                gradient.addColorStop(0.45, colorWithAlpha(burst.color, alpha * 0.8));
+                gradient.addColorStop(0.74, colorWithAlpha('#f97316', alpha * 0.36));
+                gradient.addColorStop(1, colorWithAlpha('#7f1d1d', 0));
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(bossExplosion.x + burst.x, bossExplosion.y + burst.y, radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.restore();
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'source-over';
+            bossExplosion.smoke.forEach(cloud => {
+                if (t < cloud.delay) return;
+                const alpha = clamp(cloud.life / cloud.maxLife, 0, 1) * 0.54;
+                const smoke = ctx.createRadialGradient(cloud.x, cloud.y, 0, cloud.x, cloud.y, cloud.radius);
+                smoke.addColorStop(0, `rgba(100, 116, 139, ${alpha})`);
+                smoke.addColorStop(0.45, `rgba(51, 65, 85, ${alpha * 0.88})`);
+                smoke.addColorStop(1, 'rgba(15, 23, 42, 0)');
+                ctx.fillStyle = smoke;
+                ctx.beginPath();
+                ctx.arc(cloud.x, cloud.y, cloud.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            bossExplosion.mushroom.forEach(cloud => {
+                if (t < cloud.delay) return;
+                const ageProgress = clamp(1 - cloud.life / cloud.maxLife, 0, 1);
+                const alpha = clamp(cloud.life / cloud.maxLife, 0, 1) * 0.72;
+                const core = `rgba(${cloud.tone + 38}, ${cloud.tone + 30}, ${cloud.tone + 20}, ${alpha})`;
+                const rim = `rgba(15, 23, 42, ${alpha * 0.82})`;
+                const cloudGradient = ctx.createRadialGradient(cloud.x, cloud.y, cloud.radius * 0.08, cloud.x, cloud.y, cloud.radius);
+                cloudGradient.addColorStop(0, core);
+                cloudGradient.addColorStop(0.52, `rgba(71, 85, 105, ${alpha * (0.76 + ageProgress * 0.12)})`);
+                cloudGradient.addColorStop(1, 'rgba(15, 23, 42, 0)');
+                ctx.fillStyle = cloudGradient;
+                ctx.beginPath();
+                ctx.arc(cloud.x, cloud.y, cloud.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = rim;
+                ctx.lineWidth = Math.max(1, cloud.radius * 0.025);
+                ctx.stroke();
+            });
+            ctx.restore();
+
+            ctx.save();
+            bossExplosion.debris.forEach(piece => {
+                const alpha = clamp(piece.life / piece.maxLife, 0, 1);
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.translate(piece.x, piece.y);
+                ctx.rotate(piece.rotation);
+                ctx.fillStyle = piece.color;
+                if (piece.shape === 'armor') {
+                    ctx.beginPath();
+                    ctx.moveTo(-piece.size * piece.stretch * 0.52, -piece.size * 0.34);
+                    ctx.lineTo(piece.size * piece.stretch * 0.38, -piece.size * 0.5);
+                    ctx.lineTo(piece.size * piece.stretch * 0.58, piece.size * 0.18);
+                    ctx.lineTo(-piece.size * piece.stretch * 0.22, piece.size * 0.54);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.strokeStyle = colorWithAlpha('#fecaca', alpha * 0.75);
+                    ctx.lineWidth = 1.2;
+                    ctx.stroke();
+                } else {
+                    ctx.fillRect(-piece.size * piece.stretch * 0.5, -piece.size * 0.5, piece.size * piece.stretch, piece.size);
+                }
+                if (alpha > 0.28 && (piece.glow || piece.color === '#f97316' || piece.color === '#fbbf24' || piece.color === '#7f1d1d')) {
+                    ctx.globalCompositeOperation = 'lighter';
+                    ctx.fillStyle = colorWithAlpha(piece.glow ? '#ef4444' : '#fde68a', alpha * (piece.glow ? 0.72 : 0.58));
+                    ctx.fillRect(-piece.size * 0.8, -piece.size * 0.45, piece.size * 1.6, piece.size * 0.9);
+                }
+                ctx.restore();
+            });
+            ctx.restore();
+        }
         function createTerrainDetails(count) {
             const details = [];
             for (let i = 0; i < count; i++) {
@@ -1504,18 +2060,18 @@
 
         function buildBackgroundCache() {
             const ctx = backgroundCtx;
+            const field = getBattlefield();
             ctx.clearRect(0, 0, backgroundCache.width, backgroundCache.height);
 
             const floor = ctx.createLinearGradient(0, 0, 0, backgroundCache.height);
-            floor.addColorStop(0, '#182129');
-            floor.addColorStop(0.45, '#111920');
-            floor.addColorStop(1, '#0b1015');
+            floor.addColorStop(0, field.floor[0]);
+            floor.addColorStop(0.45, field.floor[1]);
+            floor.addColorStop(1, field.floor[2]);
             ctx.fillStyle = floor;
             ctx.fillRect(0, 0, backgroundCache.width, backgroundCache.height);
 
             ctx.save();
-            ctx.globalAlpha = 0.16;
-            ctx.fillStyle = '#d1d5db';
+            ctx.fillStyle = field.diagonal;
             for (let x = -backgroundCache.height; x < backgroundCache.width; x += 96) {
                 ctx.save();
                 ctx.translate(x, 0);
@@ -1531,30 +2087,30 @@
                 ctx.rotate(detail.rot);
                 if (detail.type === 'crater') {
                     const crater = ctx.createRadialGradient(0, 0, 2, 0, 0, detail.r);
-                    crater.addColorStop(0, `rgba(0, 0, 0, ${detail.alpha + 0.14})`);
-                    crater.addColorStop(0.58, `rgba(30, 41, 59, ${detail.alpha})`);
-                    crater.addColorStop(1, 'rgba(148, 163, 184, 0)');
+                    crater.addColorStop(0, colorWithAlpha(field.craterDark, detail.alpha + 0.14));
+                    crater.addColorStop(0.58, colorWithAlpha(field.craterMid, detail.alpha));
+                    crater.addColorStop(1, colorWithAlpha(field.plate, 0));
                     ctx.fillStyle = crater;
                     ctx.beginPath();
                     ctx.ellipse(0, 0, detail.r * 1.45, detail.r * 0.72, 0, 0, Math.PI * 2);
                     ctx.fill();
                 } else if (detail.type === 'plate') {
-                    fillRoundedRect(-detail.w / 2, -detail.h / 2, detail.w, detail.h, 5, `rgba(148, 163, 184, ${detail.alpha * 0.45})`);
-                    strokeRoundedRect(-detail.w / 2, -detail.h / 2, detail.w, detail.h, 5, `rgba(203, 213, 225, ${detail.alpha})`);
+                    fillRoundedRectOn(ctx, -detail.w / 2, -detail.h / 2, detail.w, detail.h, 5, colorWithAlpha(field.plate, detail.alpha * 0.42));
+                    strokeRoundedRectOn(ctx, -detail.w / 2, -detail.h / 2, detail.w, detail.h, 5, colorWithAlpha(field.plateLine, detail.alpha));
                 } else if (detail.type === 'scrape') {
-                    ctx.strokeStyle = `rgba(226, 232, 240, ${detail.alpha})`;
+                    ctx.strokeStyle = colorWithAlpha(field.scrapeLight, detail.alpha);
                     ctx.lineWidth = 1 + detail.alpha * 10;
                     ctx.beginPath();
                     ctx.moveTo(-detail.w / 2, 0);
                     ctx.lineTo(detail.w / 2, Math.sin(detail.seed) * 8);
                     ctx.stroke();
-                    ctx.strokeStyle = `rgba(0, 0, 0, ${detail.alpha})`;
+                    ctx.strokeStyle = colorWithAlpha(field.scrapeDark, detail.alpha);
                     ctx.beginPath();
                     ctx.moveTo(-detail.w / 2, 4);
                     ctx.lineTo(detail.w / 2, 4 + Math.cos(detail.seed) * 6);
                     ctx.stroke();
                 } else {
-                    ctx.fillStyle = `rgba(203, 213, 225, ${detail.alpha})`;
+                    ctx.fillStyle = colorWithAlpha(field.rivet, detail.alpha);
                     ctx.beginPath();
                     ctx.arc(0, 0, 1.5 + detail.alpha * 10, 0, Math.PI * 2);
                     ctx.fill();
@@ -1562,8 +2118,10 @@
                 ctx.restore();
             });
 
+            drawBattlefieldAccentCache(ctx, field);
+
             ctx.save();
-            ctx.strokeStyle = 'rgba(148, 163, 184, 0.12)';
+            ctx.strokeStyle = field.grid;
             ctx.lineWidth = 1;
             for (let x = 0; x <= backgroundCache.width; x += 50) {
                 ctx.beginPath();
@@ -1578,7 +2136,7 @@
                 ctx.stroke();
             }
 
-            ctx.strokeStyle = 'rgba(251, 191, 36, 0.08)';
+            ctx.strokeStyle = field.major;
             ctx.lineWidth = 2;
             for (let x = 0; x <= backgroundCache.width; x += 200) {
                 ctx.beginPath();
@@ -1596,11 +2154,210 @@
 
             const vignette = ctx.createRadialGradient(backgroundCache.width / 2, backgroundCache.height / 2, 100, backgroundCache.width / 2, backgroundCache.height / 2, backgroundCache.width * 0.72);
             vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
-            vignette.addColorStop(1, 'rgba(0, 0, 0, 0.34)');
+            vignette.addColorStop(1, `rgba(0, 0, 0, ${field.vignette})`);
             ctx.fillStyle = vignette;
             ctx.fillRect(0, 0, backgroundCache.width, backgroundCache.height);
         }
 
+        function drawBattlefieldAccentCache(targetCtx, field) {
+            if (field.id === 'castle') {
+                targetCtx.save();
+
+                targetCtx.fillStyle = 'rgba(15, 23, 42, 0.32)';
+                fillRoundedRectOn(targetCtx, 18, 18, 764, 52, 4, 'rgba(15, 23, 42, 0.34)');
+                fillRoundedRectOn(targetCtx, 18, 730, 764, 52, 4, 'rgba(15, 23, 42, 0.34)');
+                fillRoundedRectOn(targetCtx, 18, 18, 52, 764, 4, 'rgba(15, 23, 42, 0.32)');
+                fillRoundedRectOn(targetCtx, 730, 18, 52, 764, 4, 'rgba(15, 23, 42, 0.32)');
+
+                targetCtx.strokeStyle = 'rgba(203, 213, 225, 0.16)';
+                targetCtx.lineWidth = 2;
+                for (let y = 55; y < backgroundCache.height; y += 88) {
+                    const stagger = Math.floor(y / 88) % 2 ? 42 : 0;
+                    for (let x = -stagger; x < backgroundCache.width + 80; x += 84) {
+                        targetCtx.strokeRect(x, y, 82, 38);
+                    }
+                }
+
+                [[42, 42], [758, 42], [42, 758], [758, 758]].forEach(([x, y]) => {
+                    targetCtx.fillStyle = 'rgba(71, 85, 105, 0.38)';
+                    targetCtx.beginPath();
+                    targetCtx.arc(x, y, 34, 0, Math.PI * 2);
+                    targetCtx.fill();
+                    targetCtx.strokeStyle = 'rgba(226, 232, 240, 0.24)';
+                    targetCtx.lineWidth = 2;
+                    targetCtx.stroke();
+                    targetCtx.fillStyle = 'rgba(15, 23, 42, 0.22)';
+                    targetCtx.beginPath();
+                    targetCtx.arc(x, y, 18, 0, Math.PI * 2);
+                    targetCtx.fill();
+                });
+
+                targetCtx.fillStyle = 'rgba(2, 6, 23, 0.32)';
+                fillRoundedRectOn(targetCtx, 312, 18, 176, 46, 5, 'rgba(2, 6, 23, 0.34)');
+                targetCtx.strokeStyle = 'rgba(203, 213, 225, 0.2)';
+                targetCtx.lineWidth = 3;
+                targetCtx.beginPath();
+                targetCtx.arc(400, 64, 70, Math.PI, 0);
+                targetCtx.stroke();
+
+                targetCtx.strokeStyle = 'rgba(15, 23, 42, 0.28)';
+                targetCtx.lineWidth = 5;
+                [120, 680].forEach(x => {
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(x, -20);
+                    targetCtx.lineTo(x + 30, 260);
+                    targetCtx.lineTo(x - 18, 520);
+                    targetCtx.lineTo(x + 12, 840);
+                    targetCtx.stroke();
+                });
+                targetCtx.restore();
+                return;
+            }
+
+            if (field.id === 'palace') {
+                targetCtx.save();
+
+                targetCtx.strokeStyle = 'rgba(253, 230, 138, 0.22)';
+                targetCtx.lineWidth = 2;
+                for (let x = 60; x < backgroundCache.width; x += 120) {
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(x, 0);
+                    targetCtx.lineTo(x, backgroundCache.height);
+                    targetCtx.stroke();
+                }
+                for (let y = 60; y < backgroundCache.height; y += 120) {
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(0, y);
+                    targetCtx.lineTo(backgroundCache.width, y);
+                    targetCtx.stroke();
+                }
+
+                fillRoundedRectOn(targetCtx, 190, 376, 420, 48, 6, 'rgba(127, 29, 29, 0.28)');
+                fillRoundedRectOn(targetCtx, 376, 190, 48, 420, 6, 'rgba(127, 29, 29, 0.22)');
+                targetCtx.strokeStyle = 'rgba(251, 191, 36, 0.24)';
+                targetCtx.lineWidth = 3;
+                targetCtx.strokeRect(190, 376, 420, 48);
+                targetCtx.strokeRect(376, 190, 48, 420);
+
+                targetCtx.strokeStyle = 'rgba(251, 191, 36, 0.2)';
+                targetCtx.lineWidth = 4;
+                targetCtx.beginPath();
+                targetCtx.ellipse(backgroundCache.width / 2, backgroundCache.height / 2, 260, 190, 0, 0, Math.PI * 2);
+                targetCtx.stroke();
+                targetCtx.beginPath();
+                targetCtx.ellipse(backgroundCache.width / 2, backgroundCache.height / 2, 150, 96, 0, 0, Math.PI * 2);
+                targetCtx.stroke();
+
+                [[120, 120], [680, 120], [120, 680], [680, 680], [260, 260], [540, 260], [260, 540], [540, 540]].forEach(([x, y], index) => {
+                    targetCtx.fillStyle = index < 4 ? 'rgba(251, 191, 36, 0.14)' : 'rgba(254, 243, 199, 0.1)';
+                    targetCtx.beginPath();
+                    targetCtx.arc(x, y, index < 4 ? 24 : 14, 0, Math.PI * 2);
+                    targetCtx.fill();
+                    targetCtx.strokeStyle = 'rgba(253, 230, 138, 0.22)';
+                    targetCtx.lineWidth = 2;
+                    targetCtx.stroke();
+                });
+
+                targetCtx.restore();
+                return;
+            }
+
+            if (field.id === 'ruins') {
+                targetCtx.save();
+
+                targetCtx.fillStyle = 'rgba(28, 25, 23, 0.34)';
+                fillRoundedRectOn(targetCtx, 36, 44, 210, 30, 3, 'rgba(28, 25, 23, 0.34)');
+                fillRoundedRectOn(targetCtx, 554, 44, 210, 30, 3, 'rgba(28, 25, 23, 0.34)');
+                fillRoundedRectOn(targetCtx, 42, 650, 260, 34, 3, 'rgba(28, 25, 23, 0.32)');
+                fillRoundedRectOn(targetCtx, 500, 662, 250, 30, 3, 'rgba(28, 25, 23, 0.32)');
+                fillRoundedRectOn(targetCtx, 42, 90, 32, 278, 3, 'rgba(28, 25, 23, 0.32)');
+                fillRoundedRectOn(targetCtx, 724, 420, 32, 280, 3, 'rgba(28, 25, 23, 0.32)');
+
+                targetCtx.shadowColor = '#ef4444';
+                targetCtx.shadowBlur = 8;
+                terrainDetails.slice(0, 24).forEach((detail, index) => {
+                    targetCtx.strokeStyle = index % 3 === 0 ? 'rgba(251, 146, 60, 0.22)' : 'rgba(15, 23, 42, 0.42)';
+                    targetCtx.lineWidth = 2 + detail.alpha * 12;
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(detail.x - detail.w * 0.35, detail.y - detail.h * 0.2);
+                    targetCtx.lineTo(detail.x - detail.w * 0.1, detail.y + detail.h * 0.28);
+                    targetCtx.lineTo(detail.x + detail.w * 0.22, detail.y - detail.h * 0.04);
+                    targetCtx.lineTo(detail.x + detail.w * 0.46, detail.y + detail.h * 0.24);
+                    targetCtx.stroke();
+                });
+                targetCtx.shadowBlur = 0;
+
+                targetCtx.fillStyle = 'rgba(120, 113, 108, 0.3)';
+                terrainDetails.slice(24, 52).forEach((detail, index) => {
+                    targetCtx.save();
+                    targetCtx.translate(detail.x, detail.y);
+                    targetCtx.rotate(detail.rot);
+                    if (index % 4 === 0) {
+                        targetCtx.fillRect(-detail.w * 0.22, -detail.h * 0.16, detail.w * 0.44, detail.h * 0.32);
+                    } else {
+                        targetCtx.beginPath();
+                        targetCtx.moveTo(-detail.w * 0.18, -detail.h * 0.18);
+                        targetCtx.lineTo(detail.w * 0.24, -detail.h * 0.04);
+                        targetCtx.lineTo(detail.w * 0.08, detail.h * 0.18);
+                        targetCtx.lineTo(-detail.w * 0.22, detail.h * 0.1);
+                        targetCtx.closePath();
+                        targetCtx.fill();
+                    }
+                    targetCtx.restore();
+                });
+                targetCtx.restore();
+                return;
+            }
+
+            if (field.id === 'armory') {
+                targetCtx.save();
+
+                targetCtx.strokeStyle = 'rgba(134, 239, 172, 0.18)';
+                targetCtx.lineWidth = 5;
+                for (let y = 80; y < backgroundCache.height; y += 160) {
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(40, y);
+                    targetCtx.lineTo(backgroundCache.width - 40, y);
+                    targetCtx.stroke();
+                    targetCtx.fillStyle = 'rgba(34, 197, 94, 0.18)';
+                    for (let x = 80; x < backgroundCache.width; x += 160) {
+                        targetCtx.beginPath();
+                        targetCtx.arc(x, y, 5, 0, Math.PI * 2);
+                        targetCtx.fill();
+                    }
+                }
+
+                targetCtx.strokeStyle = 'rgba(203, 213, 225, 0.12)';
+                targetCtx.lineWidth = 2;
+                for (let x = 120; x < backgroundCache.width; x += 220) {
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(x, 0);
+                    targetCtx.lineTo(x + 40, backgroundCache.height);
+                    targetCtx.stroke();
+                }
+
+                [[110, 160], [690, 160], [110, 640], [690, 640]].forEach(([x, y]) => {
+                    fillRoundedRectOn(targetCtx, x - 48, y - 26, 96, 52, 5, 'rgba(15, 23, 42, 0.34)');
+                    targetCtx.strokeStyle = 'rgba(134, 239, 172, 0.22)';
+                    targetCtx.lineWidth = 2;
+                    targetCtx.strokeRect(x - 38, y - 16, 76, 32);
+                    targetCtx.strokeStyle = 'rgba(203, 213, 225, 0.16)';
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(x - 34, y);
+                    targetCtx.lineTo(x + 34, y);
+                    targetCtx.moveTo(x, y - 14);
+                    targetCtx.lineTo(x, y + 14);
+                    targetCtx.stroke();
+                });
+
+                targetCtx.fillStyle = 'rgba(34, 197, 94, 0.08)';
+                fillRoundedRectOn(targetCtx, 300, 330, 200, 140, 8, 'rgba(34, 197, 94, 0.08)');
+                targetCtx.strokeStyle = 'rgba(134, 239, 172, 0.2)';
+                targetCtx.lineWidth = 3;
+                targetCtx.strokeRect(300, 330, 200, 140);
+                targetCtx.restore();
+            }
+        }
         function clamp(value, min, max) {
             return Math.max(min, Math.min(max, value));
         }
@@ -1620,6 +2377,35 @@
             return color || `rgba(255, 255, 255, ${alpha})`;
         }
 
+
+        function roundedRectPathOn(targetCtx, x, y, w, h, r) {
+            const radius = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+            targetCtx.beginPath();
+            targetCtx.moveTo(x + radius, y);
+            targetCtx.lineTo(x + w - radius, y);
+            targetCtx.quadraticCurveTo(x + w, y, x + w, y + radius);
+            targetCtx.lineTo(x + w, y + h - radius);
+            targetCtx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+            targetCtx.lineTo(x + radius, y + h);
+            targetCtx.quadraticCurveTo(x, y + h, x, y + h - radius);
+            targetCtx.lineTo(x, y + radius);
+            targetCtx.quadraticCurveTo(x, y, x + radius, y);
+        }
+
+        function fillRoundedRectOn(targetCtx, x, y, w, h, r, fillStyle) {
+            if (w <= 0 || h <= 0) return;
+            targetCtx.fillStyle = fillStyle;
+            roundedRectPathOn(targetCtx, x, y, w, h, r);
+            targetCtx.fill();
+        }
+
+        function strokeRoundedRectOn(targetCtx, x, y, w, h, r, strokeStyle, lineWidth = 1) {
+            if (w <= 0 || h <= 0) return;
+            targetCtx.strokeStyle = strokeStyle;
+            targetCtx.lineWidth = lineWidth;
+            roundedRectPathOn(targetCtx, x, y, w, h, r);
+            targetCtx.stroke();
+        }
         function roundedRectPath(x, y, w, h, r) {
             const radius = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
             ctx.beginPath();
@@ -1799,46 +2585,100 @@
             }
 
             if (enemy.type === 'helicopter') {
-                drawVehicleShadow(enemy.x, enemy.y, enemy.width * 1.5, enemy.height, enemy.angle, 0.24);
+                drawVehicleShadow(enemy.x, enemy.y, enemy.width * 1.9, enemy.height * 1.08, enemy.angle, 0.26);
                 ctx.save();
                 ctx.translate(enemy.x, enemy.y);
                 ctx.rotate(enemy.angle);
 
-                fillRoundedRect(-enemy.width * 0.85, -3, enemy.width * 0.78, 6, 3, '#4c1d95');
-                fillRoundedRect(-enemy.width * 1.02, -6, enemy.width * 0.18, 12, 3, '#6d28d9');
-                ctx.strokeStyle = colorWithAlpha('#ddd6fe', 0.85);
-                ctx.lineWidth = 2;
+                const rotorSpin = visualFrame * 1.45 + enemy.x * 0.01;
+                const rotorLength = enemy.width * 1.16;
+
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.globalAlpha = 0.38;
+                ctx.rotate(rotorSpin + Math.PI * 0.25);
+                fillRoundedRect(-rotorLength, -2.2, rotorLength * 2, 4.4, 3, colorWithAlpha('#f5f3ff', 0.46));
+                ctx.rotate(Math.PI / 2);
+                fillRoundedRect(-rotorLength, -2.2, rotorLength * 2, 4.4, 3, colorWithAlpha('#c4b5fd', 0.32));
+                ctx.restore();
+
+                fillRoundedRect(-enemy.width * 1.05, -3.2, enemy.width * 0.82, 6.4, 3, '#4c1d95');
+                fillRoundedRect(-enemy.width * 1.18, -7, enemy.width * 0.2, 14, 3, '#6d28d9');
+                ctx.fillStyle = '#a78bfa';
                 ctx.beginPath();
-                ctx.moveTo(-enemy.width * 1.02, 0);
-                ctx.lineTo(-enemy.width * 1.18, -8);
-                ctx.moveTo(-enemy.width * 1.02, 0);
-                ctx.lineTo(-enemy.width * 1.18, 8);
+                ctx.moveTo(-enemy.width * 1.12, 0);
+                ctx.lineTo(-enemy.width * 1.34, -10);
+                ctx.lineTo(-enemy.width * 1.27, 0);
+                ctx.lineTo(-enemy.width * 1.34, 10);
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = colorWithAlpha('#ddd6fe', 0.72);
+                ctx.lineWidth = 1.5;
                 ctx.stroke();
+
+                ctx.save();
+                ctx.translate(-enemy.width * 1.35, 0);
+                ctx.rotate(-rotorSpin * 2.25);
+                ctx.strokeStyle = colorWithAlpha('#f5f3ff', 0.86);
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                ctx.moveTo(-7, 0);
+                ctx.lineTo(7, 0);
+                ctx.moveTo(0, -7);
+                ctx.lineTo(0, 7);
+                ctx.stroke();
+                ctx.restore();
+
+                ctx.strokeStyle = colorWithAlpha('#ddd6fe', 0.6);
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(-enemy.width * 0.5, -enemy.height * 0.43);
+                ctx.lineTo(enemy.width * 0.42, -enemy.height * 0.52);
+                ctx.moveTo(-enemy.width * 0.5, enemy.height * 0.43);
+                ctx.lineTo(enemy.width * 0.42, enemy.height * 0.52);
+                ctx.stroke();
+                fillRoundedRect(-enemy.width * 0.58, -enemy.height * 0.55, enemy.width * 0.92, 3, 2, '#312e81');
+                fillRoundedRect(-enemy.width * 0.58, enemy.height * 0.49, enemy.width * 0.92, 3, 2, '#312e81');
 
                 const body = ctx.createLinearGradient(-enemy.width / 2, -enemy.height / 2, enemy.width / 2, enemy.height / 2);
                 body.addColorStop(0, '#ddd6fe');
-                body.addColorStop(0.28, enemy.color);
-                body.addColorStop(1, '#4c1d95');
+                body.addColorStop(0.22, enemy.color);
+                body.addColorStop(0.72, '#6d28d9');
+                body.addColorStop(1, '#312e81');
                 ctx.fillStyle = body;
                 ctx.beginPath();
-                ctx.ellipse(0, 0, enemy.width * 0.58, enemy.height * 0.34, 0, 0, Math.PI * 2);
+                ctx.moveTo(-enemy.width * 0.46, -enemy.height * 0.25);
+                ctx.bezierCurveTo(-enemy.width * 0.18, -enemy.height * 0.48, enemy.width * 0.48, -enemy.height * 0.38, enemy.width * 0.7, 0);
+                ctx.bezierCurveTo(enemy.width * 0.48, enemy.height * 0.38, -enemy.width * 0.18, enemy.height * 0.48, -enemy.width * 0.46, enemy.height * 0.25);
+                ctx.bezierCurveTo(-enemy.width * 0.62, enemy.height * 0.12, -enemy.width * 0.62, -enemy.height * 0.12, -enemy.width * 0.46, -enemy.height * 0.25);
+                ctx.closePath();
                 ctx.fill();
-                ctx.strokeStyle = colorWithAlpha('#ffffff', 0.18);
+                ctx.strokeStyle = colorWithAlpha('#ffffff', 0.2);
+                ctx.lineWidth = 1.2;
                 ctx.stroke();
 
-                fillRoundedRect(enemy.width * 0.16, -enemy.height * 0.16, enemy.width * 0.22, enemy.height * 0.32, 3, colorWithAlpha('#020617', 0.32));
+                const canopy = ctx.createLinearGradient(enemy.width * 0.1, -enemy.height * 0.22, enemy.width * 0.56, enemy.height * 0.2);
+                canopy.addColorStop(0, colorWithAlpha('#e0f2fe', 0.88));
+                canopy.addColorStop(1, colorWithAlpha('#0f172a', 0.5));
+                fillRoundedRect(enemy.width * 0.1, -enemy.height * 0.18, enemy.width * 0.36, enemy.height * 0.36, 5, canopy);
+                fillRoundedRect(-enemy.width * 0.22, -enemy.height * 0.2, enemy.width * 0.19, enemy.height * 0.4, 3, colorWithAlpha('#020617', 0.24));
 
                 ctx.save();
-                ctx.rotate(visualFrame * 0.45);
-                ctx.strokeStyle = colorWithAlpha('#f5f3ff', 0.82);
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(-enemy.width * 0.9, 0);
-                ctx.lineTo(enemy.width * 0.9, 0);
-                ctx.moveTo(0, -enemy.width * 0.9);
-                ctx.lineTo(0, enemy.width * 0.9);
-                ctx.stroke();
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.rotate(rotorSpin);
+                fillRoundedRect(-rotorLength, -1.2, rotorLength * 2, 2.4, 2, colorWithAlpha('#f8fafc', 0.72));
+                ctx.rotate(Math.PI / 2);
+                fillRoundedRect(-rotorLength, -1.2, rotorLength * 2, 2.4, 2, colorWithAlpha('#ede9fe', 0.5));
                 ctx.restore();
+
+                ctx.fillStyle = '#312e81';
+                ctx.beginPath();
+                ctx.arc(0, 0, 4.2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ddd6fe';
+                ctx.beginPath();
+                ctx.arc(0, 0, 2.1, 0, Math.PI * 2);
+                ctx.fill();
 
                 ctx.restore();
                 return;
@@ -1849,12 +2689,29 @@
             ctx.translate(enemy.x, enemy.y);
             ctx.rotate(enemy.angle);
 
+            const crawlerTrackOffset = (enemy.trackPhase || 0) % 7;
             fillRoundedRect(-enemy.width * 0.5, -enemy.height * 0.46, enemy.width, enemy.height * 0.24, 4, '#111827');
             fillRoundedRect(-enemy.width * 0.5, enemy.height * 0.22, enemy.width, enemy.height * 0.24, 4, '#111827');
             ctx.fillStyle = '#4b5563';
-            for (let i = -enemy.width * 0.42; i < enemy.width * 0.42; i += 7) {
-                ctx.fillRect(i, -enemy.height * 0.43, 3, enemy.height * 0.18);
-                ctx.fillRect(i, enemy.height * 0.25, 3, enemy.height * 0.18);
+            for (let i = -enemy.width * 0.52; i < enemy.width * 0.48; i += 7) {
+                const topX = i + crawlerTrackOffset;
+                const bottomX = i - crawlerTrackOffset;
+                ctx.fillRect(topX, -enemy.height * 0.43, 3, enemy.height * 0.18);
+                ctx.fillRect(bottomX, enemy.height * 0.25, 3, enemy.height * 0.18);
+            }
+            ctx.strokeStyle = colorWithAlpha('#cbd5e1', 0.16);
+            ctx.lineWidth = 1;
+            for (let i = -enemy.width * 0.36; i <= enemy.width * 0.36; i += 18) {
+                const wheelSpin = (enemy.trackPhase || 0) * 0.45 + i * 0.08;
+                [-0.34, 0.34].forEach(yPos => {
+                    ctx.beginPath();
+                    ctx.arc(i, enemy.height * yPos, 3.3, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(i, enemy.height * yPos);
+                    ctx.lineTo(i + Math.cos(wheelSpin) * 3.1, enemy.height * yPos + Math.sin(wheelSpin) * 3.1);
+                    ctx.stroke();
+                });
             }
 
             const crawlerBody = ctx.createLinearGradient(-enemy.width * 0.42, -enemy.height * 0.32, enemy.width * 0.42, enemy.height * 0.32);
@@ -2022,6 +2879,156 @@
             ctx.restore();
         }
 
+        function triggerEnemyExplosion(enemy) {
+            const pieceCount = enemy.type === 'tank' ? 14 : enemy.type === 'helicopter' ? 12 : 13;
+            const smokeCount = enemy.type === 'helicopter' ? 5 : 7;
+            const colors = [enemy.color, '#111827', '#334155', '#475569', '#fbbf24', '#fb923c'];
+            const explosion = {
+                x: enemy.x,
+                y: enemy.y,
+                timer: 0,
+                duration: 64,
+                color: enemy.color,
+                type: enemy.type,
+                width: enemy.width,
+                pieces: [],
+                smoke: []
+            };
+
+            for (let i = 0; i < pieceCount; i++) {
+                const localX = (Math.random() - 0.5) * enemy.width;
+                const localY = (Math.random() - 0.5) * enemy.height;
+                const origin = localToWorld(enemy.x, enemy.y, enemy.angle || 0, localX, localY);
+                const blastAngle = Math.atan2(origin.y - enemy.y, origin.x - enemy.x) + (Math.random() - 0.5) * 1.3;
+                const speed = 1.6 + Math.random() * 4.2;
+                const life = 34 + Math.random() * 26;
+                explosion.pieces.push({
+                    x: origin.x,
+                    y: origin.y,
+                    dx: Math.cos(blastAngle) * speed,
+                    dy: Math.sin(blastAngle) * speed - Math.random() * 0.8,
+                    gravity: 0.055 + Math.random() * 0.035,
+                    size: 2.5 + Math.random() * 5.5,
+                    stretch: 1.1 + Math.random() * 2.1,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    life,
+                    maxLife: life,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 0.38
+                });
+            }
+
+            for (let i = 0; i < smokeCount; i++) {
+                const smokeAngle = Math.random() * Math.PI * 2;
+                const dist = Math.random() * enemy.width * 0.45;
+                const life = 42 + Math.random() * 24;
+                explosion.smoke.push({
+                    x: enemy.x + Math.cos(smokeAngle) * dist,
+                    y: enemy.y + Math.sin(smokeAngle) * dist,
+                    dx: Math.cos(smokeAngle) * (0.12 + Math.random() * 0.32),
+                    dy: -0.16 - Math.random() * 0.32,
+                    radius: 8 + Math.random() * 12,
+                    grow: 0.18 + Math.random() * 0.18,
+                    life,
+                    maxLife: life
+                });
+            }
+
+            enemyExplosions.push(explosion);
+            if (enemyExplosions.length > 18) enemyExplosions.shift();
+            createParticles(enemy.x, enemy.y, enemy.color, 8);
+            screenShake = Math.max(screenShake, 4.2);
+        }
+
+        function updateEnemyExplosions() {
+            enemyExplosions = enemyExplosions.filter(explosion => {
+                explosion.timer++;
+                explosion.pieces = explosion.pieces.filter(piece => {
+                    piece.x += piece.dx;
+                    piece.y += piece.dy;
+                    piece.dy += piece.gravity;
+                    piece.dx *= 0.976;
+                    piece.dy *= 0.986;
+                    piece.rotation += piece.rotationSpeed;
+                    piece.life--;
+                    return piece.life > 0;
+                });
+                explosion.smoke = explosion.smoke.filter(cloud => {
+                    cloud.x += cloud.dx;
+                    cloud.y += cloud.dy;
+                    cloud.dx *= 0.985;
+                    cloud.dy *= 0.99;
+                    cloud.radius += cloud.grow;
+                    cloud.life--;
+                    return cloud.life > 0;
+                });
+                return explosion.timer < explosion.duration || explosion.pieces.length > 0 || explosion.smoke.length > 0;
+            });
+        }
+
+        function drawEnemyExplosions() {
+            enemyExplosions.forEach(explosion => {
+                const t = explosion.timer;
+                const progress = clamp(t / explosion.duration, 0, 1);
+
+                if (t < 22) {
+                    const radius = explosion.width * (0.55 + t * 0.095);
+                    const alpha = 1 - t / 22;
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'lighter';
+                    const fire = ctx.createRadialGradient(explosion.x, explosion.y, 0, explosion.x, explosion.y, radius);
+                    fire.addColorStop(0, colorWithAlpha('#fff7ed', alpha * 0.95));
+                    fire.addColorStop(0.28, colorWithAlpha('#fde68a', alpha * 0.85));
+                    fire.addColorStop(0.6, colorWithAlpha(explosion.color, alpha * 0.62));
+                    fire.addColorStop(1, colorWithAlpha('#7f1d1d', 0));
+                    ctx.fillStyle = fire;
+                    ctx.beginPath();
+                    ctx.arc(explosion.x, explosion.y, radius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.globalAlpha = alpha * 0.62;
+                    ctx.strokeStyle = '#fde68a';
+                    ctx.lineWidth = Math.max(1, 4 * alpha);
+                    ctx.beginPath();
+                    ctx.arc(explosion.x, explosion.y, radius * 1.25, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                ctx.save();
+                ctx.globalCompositeOperation = 'source-over';
+                explosion.smoke.forEach(cloud => {
+                    const alpha = clamp(cloud.life / cloud.maxLife, 0, 1) * 0.42;
+                    const smoke = ctx.createRadialGradient(cloud.x, cloud.y, 0, cloud.x, cloud.y, cloud.radius);
+                    smoke.addColorStop(0, `rgba(100, 116, 139, ${alpha})`);
+                    smoke.addColorStop(0.55, `rgba(30, 41, 59, ${alpha * 0.78})`);
+                    smoke.addColorStop(1, 'rgba(15, 23, 42, 0)');
+                    ctx.fillStyle = smoke;
+                    ctx.beginPath();
+                    ctx.arc(cloud.x, cloud.y, cloud.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                ctx.restore();
+
+                ctx.save();
+                explosion.pieces.forEach(piece => {
+                    const alpha = clamp(piece.life / piece.maxLife, 0, 1);
+                    ctx.save();
+                    ctx.globalAlpha = alpha;
+                    ctx.translate(piece.x, piece.y);
+                    ctx.rotate(piece.rotation);
+                    ctx.fillStyle = piece.color;
+                    ctx.fillRect(-piece.size * piece.stretch * 0.5, -piece.size * 0.5, piece.size * piece.stretch, piece.size);
+                    if (alpha > 0.35 && (piece.color === '#fbbf24' || piece.color === '#fb923c')) {
+                        ctx.globalCompositeOperation = 'lighter';
+                        ctx.fillStyle = colorWithAlpha('#fde68a', alpha * 0.5);
+                        ctx.fillRect(-piece.size * 0.55, -piece.size * 0.35, piece.size * 1.1, piece.size * 0.7);
+                    }
+                    ctx.restore();
+                });
+                ctx.restore();
+            });
+        }
         function drawProjectile(b, isPlayer) {
             ctx.save();
             ctx.translate(b.x, b.y);
@@ -2069,6 +3076,7 @@
             // Powerups and effects
             powerups.forEach(drawPowerup);
             drawParticleField();
+            drawEnemyExplosions();
 
             // Player tank
             drawPlayerTank();
@@ -2105,6 +3113,7 @@
                 const hpPercent = boss.hp / boss.maxHp;
                 drawHealthBar(canvas.width / 2 - 155, 20, 310, 22, hpPercent, `BOSS - Stage ${stage}`);
             }
+            drawBossExplosion();
 
             // Stage transition text
             if (bossMode && !boss) {
@@ -2201,7 +3210,7 @@
                     ctx.font = 'bold 28px Arial';
                     ctx.fillStyle = '#fbbf24';
                     ctx.shadowColor = '#fbbf24';
-                    ctx.fillText(`+${1000 * (stage - 1)} BONUS!`, 0, 50);
+                    ctx.fillText(`+${celebration.bonus} BONUS!`, 0, 50);
 
                     ctx.restore();
                 }
@@ -2218,6 +3227,7 @@
         }
 
         // Show start screen
+        renderBattlefieldOptions();
         setOverlay('start', 'Tank Survival', '적 탱크, 헬리콥터, 로봇들로부터 살아남으세요!', '', 'START GAME');
 
         // Initial draw
