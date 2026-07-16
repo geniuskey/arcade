@@ -15,19 +15,29 @@
     const MA = {};
 
     const css = `
-    .ma-dpad,.ma-acts{position:fixed;z-index:9000;pointer-events:none;}
+    .ma-dpad,.ma-acts{position:fixed;z-index:9000;pointer-events:none;filter:drop-shadow(0 12px 24px rgba(0,0,0,.35));}
     .ma-btn{pointer-events:auto;-webkit-user-select:none;user-select:none;touch-action:none;
-        display:flex;align-items:center;justify-content:center;cursor:pointer;
-        background:rgba(20,20,32,.5);border:2px solid rgba(255,255,255,.35);
-        color:#fff;font-weight:bold;border-radius:12px;backdrop-filter:blur(2px);}
-    .ma-btn.ma-active{background:rgba(255,255,255,.4);transform:scale(.92);}
-    .ma-dpad{display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,48px);gap:5px;bottom:18px;}
-    .ma-dpad .ma-btn{width:48px;height:48px;font-size:20px;}
+        display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:system-ui,sans-serif;
+        background:linear-gradient(145deg,rgba(34,38,58,.76),rgba(12,14,25,.72));
+        border:1px solid rgba(255,255,255,.34);box-shadow:inset 0 1px rgba(255,255,255,.13),0 0 0 1px rgba(0,0,0,.18);
+        color:#fff;font-weight:800;border-radius:14px;backdrop-filter:blur(10px) saturate(1.3);
+        transition:transform .1s ease,background .1s ease,border-color .1s ease,box-shadow .1s ease;}
+    .ma-btn.ma-active{background:linear-gradient(145deg,rgba(215,255,79,.7),rgba(61,225,255,.62));
+        color:#080910;border-color:rgba(255,255,255,.7);transform:scale(.9);
+        box-shadow:inset 0 1px rgba(255,255,255,.5),0 0 22px rgba(61,225,255,.28);}
+    .ma-dpad{display:grid;grid-template-columns:repeat(3,50px);grid-template-rows:repeat(3,50px);gap:6px;bottom:max(18px,env(safe-area-inset-bottom));}
+    .ma-dpad .ma-btn{width:50px;height:50px;font-size:18px;}
     .ma-up{grid-area:1/2}.ma-left{grid-area:2/1}.ma-right{grid-area:2/3}.ma-down{grid-area:3/2}
-    .ma-acts{display:flex;flex-direction:column;gap:10px;bottom:24px;}
-    .ma-acts .ma-btn{width:62px;height:62px;border-radius:50%;font-size:14px;}
-    .ma-tag{position:fixed;z-index:9000;font-size:10px;color:#fff;opacity:.6;pointer-events:none;}
-    @media (min-width:1001px){.ma-dpad,.ma-acts,.ma-tag{display:none!important;}}
+    .ma-acts{display:flex;flex-direction:column;gap:11px;bottom:max(24px,env(safe-area-inset-bottom));}
+    .ma-acts .ma-btn{width:64px;height:64px;padding:5px;border-radius:50%;font-size:12px;line-height:1.05;text-align:center;}
+    .ma-tag{position:fixed;z-index:9000;padding:3px 7px;color:rgba(255,255,255,.72);border-radius:6px;
+        background:rgba(7,8,15,.46);backdrop-filter:blur(6px);font:700 8px/1 system-ui,sans-serif;
+        letter-spacing:.08em;text-transform:uppercase;pointer-events:none;}
+    @media (hover:hover) and (pointer:fine) and (min-width:850px){.ma-dpad,.ma-acts,.ma-tag{display:none!important;}}
+    @media (max-height:560px){
+        .ma-dpad{grid-template-columns:repeat(3,42px);grid-template-rows:repeat(3,42px);gap:4px;bottom:8px}
+        .ma-dpad .ma-btn{width:42px;height:42px;font-size:15px}.ma-acts{bottom:10px;gap:7px}.ma-acts .ma-btn{width:52px;height:52px;font-size:10px}
+    }
     `;
 
     const KEYMAP = {
@@ -46,16 +56,25 @@
     function makeBtn(label, k) {
         const b = document.createElement('button');
         b.className = 'ma-btn';
+        b.type = 'button';
         b.innerHTML = label;
+        b.setAttribute('aria-label', String(label).replace(/<[^>]*>/g, ''));
         let held = false;
-        const dn = e => { if (e.cancelable) e.preventDefault(); if (held) return; held = true; b.classList.add('ma-active'); fire(k, 'keydown'); };
+        const dn = e => {
+            if (e.cancelable) e.preventDefault();
+            if (held) return;
+            held = true;
+            if (b.setPointerCapture && e.pointerId !== undefined) b.setPointerCapture(e.pointerId);
+            b.classList.add('ma-active');
+            if (navigator.vibrate) navigator.vibrate(8);
+            fire(k, 'keydown');
+        };
         const up = e => { if (e && e.cancelable) e.preventDefault(); if (!held) return; held = false; b.classList.remove('ma-active'); fire(k, 'keyup'); };
-        b.addEventListener('touchstart', dn, { passive: false });
-        b.addEventListener('touchend', up, { passive: false });
-        b.addEventListener('touchcancel', up, { passive: false });
-        b.addEventListener('mousedown', dn);
-        b.addEventListener('mouseup', up);
-        b.addEventListener('mouseleave', up);
+        b.addEventListener('pointerdown', dn);
+        b.addEventListener('pointerup', up);
+        b.addEventListener('pointercancel', up);
+        b.addEventListener('lostpointercapture', up);
+        b.addEventListener('contextmenu', e => e.preventDefault());
         return b;
     }
     MA.makeBtn = makeBtn;
