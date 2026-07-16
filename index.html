@@ -639,6 +639,7 @@
   <script>
     (() => {
       const cards = [...document.querySelectorAll('.game-card')];
+      const grid = document.getElementById('game-grid');
       const search = document.getElementById('search');
       const count = document.getElementById('catalog-count');
       const empty = document.getElementById('empty');
@@ -681,6 +682,15 @@
       function applyFilters() {
         const term = search.value.trim().toLowerCase();
         let visible = 0;
+
+        const orderedCards = activeFilter === 'all'
+          ? [...cards].sort((a, b) => {
+              const favoriteOrder = Number(favorites.has(b.dataset.id)) - Number(favorites.has(a.dataset.id));
+              return favoriteOrder || cards.indexOf(a) - cards.indexOf(b);
+            })
+          : cards;
+        orderedCards.forEach(card => grid.appendChild(card));
+
         cards.forEach(card => {
           const haystack = `${card.dataset.name} ${card.dataset.tags}`.toLowerCase();
           const filterMatch = activeFilter === 'all' || (activeFilter === 'favorite' ? favorites.has(card.dataset.id) : card.dataset.tags.includes(activeFilter));
