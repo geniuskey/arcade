@@ -1,236 +1,139 @@
 <!DOCTYPE html>
 <html lang="ko">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>⛓️ 슬기로운 감방생활</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #1a1a2e; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; overflow: hidden; }
-        #gameContainer { position: relative; display: flex; flex-direction: column; }
-        #gameCanvas { border: 4px solid #4a4a6a; border-radius: 8px 8px 0 0; box-shadow: 0 0 30px rgba(0, 0, 0, 0.5); background: #222; }
-        #bottomBar { width: 968px; height: 140px; background: linear-gradient(180deg, #2c3e50 0%, #000000 100%); border: 4px solid #4a4a6a; border-top: 2px solid #6a6a8a; border-radius: 0 0 8px 8px; display: flex; align-items: center; padding: 10px; gap: 15px; }
-        #ui { display: flex; flex-direction: column; gap: 5px; color: white; font-size: 13px; min-width: 180px; }
-        #ui div { padding: 4px 8px; background: rgba(0, 0, 0, 0.6); border-radius: 4px; border-left: 3px solid #3498db; }
-        #inventory { display: flex; gap: 5px; }
-        .inv-slot { width: 50px; height: 50px; background: #34495e; border: 2px solid #7f8c8d; border-radius: 5px; display: flex; justify-content: center; align-items: center; font-size: 24px; position: relative; }
-        .inv-slot.active { border-color: #f1c40f; box-shadow: 0 0 10px #f1c40f; }
-        #minimapContainer { margin-left: auto; border: 2px solid #6a6a8a; background: #000; }
-        #minimap { display: block; }
-        #startScreen, #gameOverScreen, #victoryScreen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; text-align: center; padding: 20px; }
-        h1 { font-size: 48px; margin-bottom: 20px; color: #e74c3c; text-shadow: 2px 2px 0 #000; }
-        p { font-size: 18px; margin-bottom: 30px; line-height: 1.6; max-width: 600px; }
-        button { padding: 15px 40px; font-size: 20px; background: #2980b9; color: white; border: none; border-radius: 5px; cursor: pointer; transition: 0.2s; }
-        button:hover { background: #3498db; transform: scale(1.05); }
-        .hidden { display: none !important; }
-        .back-btn { position: fixed; top: 10px; right: 10px; z-index: 1000; text-decoration: none; color: white; background: rgba(0, 0, 0, 0.5); padding: 8px 16px; border-radius: 20px; font-size: 14px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Night Shift — Prison Life</title>
+  <style>
+    :root{color-scheme:dark;--amber:#ffb13b;--cyan:#50e5ff;--red:#ff4d5f;--lime:#cfff57;--ink:#07090d}
+    *{box-sizing:border-box}
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#05070a}
+    body{display:grid;place-items:center;color:#fff;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;touch-action:none;background:radial-gradient(circle at 50% 32%,#26303a 0,#10151b 44%,#05070a 100%)}
+    button,a{font:inherit}
+    #game-shell{position:relative;width:min(1120px,100vw,calc(100dvh * 16 / 10));aspect-ratio:16/10;overflow:hidden;border:1px solid #ffffff13;border-radius:27px;background:#10151a;box-shadow:0 36px 110px #000d,0 0 70px #23425a20;isolation:isolate}
+    canvas{display:block;width:100%;height:100%;background:#151a1f}
+    .corner{position:absolute;top:16px;z-index:50;display:grid;place-items:center;height:41px;padding:0 15px;border:1px solid #ffffff20;border-radius:13px;background:#080b0fde;color:#fff;text-decoration:none;font-size:11px;font-weight:900;letter-spacing:.04em;backdrop-filter:blur(12px);box-shadow:0 9px 25px #0008;cursor:pointer}
+    #back{left:16px}#sound{right:16px;width:41px;padding:0}
+    #hud{position:absolute;inset:15px 72px auto 112px;z-index:22;display:grid;grid-template-columns:1fr minmax(250px,1.25fr) 1fr;align-items:center;gap:10px;pointer-events:none;transition:.2s}
+    #hud.hidden{opacity:0;transform:translateY(-10px)}
+    .hud-card{min-width:0;padding:9px 12px;border:1px solid #ffffff15;border-radius:14px;background:#080b10df;backdrop-filter:blur(13px);box-shadow:0 10px 28px #0005}.hud-line{display:flex;justify-content:space-between;gap:9px;color:#e8edf4;font-size:8px;font-weight:950;letter-spacing:.11em}.hud-line span:last-child{color:#8d96a4}.lives{display:flex;gap:5px;margin-top:7px}.life{width:25px;height:5px;border-radius:7px;background:var(--amber);box-shadow:0 0 10px #ff9a3155}.life.lost{background:#ffffff13;box-shadow:none}
+    .mission-card{text-align:center;padding:8px 13px}.mission-card strong{display:block;color:var(--amber);font:950 8px/1 ui-monospace,monospace;letter-spacing:.17em}.mission-card span{display:block;margin-top:5px;overflow:hidden;color:#fff;font-size:10px;font-weight:900;letter-spacing:.02em;text-overflow:ellipsis;white-space:nowrap}.mission-card small{display:block;margin-top:4px;color:#818a99;font:800 7px/1 ui-monospace,monospace;letter-spacing:.09em}
+    .alert-head{display:flex;justify-content:space-between;color:#ff8790;font:950 8px/1 ui-monospace,monospace;letter-spacing:.12em}.alert-track{height:6px;margin-top:7px;overflow:hidden;border-radius:8px;background:#ffffff12}.alert-track i{display:block;width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#ffc04b,#ff334f);box-shadow:0 0 12px #ff405b;transition:width .1s}.loot-line{display:flex;justify-content:space-between;margin-top:6px;color:#8e98a7;font:800 7px/1 ui-monospace,monospace}.loot-line b{color:#e8eef5}
+    #prompt{position:absolute;left:50%;bottom:17px;z-index:25;transform:translateX(-50%);min-width:230px;padding:9px 14px;border:1px solid #ffffff1c;border-radius:11px;background:#070a0ee8;color:#f4f7fb;text-align:center;font:900 9px/1 ui-monospace,monospace;letter-spacing:.08em;pointer-events:none;opacity:0;transition:.16s}#prompt.show{opacity:1;transform:translate(-50%,-4px)}#prompt b{color:var(--amber)}
+    #callout{position:absolute;top:27%;left:50%;z-index:28;transform:translate(-50%,-50%) scale(.96);padding:9px 16px;border:1px solid currentColor;border-radius:11px;background:#07090de8;color:var(--amber);font:1000 10px/1 ui-monospace,monospace;letter-spacing:.15em;opacity:0;pointer-events:none;transition:.2s}#callout.show{opacity:1;transform:translate(-50%,-58%) scale(1)}
+    #ui-layer{position:absolute;inset:0;z-index:35;display:grid;place-items:center;pointer-events:none}
+    .panel{display:none;width:min(540px,calc(100% - 34px));padding:31px 35px 28px;border:1px solid #ffffff17;border-radius:27px;background:linear-gradient(155deg,#151a20f5,#080a0ef9);box-shadow:0 31px 90px #000d,inset 0 1px #ffffff0e;text-align:center;pointer-events:auto;backdrop-filter:blur(17px)}.panel.active{display:block;animation:panel-in .25s ease-out}@keyframes panel-in{from{opacity:0;transform:translateY(11px) scale(.98)}}
+    .kicker{color:var(--amber);font:950 8px/1 ui-monospace,monospace;letter-spacing:.21em}.title{margin:10px 0 0;font-size:48px;line-height:.88;font-weight:1000;letter-spacing:-.06em}.title span{color:transparent;-webkit-text-stroke:1px #ffffff7c}.tagline{margin:17px auto 20px;max-width:410px;color:#aab2bf;font-size:12px;line-height:1.65}
+    .briefing{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px}.brief{padding:11px 7px;border:1px solid #ffffff11;border-radius:12px;background:#ffffff04}.brief b{display:block;color:var(--amber);font:950 16px/1 ui-monospace,monospace}.brief span{display:block;margin-top:5px;color:#858f9e;font-size:7px;font-weight:900;letter-spacing:.08em}
+    .primary{width:100%;height:52px;border:1px solid #ffffff18;border-radius:15px;background:linear-gradient(145deg,#ffc24c,#ff7e31);color:#1b0c04;font-size:11px;font-weight:1000;letter-spacing:.05em;cursor:pointer;box-shadow:0 12px 28px #ff8b3035;transition:.16s}.primary:hover{transform:translateY(-2px);filter:brightness(1.08)}.primary.alt{background:#ffffff09;color:#f4f6f8;box-shadow:none}.actions{display:grid;grid-template-columns:1.15fr 1fr;gap:9px}.panel-foot{display:flex;justify-content:center;gap:17px;margin-top:15px;color:#747e8d;font:800 7px/1 ui-monospace,monospace;letter-spacing:.08em}
+    .result-title{margin:9px 0 0;font-size:42px;line-height:1;font-weight:1000;letter-spacing:-.05em}.result-title span{color:var(--lime)}.results{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:20px 0}.result{padding:12px 6px;border:1px solid #ffffff12;border-radius:13px;background:#ffffff05}.result span{display:block;color:#828b99;font-size:7px;font-weight:900;letter-spacing:.09em}.result strong{display:block;margin-top:5px;font:950 16px/1 ui-monospace,monospace}
+    @media(max-aspect-ratio:4/5){#game-shell{width:calc(100vw - 12px);border-radius:18px}#hud{inset:7px 38px auto;grid-template-columns:1fr 1.2fr 1fr;gap:3px}.hud-card{padding:5px 6px;border-radius:8px}.hud-line,.alert-head,.loot-line{font-size:5px}.lives{margin-top:4px;gap:2px}.life{width:12px;height:3px}.mission-card{padding:5px}.mission-card strong{font-size:5px}.mission-card span{font-size:6px;margin-top:3px}.mission-card small{display:none}.alert-track{height:3px;margin-top:4px}.corner{top:7px;height:28px;padding:0 8px;border-radius:8px;font-size:7px}#back{left:7px;width:28px;padding:0}.back-label{display:none}#sound{right:7px;width:28px}#prompt{bottom:3px;min-width:0;padding:5px 8px;font-size:6px}.panel{padding:21px 17px;border-radius:19px}.title{font-size:36px}.tagline{font-size:10px;margin:13px auto 16px}.briefing{gap:4px}.brief{padding:8px 4px}.brief b{font-size:12px}.actions{grid-template-columns:1fr}.primary{height:41px}.panel-foot{margin-top:11px}#callout{top:24%;font-size:7px;padding:6px 9px}}
+  </style>
 </head>
-
 <body>
-    <a href="../" class="back-btn">← Arcade</a>
-    <div id="gameContainer">
-        <canvas id="gameCanvas"></canvas>
-        <div id="startScreen">
-            <h1>⛓️ 슬기로운 감방생활</h1>
-            <p>억울하게 수감되었습니다. 담배 10개를 모아 상점에서 마스터키를 사고 식당 위쪽 문으로 탈출하세요!<br><br><b>WASD: 이동 | E: 상호작용 | H: 은신</b></p>
-            <button onclick="startGame()">감옥 입장</button>
-        </div>
-        <div id="gameOverScreen" class="hidden">
-            <h1>🚔 독방행!</h1>
-            <p>교도관에게 붙잡혔습니다.</p>
-            <button onclick="location.reload()">다시 시도</button>
-        </div>
-        <div id="victoryScreen" class="hidden">
-            <h1>🎉 탈출 성공!</h1>
-            <p>축하합니다! 자유의 몸이 되었습니다.</p>
-            <button onclick="location.reload()">다시 하기</button>
-        </div>
-        <div id="bottomBar">
-            <div id="ui">
-                <div>❤️ 체력: <span id="hp">100</span> / 100</div>
-                <div>💰 담배: <span id="money">0</span> / 10 개</div>
-                <div>🕒 생존: <span id="time">0</span>일차</div>
-                <div id="goal" style="color: #f1c40f; border-left-color: #f1c40f;">🎯 목표: 담배 10개 수집</div>
-            </div>
-            <div id="inventory">
-                <div class="inv-slot" id="slot-key" title="마스터키"></div>
-                <div class="inv-slot" title="비상식량">🍎</div>
-                <div class="inv-slot" title="도구">⚒️</div>
-            </div>
-            <div id="minimapContainer"><canvas id="minimap" width="200" height="120"></canvas></div>
-        </div>
+  <main id="game-shell">
+    <canvas id="game" width="1120" height="700" aria-label="Prison Life stealth escape game"></canvas>
+    <a id="back" class="corner" href="../"><span>← <span class="back-label">Arcade</span></span></a>
+    <button id="sound" class="corner" type="button" aria-label="소리 끄기">♪</button>
+
+    <section id="hud" class="hidden" aria-label="탈옥 임무 상태">
+      <div class="hud-card"><div class="hud-line"><span>COVER</span><span id="status-label">CLEAR</span></div><div id="lives" class="lives"><i class="life"></i><i class="life"></i><i class="life"></i></div></div>
+      <div class="hud-card mission-card"><strong>ESCAPE PLAN</strong><span id="objective">정보 물품 5개 확보</span><small id="timer">00:00.0 · NIGHT SHIFT</small></div>
+      <div class="hud-card"><div class="alert-head"><span>DETECTION</span><span id="alert-value">0%</span></div><div class="alert-track"><i id="alert-fill"></i></div><div class="loot-line"><span>CONTRABAND <b id="loot">0 / 5</b></span><span id="gear">NO GEAR</span></div></div>
+    </section>
+    <div id="prompt"><b>E</b> 조사하기</div><div id="callout" role="status">CONTRABAND FOUND</div>
+
+    <div id="ui-layer">
+      <section id="main-menu" class="panel active">
+        <div class="kicker">GENIUSKEY MAXIMUM SECURITY</div>
+        <h1 class="title">PRISON <span>LIFE</span></h1>
+        <p class="tagline">야간 순찰 사이를 읽고 감방의 거래품을 모으세요. 매점에서 키카드를 구한 뒤 전력을 끊고 북문으로 빠져나가야 합니다.</p>
+        <div class="briefing"><div class="brief"><b>5</b><span>CONTRABAND</span></div><div class="brief"><b>3</b><span>GUARD PATROLS</span></div><div class="brief"><b>3</b><span>CHANCES</span></div></div>
+        <button id="start" class="primary" type="button">BEGIN NIGHT SHIFT</button>
+        <div class="panel-foot"><span>WASD MOVE</span><span>SHIFT RUN</span><span>E USE</span><span>H HIDE</span></div>
+      </section>
+      <section id="pause-menu" class="panel"><div class="kicker">NIGHT SHIFT PAUSED</div><h2 class="result-title">STAY <span>QUIET</span></h2><p class="tagline">경비와 임무 시간이 모두 멈췄습니다.</p><button id="resume" class="primary" type="button">RESUME</button></section>
+      <section id="caught-menu" class="panel"><div class="kicker">SECURITY BREACH</div><h2 class="result-title">SOLITARY <span>BLOCK</span></h2><p class="tagline">세 번 붙잡혀 탈출 계획이 무너졌습니다.</p><div class="actions"><button id="retry" class="primary" type="button">TRY AGAIN</button><button id="caught-menu-btn" class="primary alt" type="button">MENU</button></div></section>
+      <section id="victory-menu" class="panel"><div class="kicker">PERIMETER CLEARED</div><h2 class="result-title">YOU ARE <span>FREE</span></h2><div class="results"><div class="result"><span>ESCAPE TIME</span><strong id="final-time">00:00</strong></div><div class="result"><span>CAPTURES</span><strong id="final-catches">0</strong></div><div class="result"><span>BEST</span><strong id="final-best">--:--</strong></div></div><div class="actions"><button id="escape-again" class="primary" type="button">ESCAPE AGAIN</button><button id="victory-menu-btn" class="primary alt" type="button">MENU</button></div></section>
     </div>
+  </main>
 
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const minimap = document.getElementById('minimap');
-        const mctx = minimap.getContext('2d');
-        canvas.width = 960; canvas.height = 544;
-        const TILE_SIZE = 32; const MAP_W = 30; const MAP_H = 17;
-        const FLOOR = 0, WALL = 1, BARS = 2, DOOR = 3, TABLE = 4, CHAIR = 5, BED = 6, DESK = 7, SHOP_COUNTER = 8;
-        let map = [];
-        let player = { x: 0, y: 0, hp: 100, money: 0, days: 1, isHiding: false, gracePeriod: 0, hasKey: false };
-        let guards = []; let prisoners = []; let items = []; let gameState = 'start'; let frameCount = 0; let keys = {};
-
-        function initMap() {
-            for (let y = 0; y < MAP_H; y++) {
-                map[y] = [];
-                for (let x = 0; x < MAP_W; x++) map[y][x] = (x === 0 || x === MAP_W - 1 || y === 0 || y === MAP_H - 1) ? WALL : FLOOR;
-            }
-            let drs = [];
-            // 식당
-            for (let y = 1; y < MAP_H - 1; y++) map[y][7] = WALL;
-            map[2][7] = DOOR; drs.push({x:7, y:2}); map[14][7] = DOOR; drs.push({x:7, y:14});
-            for (let y = 3; y < 14; y++) { map[y][2] = TABLE; map[y][1] = CHAIR; map[y][3] = CHAIR; }
-            // 감방
-            for (let i = 0; i < 3; i++) {
-                let sx = 8 + (i * 7); if (i < 2) for (let y = 11; y < 16; y++) map[y][sx + 6] = WALL;
-                for (let x = sx; x < sx + 7; x++) map[11][x] = BARS;
-                map[11][sx + 3] = DOOR; drs.push({x:sx + 3, y:11});
-                map[14][sx + 5] = BED; map[14][sx + 1] = DESK;
-                prisoners.push({ x: (sx + 2) * TILE_SIZE, y: 13 * TILE_SIZE, emoji: '👥' });
-            }
-            for (let i = 0; i < 2; i++) {
-                let sx = 8 + (i * 7); for (let x = sx; x < sx + 7; x++) map[5][x] = BARS;
-                map[5][sx + 3] = DOOR; drs.push({x:sx + 3, y:5});
-                map[2][sx + 1] = BED; for (let y = 1; y < 5; y++) map[y][sx + 6] = WALL;
-            }
-            // 상점/창고
-            for (let x = 22; x < 25; x++) map[3][x] = WALL; map[3][23] = DOOR; drs.push({x:23, y:3});
-            for (let y = 1; y < 5; y++) map[y][25] = WALL; for (let x = 25; x < 29; x++) map[5][x] = WALL;
-            map[3][25] = DOOR; drs.push({x:25, y:3}); map[2][27] = SHOP_COUNTER;
-            map[8][8] = DESK;
-            for (let i = 0; i < 15; i++) {
-                let rx = Math.floor(Math.random() * (MAP_W - 2)) + 1, ry = Math.floor(Math.random() * (MAP_H - 2)) + 1;
-                if (map[ry][rx] === FLOOR) items.push({ x: rx * TILE_SIZE, y: ry * TILE_SIZE });
-            }
-            return drs;
-        }
-
-        function createGuard(drs) {
-            let d = drs[Math.floor(Math.random() * drs.length)];
-            return { x: d.x * TILE_SIZE, y: d.y * TILE_SIZE, targetDoor: d, speed: 1.2, angle: 0, drs: drs, waitTimer: 10, pathStep: 0 };
-        }
-
-        function startGame() {
-            document.getElementById('startScreen').classList.add('hidden');
-            let drs = initMap(); guards = [createGuard(drs), createGuard(drs)];
-            gameState = 'playing'; player.x = 11 * TILE_SIZE; player.y = 13 * TILE_SIZE;
-            player.hp = 100; player.money = 0; player.days = 1; player.isHiding = false; player.gracePeriod = 60; player.hasKey = false;
-            gameLoop();
-        }
-
-        function update() {
-            if (gameState !== 'playing') return;
-            if (player.gracePeriod > 0) player.gracePeriod--;
-            if (!player.isHiding) {
-                let dx = 0, dy = 0; if (keys['w']) dy -= 3; if (keys['s']) dy += 3; if (keys['a']) dx -= 3; if (keys['d']) dx += 3;
-                moveEntity(player, dx, dy);
-            }
-            if (keys['h']) {
-                keys['h'] = false;
-                if (player.isHiding) player.isHiding = false;
-                else {
-                    let tx = Math.floor((player.x + 16) / TILE_SIZE), ty = Math.floor((player.y + 16) / TILE_SIZE);
-                    let can = false; for(let oy = -1; oy <= 1; oy++) for(let ox = -1; ox <= 1; ox++) {
-                        let t = map[ty+oy]?.[tx+ox]; if (t === BED || t === TABLE) {
-                            can = true; if (t === BED) { player.hp = Math.min(100, player.hp + 30); player.days++; player.gracePeriod = 60; }
-                            break;
-                        }
-                    }
-                    if (can) player.isHiding = true;
-                }
-            }
-            if (keys['e']) {
-                keys['e'] = false;
-                items = items.filter(it => { if (Math.hypot(player.x - it.x, player.y - it.y) < 40) { player.money++; checkGoal(); return false; } return true; });
-                let tx = Math.floor((player.x + 16) / TILE_SIZE), ty = Math.floor((player.y + 16) / TILE_SIZE);
-                if (map[ty][tx] === SHOP_COUNTER || map[ty+1]?.[tx] === SHOP_COUNTER) {
-                    if (player.money >= 10 && !player.hasKey) { player.money -= 10; player.hasKey = true; document.getElementById('slot-key').textContent = '🔑'; checkGoal(); alert("마스터키 구입! 식당 위쪽 문(x7, y2)으로 탈출하세요!"); }
-                }
-                for(let oy = -1; oy <= 1; oy++) for(let ox = -1; ox <= 1; ox++) {
-                    let t = map[ty+oy]?.[tx+ox]; if (t === TABLE) player.hp = Math.min(100, player.hp + 10);
-                    if (t === DOOR && (tx+ox) === 7 && (ty+oy) === 2 && player.hasKey) victory();
-                }
-            }
-            guards.forEach(g => {
-                if (g.waitTimer > 0) { g.waitTimer--; if (g.waitTimer === 0) {
-                    let n; do { n = g.drs[Math.floor(Math.random()*g.drs.length)]; } while(n === g.targetDoor); g.targetDoor = n; g.pathStep = 0;
-                } return; }
-                let tx = g.targetDoor.x * TILE_SIZE, ty = g.targetDoor.y * TILE_SIZE, cy = 8 * TILE_SIZE;
-                let gx = tx, gy = ty; if (g.pathStep === 0) { gx = g.x; gy = cy; if (Math.abs(g.y-cy)<5) g.pathStep = 1; }
-                else if (g.pathStep === 1) { gx = tx; gy = cy; if (Math.abs(g.x-tx)<5) g.pathStep = 2; }
-                else { if (Math.hypot(tx-g.x, ty-g.y)<5) { g.waitTimer = 80; return; } }
-                let a = Math.atan2(gy-g.y, gx-g.x); g.x += Math.cos(a)*g.speed; g.y += Math.sin(a)*g.speed; g.angle = a;
-                if (!player.isHiding && player.gracePeriod <= 0) {
-                    let d = Math.hypot(player.x-g.x, player.y-g.y);
-                    if (d < 130 && (Math.abs(a - Math.atan2(player.y-g.y, player.x-g.x)) < 0.7 || d < 40)) { gameState = 'gameover'; document.getElementById('gameOverScreen').classList.remove('hidden'); }
-                }
-            });
-            document.getElementById('hp').textContent = Math.floor(player.hp); document.getElementById('money').textContent = player.money; document.getElementById('time').textContent = player.days;
-            frameCount++; if (frameCount % 600 === 0 && !player.isHiding) player.hp -= 1;
-            if (player.hp <= 0) { gameState = 'gameover'; document.getElementById('gameOverScreen').classList.remove('hidden'); }
-        }
-
-        function checkGoal() {
-            let g = document.getElementById('goal');
-            if (!player.hasKey) { g.textContent = `🎯 목표: 담배 수집 (${player.money}/10)`; if (player.money >= 10) g.textContent = "🎯 목표: 상점에서 키 구입"; }
-            else { g.textContent = "🎯 목표: 식당 위쪽 문으로 탈출"; g.style.color = "#2ecc71"; }
-        }
-
-        function moveEntity(ent, dx, dy) { if (isWalkable(ent.x + dx, ent.y)) ent.x += dx; if (isWalkable(ent.x, ent.y + dy)) ent.y += dy; }
-        function isWalkable(x, y) {
-            let p = 6; let pts = [{x:x+p, y:y+p}, {x:x+32-p, y:y+p}, {x:x+p, y:y+32-p}, {x:x+32-p, y:y+32-p}];
-            for (let pt of pts) {
-                let tx = Math.floor(pt.x/TILE_SIZE), ty = Math.floor(pt.y/TILE_SIZE);
-                if (tx < 0 || tx >= MAP_W || ty < 0 || ty >= MAP_H) return false;
-                let t = map[ty][tx]; if (t !== FLOOR && t !== DOOR) return false;
-            } return true;
-        }
-
-        function victory() { gameState = 'victory'; document.getElementById('victoryScreen').classList.remove('hidden'); }
-
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
-                let t = map[y][x], px = x*TILE_SIZE, py = y*TILE_SIZE;
-                ctx.fillStyle = '#222'; ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-                ctx.strokeStyle = '#333'; ctx.strokeRect(px, py, TILE_SIZE, TILE_SIZE);
-                if (t === WALL) { ctx.fillStyle = '#1c2833'; ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE); }
-                else if (t === BARS) { ctx.fillStyle = '#2c3e50'; ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE); ctx.fillStyle = '#7f8c8d'; for(let i=0;i<4;i++) ctx.fillRect(px+4+i*8, py, 2, TILE_SIZE); }
-                else if (t === DOOR) { ctx.fillStyle = '#5d6d7e'; ctx.fillRect(px+2, py+2, TILE_SIZE-4, TILE_SIZE-4); ctx.fillStyle = '#34495e'; ctx.fillRect(px+6, py+6, TILE_SIZE-12, TILE_SIZE-12); ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(px+TILE_SIZE-10, py+TILE_SIZE/2, 2, 0, Math.PI*2); ctx.fill(); }
-                else if (t === TABLE) { ctx.fillStyle = '#5d4037'; ctx.fillRect(px+2, py+10, TILE_SIZE-4, TILE_SIZE-14); }
-                else if (t === BED) { ctx.fillStyle = '#2e86c1'; ctx.fillRect(px+2, py+12, TILE_SIZE-4, TILE_SIZE-16); ctx.fillStyle = 'white'; ctx.fillRect(px+2, py+12, 10, 8); }
-                else if (t === CHAIR) { ctx.fillStyle = '#4e342e'; ctx.fillRect(px+10, py+10, TILE_SIZE-20, TILE_SIZE-20); }
-                else if (t === DESK) { ctx.fillStyle = '#455a64'; ctx.fillRect(px+2, py+6, TILE_SIZE-4, TILE_SIZE-10); }
-                else if (t === SHOP_COUNTER) { ctx.fillStyle = '#d4ac0d'; ctx.fillRect(px, py+16, TILE_SIZE, 16); }
-            }
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            items.forEach(it => { ctx.font = '20px Arial'; ctx.fillText('🚬', it.x+16, it.y+16); });
-            prisoners.forEach(p => { ctx.font = '24px Arial'; ctx.fillText(p.emoji, p.x+16, p.y+16); });
-            if (!player.isHiding) { ctx.font = '24px Arial'; ctx.fillText('👨‍🔧', player.x+16, player.y+16); }
-            else { ctx.fillStyle = 'rgba(52, 152, 219, 0.5)'; ctx.beginPath(); ctx.arc(player.x+16, player.y+16, 12, 0, Math.PI*2); ctx.fill(); ctx.font = '10px Arial'; ctx.fillStyle = 'white'; ctx.fillText('은신중', player.x+16, player.y+16); }
-            guards.forEach(g => {
-                let gr = ctx.createRadialGradient(g.x+16, g.y+16, 20, g.x+16, g.y+16, 120);
-                gr.addColorStop(0, 'rgba(231, 76, 60, 0.4)'); gr.addColorStop(1, 'rgba(231, 76, 60, 0)');
-                ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(g.x+16, g.y+16); ctx.arc(g.x+16, g.y+16, 120, g.angle-0.6, g.angle+0.6); ctx.lineTo(g.x+16, g.y+16); ctx.fill();
-                ctx.font = '24px Arial'; ctx.fillText('👮', g.x+16, g.y+16);
-            });
-            mctx.fillStyle = 'black'; mctx.fillRect(0, 0, minimap.width, minimap.height);
-            let s = 3; for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) if (map[y][x] === WALL) { mctx.fillStyle = '#555'; mctx.fillRect(x*s+10, y*s+10, s, s); }
-            mctx.fillStyle = 'cyan'; mctx.fillRect((player.x/TILE_SIZE)*s+10, (player.y/TILE_SIZE)*s+10, s, s);
-        }
-        window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true); window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
-        function gameLoop() { update(); draw(); if (gameState === 'playing') requestAnimationFrame(gameLoop); }
-    </script>
-    <script src="../mobile-arcade.js"></script>
-    <script>
-        MobileArcade.fit('#gameContainer');
-        MobileArcade.dpad({ up: 'w', down: 's', left: 'a', right: 'd' }, { side: 'left' });
-        MobileArcade.actions([{ label: '🫣숨기', key: 'h' }, { label: '✋줍기', key: 'e' }], { side: 'right' });
-    </script>
+  <script>
+  (()=>{
+    'use strict';
+    const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d'),W=1120,H=700,TS=40,MW=28,MH=17,TAU=Math.PI*2;
+    const TILE={FLOOR:0,WALL:1,BARS:2,DOOR:3,TABLE:4,BED:5,LOCKER:6,COUNTER:7,CONSOLE:8,EXIT:9};
+    const $=s=>document.querySelector(s),ui={hud:$('#hud'),lives:$('#lives'),status:$('#status-label'),objective:$('#objective'),timer:$('#timer'),alert:$('#alert-fill'),alertValue:$('#alert-value'),loot:$('#loot'),gear:$('#gear'),prompt:$('#prompt'),callout:$('#callout'),menu:$('#main-menu'),pause:$('#pause-menu'),caught:$('#caught-menu'),victory:$('#victory-menu'),finalTime:$('#final-time'),finalCatches:$('#final-catches'),finalBest:$('#final-best')};
+    const keys={},pressed=new Set(),map=[],caches=[],guards=[],particles=[],noiseRings=[],decor=[];
+    let state='menu',paused=false,last=performance.now(),elapsed=0,catches=0,contraband=0,hasKey=false,powerOff=false,audioOn=true,audioCtx=null,calloutTimer=0,shake=0,flash=0,nearAction=null;
+    const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t,center=(x,y)=>({x:(x+.5)*TS,y:(y+.5)*TS}),angleDiff=(a,b)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
+    function readBest(){const n=Number(localStorage.getItem('prison_life_best')||0);return n>0?n:0}function saveBest(n){try{localStorage.setItem('prison_life_best',String(Number(n.toFixed(1))))}catch{}}
+    function format(sec){if(!Number.isFinite(sec)||sec<=0)return'--:--';const m=Math.floor(sec/60),s=Math.floor(sec%60),d=Math.floor(sec*10)%10;return`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${d}`}
+    function tone(freq,d=.05,type='sine',vol=.025){if(!audioOn)return;try{audioCtx??=new(window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(vol,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+d);o.connect(g).connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+d)}catch{}}
+    function setPanel(panel){[ui.menu,ui.pause,ui.caught,ui.victory].forEach(x=>x.classList.toggle('active',x===panel))}
+    function setCallout(text,color='#ffb13b',ms=850){ui.callout.textContent=text;ui.callout.style.color=color;ui.callout.classList.remove('show');void ui.callout.offsetWidth;ui.callout.classList.add('show');clearTimeout(calloutTimer);calloutTimer=setTimeout(()=>ui.callout.classList.remove('show'),ms)}
+    function burst(x,y,color,count=14,power=110){for(let i=0;i<count;i++){const a=Math.random()*TAU,s=20+Math.random()*power;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,size:1.5+Math.random()*3,color})}}
+    function buildMap(){map.length=0;caches.length=0;decor.length=0;for(let y=0;y<MH;y++){map[y]=[];for(let x=0;x<MW;x++)map[y][x]=(x===0||x===MW-1||y===0||y===MH-1)?TILE.WALL:TILE.FLOOR}
+      for(let y=1;y<MH-1;y++)map[y][8]=TILE.WALL;map[8][8]=TILE.DOOR;
+      for(let x=9;x<=26;x++){map[6][x]=TILE.BARS;map[11][x]=TILE.BARS}for(const x of [12,18,24]){map[6][x]=TILE.DOOR;map[11][x]=TILE.DOOR}
+      for(let y=1;y<=5;y++){map[y][15]=TILE.WALL;map[y][22]=TILE.WALL}map[3][15]=TILE.DOOR;map[4][22]=TILE.DOOR;
+      for(let y=12;y<=15;y++){map[y][15]=TILE.WALL;map[y][22]=TILE.WALL}map[14][15]=TILE.DOOR;map[13][22]=TILE.DOOR;
+      map[0][4]=TILE.EXIT;map[3][25]=TILE.COUNTER;map[14][25]=TILE.CONSOLE;
+      for(const [x,y] of [[3,3],[5,3],[3,6],[5,6],[3,11],[5,11],[3,14],[5,14]])map[y][x]=TILE.TABLE;
+      for(const [x,y] of [[10,2],[14,4],[17,2],[21,4],[10,14],[14,12],[17,14],[21,12]])map[y][x]=TILE.BED;
+      for(const [x,y] of [[6,2],[6,15],[23,2],[26,5],[23,15]])map[y][x]=TILE.LOCKER;
+      for(const [x,y] of [[11,3],[19,3],[6,5],[11,14],[19,14],[26,8],[6,13]])caches.push({x:(x+.5)*TS,y:(y+.5)*TS,found:false,pulse:Math.random()*TAU});
+      for(const [x,y] of [[2,2],[7,4],[2,9],[7,13],[13,8],[16,9],[20,8],[25,9]])decor.push({x:(x+.5)*TS,y:(y+.5)*TS,phase:Math.random()*TAU})}
+    const player={x:11.5*TS,y:14.5*TS,r:13,angle:-Math.PI/2,hidden:false,hideSpot:null,stamina:100,grace:0,moving:false,sprinting:false};
+    const guardPaths=[[[10,8],[26,8],[26,10],[10,10]],[[7,8],[3,8],[3,3],[6,3],[6,13],[3,13]],[[12,9],[12,3],[18,3],[18,8],[24,8],[24,14],[18,14],[18,9]]];
+    function makeGuard(path,index){const p=center(...path[0]);return{x:p.x,y:p.y,r:14,angle:0,path:path.map(v=>center(...v)),index:1,state:'patrol',wait:0,suspicion:0,lastSeen:{x:p.x,y:p.y},search:0,color:index===0?'#ff5f57':index===1?'#ff8d48':'#ffcf5b'}}
+    function resetMission(){buildMap();guards.length=0;guardPaths.forEach((p,i)=>guards.push(makeGuard(p,i)));player.x=11.5*TS;player.y=14.5*TS;player.angle=-Math.PI/2;player.hidden=false;player.hideSpot=null;player.stamina=100;player.grace=1.6;elapsed=0;catches=0;contraband=0;hasKey=false;powerOff=false;particles.length=0;noiseRings.length=0;nearAction=null;updateHud()}
+    function tileAt(x,y){const tx=Math.floor(x/TS),ty=Math.floor(y/TS);return tx<0||ty<0||tx>=MW||ty>=MH?TILE.WALL:map[ty][tx]}
+    function solid(t){return![TILE.FLOOR,TILE.DOOR].includes(t)}
+    function canMove(x,y,r=player.r){for(const [ox,oy] of [[-r,-r],[r,-r],[-r,r],[r,r]])if(solid(tileAt(x+ox,y+oy)))return false;return true}
+    function lineClear(x1,y1,x2,y2){const d=Math.hypot(x2-x1,y2-y1),steps=Math.ceil(d/8);for(let i=1;i<steps;i++){const t=tileAt(lerp(x1,x2,i/steps),lerp(y1,y2,i/steps));if(t===TILE.WALL)return false}return true}
+    function rayLength(x,y,a,max){for(let d=14;d<=max;d+=9)if(tileAt(x+Math.cos(a)*d,y+Math.sin(a)*d)===TILE.WALL)return d;return max}
+    function objectiveText(){if(powerOff)return'식당 북문으로 탈출';if(hasKey)return'통제실 전력 차단';if(contraband<5)return`거래품 확보 · ${contraband} / 5`;return'매점에서 키카드 구입'}
+    function updateHud(){ui.objective.textContent=objectiveText();ui.timer.textContent=`${format(elapsed)} · NIGHT SHIFT`;ui.loot.textContent=`${contraband} / 5`;ui.gear.textContent=powerOff?'POWER OFF':hasKey?'KEYCARD':'NO GEAR';ui.lives.querySelectorAll('.life').forEach((x,i)=>x.classList.toggle('lost',i>=3-catches))}
+    function updatePlayer(dt){player.grace=Math.max(0,player.grace-dt);if(player.hidden){player.moving=false;player.sprinting=false;if(pressed.has('KeyH')){player.hidden=false;player.hideSpot=null;setCallout('BACK IN THE OPEN','#ffffff',500)}return}let dx=(keys.KeyD?1:0)-(keys.KeyA?1:0),dy=(keys.KeyS?1:0)-(keys.KeyW?1:0),mag=Math.hypot(dx,dy);player.sprinting=(keys.ShiftLeft||keys.ShiftRight||keys.KeyX)&&player.stamina>0&&mag>0;const speed=player.sprinting?225:145;if(mag){dx/=mag;dy/=mag;player.angle=Math.atan2(dy,dx);player.moving=true;const nx=player.x+dx*speed*dt,ny=player.y+dy*speed*dt;if(canMove(nx,player.y))player.x=nx;if(canMove(player.x,ny))player.y=ny}else player.moving=false;if(player.sprinting){player.stamina=Math.max(0,player.stamina-31*dt);if(Math.random()>.84)noiseRings.push({x:player.x,y:player.y,r:8,life:1})}else player.stamina=Math.min(100,player.stamina+19*dt);if(pressed.has('KeyH'))toggleHide();if(pressed.has('KeyE'))interact();nearAction=findAction();updatePrompt()}
+    function hideSpotNear(){let best=null,bestD=54;for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const t=map[y][x];if(t!==TILE.BED&&t!==TILE.LOCKER&&t!==TILE.TABLE)continue;const p=center(x,y),d=Math.hypot(player.x-p.x,player.y-p.y);if(d<bestD){best={x:p.x,y:p.y,type:t};bestD=d}}return best}
+    function toggleHide(){const spot=hideSpotNear();if(!spot){setCallout('NO COVER NEARBY','#ff7a69',520);return}player.hidden=true;player.hideSpot=spot;player.x=spot.x;player.y=spot.y;setCallout(spot.type===TILE.BED?'HIDDEN UNDER BED':spot.type===TILE.LOCKER?'HIDDEN IN LOCKER':'HIDDEN UNDER TABLE','#50e5ff',650);tone(240,.06,'sine',.02)}
+    function findAction(){let best=null,d=55;for(const c of caches){if(c.found)continue;const cd=Math.hypot(player.x-c.x,player.y-c.y);if(cd<d){best={type:'cache',target:c,label:'조사해서 거래품 찾기'};d=cd}}const points=[{type:'shop',x:25.5*TS,y:3.5*TS,label:hasKey?'이미 키카드 보유':contraband>=5?'거래품 5개로 키카드 구입':'거래품 5개 필요'},{type:'console',x:25.5*TS,y:14.5*TS,label:powerOff?'전력이 이미 차단됨':hasKey?'보안 전력 차단':'키카드 필요'},{type:'exit',x:4.5*TS,y:.5*TS,label:powerOff?'북문 열고 탈출':'키카드와 전력 차단 필요'}];for(const p of points){const pd=Math.hypot(player.x-p.x,player.y-p.y);if(pd<d){best=p;d=pd}}return best}
+    function updatePrompt(){if(player.hidden){ui.prompt.innerHTML='<b>H</b> 은신처에서 나오기';ui.prompt.classList.add('show');return}if(nearAction){ui.prompt.innerHTML=`<b>E</b> ${nearAction.label}`;ui.prompt.classList.add('show');return}const hide=hideSpotNear();if(hide){ui.prompt.innerHTML='<b>H</b> 주변 은신처 사용';ui.prompt.classList.add('show')}else ui.prompt.classList.remove('show')}
+    function interact(){const a=findAction();if(!a)return;if(a.type==='cache'){a.target.found=true;contraband++;burst(a.target.x,a.target.y,'#ffba4d',20,150);setCallout(`CONTRABAND ${contraband} / 5`,'#ffb13b');tone(520,.09,'triangle',.035);updateHud()}else if(a.type==='shop'){if(hasKey)setCallout('KEYCARD ALREADY ACQUIRED','#ffffff',520);else if(contraband<5)setCallout(`NEED ${5-contraband} MORE`,'#ff6f62',550);else{contraband-=5;hasKey=true;setCallout('KEYCARD ACQUIRED','#50e5ff',900);burst(a.x,a.y,'#50e5ff',26,170);tone(640,.15,'square',.04);updateHud()}}else if(a.type==='console'){if(powerOff)setCallout('SECURITY IS DARK','#ffffff',500);else if(!hasKey)setCallout('KEYCARD REQUIRED','#ff6f62',550);else{powerOff=true;setCallout('PERIMETER POWER OFF','#cfff57',1000);flash=.7;shake=8;burst(a.x,a.y,'#cfff57',30,200);tone(120,.2,'sawtooth',.05);updateHud()}}else if(a.type==='exit'){if(!powerOff)setCallout('THE GATE IS STILL LOCKED','#ff6f62',650);else victory()}}
+    function guardVision(g){const d=Math.hypot(player.x-g.x,player.y-g.y),max=powerOff?165:g.state==='chase'?270:225,fov=g.state==='chase'?.92:.68,a=Math.atan2(player.y-g.y,player.x-g.x);return!player.hidden&&player.grace<=0&&d<max&&Math.abs(angleDiff(a,g.angle))<fov&&lineClear(g.x,g.y,player.x,player.y)?{seen:true,d,max}:{seen:false,d,max}}
+    function moveToward(g,target,speed,dt){const a=Math.atan2(target.y-g.y,target.x-g.x);g.angle=lerpAngle(g.angle,a,1-Math.pow(.0008,dt));const nx=g.x+Math.cos(g.angle)*speed*dt,ny=g.y+Math.sin(g.angle)*speed*dt;if(canGuardMove(nx,g.y,g.r))g.x=nx;if(canGuardMove(g.x,ny,g.r))g.y=ny;return Math.hypot(target.x-g.x,target.y-g.y)}
+    function lerpAngle(a,b,t){return a+angleDiff(b,a)*t}function canGuardMove(x,y,r){for(const [ox,oy] of [[-r,-r],[r,-r],[-r,r],[r,r]]){const t=tileAt(x+ox,y+oy);if(t===TILE.WALL)return false}return true}
+    function updateGuard(g,dt){const v=guardVision(g);if(v.seen){const rate=(player.sprinting?105:player.moving?72:42)*(1-v.d/v.max*.45);g.suspicion=clamp(g.suspicion+rate*dt,0,100);g.lastSeen={x:player.x,y:player.y};if(g.suspicion>=100&&g.state!=='chase'){g.state='chase';g.search=5;setCallout('SPOTTED! BREAK LINE OF SIGHT','#ff4d5f',650);tone(120,.18,'sawtooth',.045)}}else g.suspicion=Math.max(0,g.suspicion-(g.state==='chase'?10:31)*dt);
+      if(player.sprinting&&g.state==='patrol'&&Math.hypot(player.x-g.x,player.y-g.y)<175&&lineClear(g.x,g.y,player.x,player.y)){g.state='investigate';g.lastSeen={x:player.x,y:player.y};g.search=2.5}
+      if(g.state==='chase'){const d=moveToward(g,v.seen?player:g.lastSeen,154,dt);if(v.seen)g.search=4;else g.search-=dt;if(d<g.r+player.r+5){caught();return}if(g.search<=0){g.state='search';g.search=3.2;g.suspicion=62}}
+      else if(g.state==='investigate'||g.state==='search'){const d=moveToward(g,g.lastSeen,g.state==='search'?76:108,dt);g.search-=dt;if(d<15||g.search<=0){g.state='patrol';g.suspicion=0}}
+      else{const target=g.path[g.index],d=moveToward(g,target,78,dt);if(d<10){g.wait-=dt;if(g.wait<=0){g.index=(g.index+1)%g.path.length;g.wait=.35}}}}
+    function caught(){if(state!=='playing'||player.grace>0)return;catches++;shake=18;flash=1;burst(player.x,player.y,'#ff4d5f',32,240);tone(85,.25,'sawtooth',.055);updateHud();if(catches>=3){state='caught';ui.prompt.classList.remove('show');setTimeout(()=>setPanel(ui.caught),450);return}if(!hasKey&&contraband>0){contraband--;const found=caches.find(c=>c.found);if(found)found.found=false}player.x=11.5*TS;player.y=14.5*TS;player.hidden=false;player.grace=2;guards.forEach(g=>{g.state='patrol';g.suspicion=0;g.search=0});setCallout(`CAUGHT · ${3-catches} CHANCES LEFT`,'#ff6a66',1000);updateHud()}
+    function update(dt){if(state!=='playing')return;elapsed+=dt;updatePlayer(dt);guards.forEach(g=>updateGuard(g,dt));const alert=Math.max(0,...guards.map(g=>g.suspicion));ui.alert.style.width=`${alert}%`;ui.alertValue.textContent=`${Math.round(alert)}%`;ui.status.textContent=player.hidden?'HIDDEN':alert>=100?'CHASE':alert>45?'WATCHED':player.sprinting?'NOISY':'CLEAR';updateHud()}
+    function startGame(){clearTimeout(calloutTimer);resetMission();state='playing';paused=false;ui.hud.classList.remove('hidden');setPanel(null);window.setPrisonMobileControls?.(true);setCallout('NIGHT SHIFT STARTED','#ffb13b',900)}
+    function resetMenu(){state='menu';paused=false;buildMap();player.x=11.5*TS;player.y=14.5*TS;guards.length=0;guardPaths.forEach((p,i)=>guards.push(makeGuard(p,i)));ui.hud.classList.add('hidden');ui.prompt.classList.remove('show');setPanel(ui.menu);window.setPrisonMobileControls?.(false)}
+    function victory(){state='victory';const best=readBest();if(!best||elapsed<best)saveBest(elapsed);ui.finalTime.textContent=format(elapsed);ui.finalCatches.textContent=catches;ui.finalBest.textContent=format(readBest());ui.prompt.classList.remove('show');setPanel(ui.victory);for(let i=0;i<100;i++)particles.push({x:4.5*TS,y:20,vx:(Math.random()-.5)*300,vy:30+Math.random()*250,life:1.7,size:2+Math.random()*5,color:['#cfff57','#50e5ff','#ffb13b','#ffffff'][i%4]});tone(720,.3,'triangle',.045)}
+    function togglePause(){if(paused){paused=false;state='playing';setPanel(null);last=performance.now();return}if(state!=='playing')return;paused=true;state='paused';setPanel(ui.pause)}
+    function drawFloor(time){const g=ctx.createLinearGradient(0,0,W,H);g.addColorStop(0,'#222b31');g.addColorStop(.5,'#11171c');g.addColorStop(1,'#242019');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const px=x*TS,py=y*TS,t=map[y][x];ctx.fillStyle=(x+y)%2?'#171d21':'#1b2226';ctx.fillRect(px,py,TS,TS);ctx.strokeStyle='rgba(126,155,167,.045)';ctx.strokeRect(px+.5,py+.5,TS-1,TS-1);if(t!==TILE.FLOOR&&t!==TILE.DOOR)drawTile(t,px,py,time)}const sheen=ctx.createLinearGradient(0,0,W,0);sheen.addColorStop(0,'transparent');sheen.addColorStop(.48,'rgba(100,186,209,.045)');sheen.addColorStop(.52,'rgba(255,183,78,.04)');sheen.addColorStop(1,'transparent');ctx.fillStyle=sheen;ctx.fillRect(0,0,W,MH*TS)}
+    function drawTile(t,x,y,time){if(t===TILE.WALL||t===TILE.EXIT){ctx.fillStyle='#0b1115';ctx.fillRect(x,y,TS,TS);ctx.fillStyle='#26343b';ctx.fillRect(x+2,y+2,TS-4,8);ctx.strokeStyle='#34444b';ctx.strokeRect(x+2.5,y+2.5,TS-5,TS-5);if(t===TILE.EXIT){ctx.fillStyle=powerOff?'#8dcc54':'#962d2d';ctx.fillRect(x+6,y+6,TS-12,TS-6);ctx.strokeStyle='#080a0b';ctx.lineWidth=3;for(let i=0;i<4;i++){ctx.beginPath();ctx.moveTo(x+9+i*7,y+7);ctx.lineTo(x+9+i*7,y+TS);ctx.stroke()}}}else if(t===TILE.BARS){ctx.fillStyle='#10171b';ctx.fillRect(x,y,TS,TS);ctx.strokeStyle='#7f9197';ctx.lineWidth=3;for(let i=5;i<TS;i+=8){ctx.beginPath();ctx.moveTo(x+i,y);ctx.lineTo(x+i,y+TS);ctx.stroke()}ctx.strokeStyle='#344247';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x,y+7);ctx.lineTo(x+TS,y+7);ctx.moveTo(x,y+TS-7);ctx.lineTo(x+TS,y+TS-7);ctx.stroke()}else if(t===TILE.DOOR){ctx.fillStyle='#27353b';ctx.fillRect(x+3,y+2,TS-6,TS-4);ctx.fillStyle='#0b1115';ctx.fillRect(x+8,y+7,TS-16,TS-14);ctx.fillStyle='#e1ac43';ctx.beginPath();ctx.arc(x+TS-10,y+TS/2,2.5,0,TAU);ctx.fill()}else if(t===TILE.TABLE){ctx.fillStyle='#3c2d25';ctx.shadowColor='#000';ctx.shadowBlur=6;ctx.fillRect(x+4,y+8,TS-8,TS-16);ctx.shadowBlur=0;ctx.fillStyle='#79513a';ctx.fillRect(x+5,y+8,TS-10,5)}else if(t===TILE.BED){ctx.fillStyle='#182126';ctx.fillRect(x+2,y+4,TS-4,TS-8);ctx.fillStyle='#365666';ctx.fillRect(x+4,y+7,TS-8,TS-13);ctx.fillStyle='#c5c7b9';ctx.fillRect(x+5,y+8,11,9)}else if(t===TILE.LOCKER){ctx.fillStyle='#34464d';ctx.fillRect(x+5,y+2,TS-10,TS-4);ctx.strokeStyle='#6a7c82';ctx.strokeRect(x+6.5,y+3.5,TS-13,TS-7);ctx.fillStyle='#0e1518';for(let i=0;i<3;i++)ctx.fillRect(x+12,y+9+i*5,TS-24,2)}else if(t===TILE.COUNTER){ctx.fillStyle='#5c4126';ctx.fillRect(x+1,y+9,TS-2,TS-10);ctx.fillStyle='#d79c3c';ctx.fillRect(x+1,y+7,TS-2,6);ctx.fillStyle='#50e5ff';ctx.shadowColor='#50e5ff';ctx.shadowBlur=10;ctx.fillRect(x+15,y+15,10,7);ctx.shadowBlur=0}else if(t===TILE.CONSOLE){ctx.fillStyle='#242d32';ctx.fillRect(x+3,y+3,TS-6,TS-6);ctx.fillStyle=powerOff?'#752d2d':'#83e36d';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=10;ctx.fillRect(x+9,y+8,TS-18,10);ctx.shadowBlur=0;ctx.fillStyle='#88969c';for(let i=0;i<3;i++)ctx.fillRect(x+8+i*9,y+25,5,5)}}
+    function drawCaches(time){for(const c of caches){if(c.found)continue;const pulse=.55+Math.sin(time*.004+c.pulse)*.25;ctx.save();ctx.translate(c.x,c.y);ctx.globalAlpha=pulse;ctx.shadowColor='#ffb13b';ctx.shadowBlur=16;ctx.fillStyle='#f1a63b';ctx.beginPath();ctx.roundRect(-10,-6,20,12,3);ctx.fill();ctx.fillStyle='#fff4c8';ctx.fillRect(-5,-3,10,2);ctx.restore()}ctx.globalAlpha=1}
+    function drawDecor(time){for(const d of decor){ctx.fillStyle='#13191d';ctx.beginPath();ctx.arc(d.x,d.y+5,11,0,TAU);ctx.fill();ctx.fillStyle='#626b6e';ctx.beginPath();ctx.arc(d.x,d.y-5,6,0,TAU);ctx.fill();ctx.globalAlpha=.2+Math.sin(time*.002+d.phase)*.04;ctx.fillStyle='#fff';ctx.fillRect(d.x-1,d.y+16,2,10);ctx.globalAlpha=1}}
+    function drawVision(g){const max=powerOff?165:g.state==='chase'?270:225,fov=g.state==='chase'?.92:.68,segments=18;ctx.save();ctx.beginPath();ctx.moveTo(g.x,g.y);for(let i=0;i<=segments;i++){const a=g.angle-fov+(fov*2*i/segments),r=rayLength(g.x,g.y,a,max);ctx.lineTo(g.x+Math.cos(a)*r,g.y+Math.sin(a)*r)}ctx.closePath();const grad=ctx.createRadialGradient(g.x,g.y,10,g.x,g.y,max);grad.addColorStop(0,g.state==='chase'?'rgba(255,55,61,.32)':'rgba(255,195,82,.24)');grad.addColorStop(1,'rgba(255,60,50,0)');ctx.fillStyle=grad;ctx.fill();ctx.restore()}
+    function drawGuard(g,time){drawVision(g);ctx.save();ctx.translate(g.x,g.y);ctx.rotate(g.angle);ctx.fillStyle='rgba(0,0,0,.38)';ctx.beginPath();ctx.ellipse(-3,5,17,13,0,0,TAU);ctx.fill();ctx.fillStyle=g.state==='chase'?'#c53238':'#1c4262';ctx.beginPath();ctx.roundRect(-14,-11,28,22,8);ctx.fill();ctx.fillStyle='#dde3df';ctx.beginPath();ctx.arc(7,0,7,0,TAU);ctx.fill();ctx.fillStyle='#10151a';ctx.fillRect(4,-6,8,4);ctx.fillStyle=g.color;ctx.shadowColor=g.color;ctx.shadowBlur=10;ctx.fillRect(-10,-14,18,4);ctx.shadowBlur=0;ctx.restore();if(g.suspicion>2){ctx.fillStyle='#131619';ctx.fillRect(g.x-20,g.y-26,40,4);ctx.fillStyle=g.suspicion>=100?'#ff4351':'#ffb64b';ctx.fillRect(g.x-20,g.y-26,40*g.suspicion/100,4)}}
+    function drawPlayer(time){if(player.hidden){ctx.save();ctx.globalAlpha=.55+Math.sin(time*.006)*.15;ctx.strokeStyle='#50e5ff';ctx.lineWidth=2;ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(player.x,player.y,16,0,TAU);ctx.stroke();ctx.setLineDash([]);ctx.restore();return}ctx.save();ctx.translate(player.x,player.y);ctx.rotate(player.angle);ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(-2,5,17,12,0,0,TAU);ctx.fill();ctx.fillStyle=player.grace>0&&Math.sin(time*.02)>0?'#fff2b0':'#db6d27';ctx.beginPath();ctx.roundRect(-14,-11,28,22,8);ctx.fill();ctx.fillStyle='#f0c39c';ctx.beginPath();ctx.arc(7,0,7,0,TAU);ctx.fill();ctx.fillStyle='#4d241b';ctx.beginPath();ctx.arc(8,0,7,Math.PI*.65,Math.PI*1.35);ctx.fill();ctx.strokeStyle='#ffc46b';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-6,-7);ctx.lineTo(4,-7);ctx.moveTo(-6,7);ctx.lineTo(4,7);ctx.stroke();ctx.restore();if(player.sprinting){ctx.strokeStyle='rgba(255,185,80,.5)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(player.x,player.y,23+Math.sin(time*.012)*3,0,TAU);ctx.stroke()}}
+    function drawEffects(dt){for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.pow(.08,dt);p.vy*=Math.pow(.08,dt);p.life-=1.3*dt;const life=Math.max(0,p.life);ctx.globalAlpha=life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size*life,0,TAU);ctx.fill()}for(const n of noiseRings){n.r+=105*dt;n.life-=1.7*dt;ctx.globalAlpha=Math.max(0,n.life)*.35;ctx.strokeStyle='#ffbe62';ctx.lineWidth=2;ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,TAU);ctx.stroke()}ctx.globalAlpha=1;for(let i=particles.length-1;i>=0;i--)if(particles[i].life<=0)particles.splice(i,1);for(let i=noiseRings.length-1;i>=0;i--)if(noiseRings[i].life<=0)noiseRings.splice(i,1)}
+    function drawVignette(){const g=ctx.createRadialGradient(W/2,H/2,230,W/2,H/2,720);g.addColorStop(0,'transparent');g.addColorStop(1,player.hidden?'rgba(0,35,49,.76)':'rgba(0,0,0,.66)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);if(!powerOff){ctx.fillStyle='rgba(255,185,80,.035)';for(const x of [150,560,970]){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x-90,360);ctx.lineTo(x+90,360);ctx.closePath();ctx.fill()}}}
+    function draw(time,dt){ctx.clearRect(0,0,W,H);ctx.save();if(shake>.2)ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);drawFloor(time);drawCaches(time);drawDecor(time);guards.forEach(g=>drawGuard(g,time));drawPlayer(time);drawEffects(dt);drawVignette();ctx.restore();if(flash>.01){ctx.fillStyle=`rgba(255,255,255,${flash*.18})`;ctx.fillRect(0,0,W,H)}shake*=Math.pow(.001,dt);flash*=Math.pow(.002,dt)}
+    function loop(now){const dt=clamp((now-last)/1000,.001,.034);last=now;if(!paused)update(dt);draw(now,dt);pressed.clear();requestAnimationFrame(loop)}
+    addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(!keys[e.code]&&!e.repeat)pressed.add(e.code);keys[e.code]=true;if(['KeyP','Escape'].includes(e.code)){e.preventDefault();togglePause()}});addEventListener('keyup',e=>keys[e.code]=false);addEventListener('blur',()=>{Object.keys(keys).forEach(k=>keys[k]=false);if(state==='playing')togglePause()});
+    $('#start').onclick=startGame;$('#resume').onclick=togglePause;$('#retry').onclick=startGame;$('#escape-again').onclick=startGame;$('#caught-menu-btn').onclick=resetMenu;$('#victory-menu-btn').onclick=resetMenu;$('#sound').onclick=()=>{audioOn=!audioOn;$('#sound').textContent=audioOn?'♪':'×';$('#sound').setAttribute('aria-label',audioOn?'소리 끄기':'소리 켜기')};
+    window.startPrisonLife=startGame;window.resetPrisonLife=resetMenu;buildMap();guards.push(...guardPaths.map((p,i)=>makeGuard(p,i)));last=performance.now();loop(last);
+  })();
+  </script>
+  <script src="../mobile-arcade.js"></script>
+  <script>
+  (()=>{if(!window.MobileArcade)return;const pad=MobileArcade.dpad({up:'w',down:'s',left:'a',right:'d'},{side:'left',tag:'MOVE'}),acts=MobileArcade.actions([{label:'HIDE',key:'h'},{label:'USE',key:'e'},{label:'RUN',key:'x'}],{side:'right'}),tags=[...document.querySelectorAll('.ma-tag')];window.setPrisonMobileControls=active=>{pad.style.display=active?'':'none';acts.style.display=active?'':'none';if(tags[0])tags[0].style.display=active?'':'none'};window.setPrisonMobileControls(false)})();
+  </script>
 </body>
 </html>

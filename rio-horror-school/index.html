@@ -968,6 +968,9 @@
         let floorObjectives = {};
         let surviveTime = 0;
         let lastTime = 0;
+        let previousFrameTime = 0;
+        let simulationAccumulator = 0;
+        const SIMULATION_STEP = 1000 / 60;
         let countdownTime = 3;
         let countdownInterval = null;
         let attackEffects = [];
@@ -3297,6 +3300,8 @@
             }, 1000);
 
             lastTime = Date.now();
+            previousFrameTime = 0;
+            simulationAccumulator = 0;
             requestAnimationFrame(gameLoop);
         }
 
@@ -3348,20 +3353,30 @@
             fitToScreen();
         }
 
-        function gameLoop() {
+        function gameLoop(timestamp = performance.now()) {
             // Keep the loop alive during the pre-game countdown so the map stays
             // visible behind the overlay; only run gameplay updates once playing.
             if (gameState !== 'playing' && gameState !== 'countdown') return;
 
+            if (!previousFrameTime) previousFrameTime = timestamp;
+            const frameElapsed = Math.min(100, Math.max(0, timestamp - previousFrameTime));
+            previousFrameTime = timestamp;
+
             if (gameState === 'playing') {
-                const now = Date.now();
-                if (now - lastTime >= 1000) { surviveTime++; lastTime = now; }
+                simulationAccumulator += frameElapsed;
+                let steps = 0;
+                while (simulationAccumulator >= SIMULATION_STEP && steps < 4) {
+                    const now = Date.now();
+                    if (now - lastTime >= 1000) { surviveTime++; lastTime = now; }
 
-                // Update both entities (each on its own floor)
-                if (role === 'rio') { updateHuman(rio); } else { updateRioAI(); }
-                if (role === 'villain') { updateHuman(villain); } else { updateVillainAI(); }
-
-                updateEffects();
+                    // The game logic is tuned in 60 Hz ticks. Fixed stepping keeps
+                    // movement, cooldowns, AI and effects consistent on 90/120Hz screens.
+                    if (role === 'rio') { updateHuman(rio); } else { updateRioAI(); }
+                    if (role === 'villain') { updateHuman(villain); } else { updateVillainAI(); }
+                    updateEffects();
+                    simulationAccumulator -= SIMULATION_STEP;
+                    steps++;
+                }
             }
 
             ctx.fillStyle = '#0a0a14';

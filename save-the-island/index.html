@@ -206,6 +206,21 @@
       #restart-btn {
         max-width: 200px;
       }
+
+      @media (max-width: 600px) {
+        .hud { top: 8px; left: 8px; gap: 6px; }
+        .panel { width: 176px; padding: 10px 11px; border-radius: 12px; }
+        h1 { margin-bottom: 8px; font-size: 15px; }
+        .stat-row { margin-bottom: 4px; }
+        .stat-label { font-size: 8px; }
+        .stat-value { font-size: 13px; }
+        .money-text { font-size: 17px; }
+        .btn { margin-top: 6px; padding: 8px; border-radius: 8px; font-size: 9px; }
+        .item-badge { margin-top: 6px; padding: 3px 6px; font-size: 8px; }
+        .controls-tip { display: none; }
+        .game-over h2 { font-size: 38px; }
+        .game-over p { font-size: 14px; }
+      }
     </style>
   </head>
   <body>
@@ -640,10 +655,12 @@
 
       function update(delta) {
         if (state.gameOver) return;
-        state.frame++;
+        // Keep gameplay and visual timing stable on 60/90/120Hz displays.
+        const ts = delta / 16.67;
+        state.frame += ts;
         state.gunCooldown = Math.max(0, state.gunCooldown - delta);
         state.cannonCooldown = Math.max(0, state.cannonCooldown - delta);
-        state.shake *= 0.9;
+        state.shake *= Math.pow(0.9, ts);
 
         if (!state.launcherAlive) {
           state.launcherCooldown -= delta;
@@ -664,24 +681,24 @@
 
         // Clouds
         clouds.forEach(c => {
-          c.x -= c.speed;
+          c.x -= c.speed * ts;
           if (c.x < -200) c.x = width + 200;
         });
 
         // Projectiles
         for (let i = projectiles.length - 1; i >= 0; i--) {
           const p = projectiles[i];
-          p.x += p.vx; p.y += p.vy;
+          p.x += p.vx * ts; p.y += p.vy * ts;
           if (p.x < 0 || p.x > width || p.y < 0 || p.y > height) projectiles.splice(i, 1);
         }
 
         // Enemies
         for (let i = enemies.length - 1; i >= 0; i--) {
           const e = enemies[i];
-          e.x += e.speed;
+          e.x += e.speed * ts;
           
           if (e.takingOff) {
-            e.y -= 2;
+            e.y -= 2 * ts;
             if (e.y <= e.targetY) { e.y = e.targetY; e.takingOff = false; }
           }
 
@@ -726,11 +743,11 @@
         // Missiles & Bombs
         for (let i = enemyMissiles.length - 1; i >= 0; i--) {
           const m = enemyMissiles[i];
-          m.x += m.vx; m.y += m.vy;
+          m.x += m.vx * ts; m.y += m.vy * ts;
           if (m.gravity) {
-            m.vy += m.gravity;
+            m.vy += m.gravity * ts;
             // Add smoke trail for bombs
-            if (state.frame % 3 === 0) {
+            if (Math.random() < Math.min(1, ts / 3)) {
               particles.push({
                 x: m.x, y: m.y,
                 vx: (Math.random() - 0.5) * 1,
@@ -760,23 +777,23 @@
         // Gifts
         for (let i = gifts.length - 1; i >= 0; i--) {
           const g = gifts[i];
-          g.y += g.speed;
+          g.y += g.speed * ts;
           if (g.y > getSeaY()) gifts.splice(i, 1);
         }
 
         // Particles
         for (let i = particles.length - 1; i >= 0; i--) {
           const p = particles[i];
-          p.x += p.vx; p.y += p.vy;
-          p.life -= p.decay;
+          p.x += p.vx * ts; p.y += p.vy * ts;
+          p.life -= p.decay * ts;
           if (p.life <= 0) particles.splice(i, 1);
         }
 
         // Popups
         for (let i = popups.length - 1; i >= 0; i--) {
           const p = popups[i];
-          p.life -= 0.016;
-          p.y -= 0.5;
+          p.life -= delta / 1000;
+          p.y -= 0.5 * ts;
           if (p.life <= 0) popups.splice(i, 1);
         }
 
@@ -988,9 +1005,9 @@
       function drawBaseHpBar() {
         const iw = getIslandWidth();
         const seaY = getSeaY();
-        const x = width - iw * 0.5;
+        const barW = Math.min(120, width * 0.28);
+        const x = Math.min(width - barW / 2 - 8, width - iw * 0.5);
         const y = seaY - 140;
-        const barW = 120;
         const barH = 10;
         
         const hpRatio = Math.max(0, state.baseHp / state.maxHp);

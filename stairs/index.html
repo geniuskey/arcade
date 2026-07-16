@@ -1,623 +1,84 @@
-<!DOCTYPE html>
-<html lang="en">
-
+<!doctype html>
+<html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Infinite Stairs - Arcade</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=Space+Grotesk:wght@700&display=swap"
-        rel="stylesheet">
-    <style>
-        :root {
-            --bg-color: #a0d8ef;
-            --ui-color: #ff9d00;
-            --ui-border: #804f00;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            background-color: #222;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            touch-action: none;
-        }
-
-        #game-container {
-            position: relative;
-            width: 100%;
-            max-width: 450px;
-            height: 100%;
-            background-color: var(--bg-color);
-            overflow: hidden;
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
-        }
-
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-            image-rendering: pixelated;
-        }
-
-        #ui {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-
-        .energy-bar-container {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            height: 30px;
-            background: #444;
-            border: 4px solid #fff;
-            border-radius: 15px;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-        }
-
-        #energy-fill {
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(to bottom, #ff5f6d, #ffc371);
-        }
-
-        #timer-text {
-            position: absolute;
-            width: 100%;
-            text-align: center;
-            color: #fff;
-            font-weight: 800;
-            font-size: 18px;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-            z-index: 2;
-        }
-
-        #score-display {
-            position: absolute;
-            top: 60px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 48px;
-            color: #fff;
-            text-shadow: 3px 3px 0 #000;
-        }
-
-        .controls {
-            position: absolute;
-            bottom: 40px;
-            width: 100%;
-            display: flex;
-            justify-content: space-around;
-            padding: 0 20px;
-            pointer-events: auto;
-        }
-
-        .btn {
-            width: 120px;
-            height: 120px;
-            background: var(--ui-color);
-            border: 6px solid var(--ui-border);
-            border-bottom-width: 12px;
-            border-radius: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: transform 0.05s, border-bottom-width 0.05s;
-            color: #fff;
-        }
-
-        .btn:active {
-            transform: translateY(6px);
-            border-bottom-width: 6px;
-        }
-
-        .btn-icon {
-            font-size: 40px;
-            margin-bottom: 4px;
-        }
-
-        .btn-label {
-            font-size: 14px;
-            font-weight: 800;
-            text-transform: uppercase;
-        }
-
-        #game-over {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 10;
-            pointer-events: auto;
-            padding: 20px;
-        }
-
-        #game-over h2 {
-            color: #fff;
-            font-size: 40px;
-            margin-bottom: 10px;
-        }
-
-        #game-over p {
-            color: #fff;
-            font-size: 20px;
-            margin-bottom: 20px;
-        }
-
-        .leaderboard {
-            width: 100%;
-            max-width: 300px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 15px;
-            margin-bottom: 30px;
-            color: #fff;
-        }
-
-        .leaderboard h3 {
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: 18px;
-            color: var(--ui-color);
-            text-transform: uppercase;
-        }
-
-        .rank-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            font-family: 'Space Grotesk', sans-serif;
-        }
-
-        .rank-item:last-child {
-            border-bottom: none;
-        }
-
-        .rank-num {
-            color: var(--ui-color);
-            font-weight: 800;
-            width: 30px;
-        }
-
-        .rank-score {
-            font-weight: 700;
-        }
-
-        .retry-btn {
-            padding: 15px 40px;
-            background: #ff9d00;
-            color: #fff;
-            font-size: 20px;
-            font-weight: 800;
-            border-radius: 30px;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 5px 0 #804f00;
-        }
-
-        .retry-btn:active {
-            transform: translateY(3px);
-            box-shadow: 0 2px 0 #804f00;
-        }
-
-        #start-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 5;
-            pointer-events: auto;
-        }
-
-        .start-btn {
-            padding: 20px 50px;
-            background: #ff9d00;
-            color: #fff;
-            font-size: 32px;
-            font-weight: 800;
-            border-radius: 40px;
-            cursor: pointer;
-            border: 6px solid #804f00;
-            box-shadow: 0 10px 0 #804f00;
-        }
-
-        .start-btn:active {
-            transform: translateY(5px);
-            box-shadow: 0 5px 0 #804f00;
-        }
-
-        .back-btn {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 1000;
-            text-decoration: none;
-            color: white;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 6px 12px;
-            border-radius: 15px;
-            font-family: sans-serif;
-            font-size: 12px;
-            transition: background 0.3s;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .back-btn:hover {
-            background: rgba(0, 0, 0, 0.8);
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <title>Starway — Infinite Stairs</title>
+  <style>
+    :root{color-scheme:dark;--ink:#f8f5ff;--muted:#aaa2bf;--lime:#d9ff4a;--violet:#9c5cff;--panel:rgba(13,9,25,.88)}
+    *{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden}body{display:grid;place-items:center;color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;touch-action:none;background:radial-gradient(circle at 50% 38%,#31164b 0,#100a1e 46%,#030207 100%)}
+    button,a{font:inherit}button{border:0;color:inherit}button:focus-visible,a:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
+    #game-shell{position:relative;width:min(1120px,calc(100vw - 24px));max-height:calc(100vh - 18px);aspect-ratio:16/10;overflow:hidden;border:1px solid rgba(255,255,255,.12);border-radius:26px;background:#080510;box-shadow:0 34px 100px rgba(0,0,0,.62),inset 0 1px rgba(255,255,255,.06)}
+    canvas{width:100%;height:100%;display:block}
+    .corner{position:absolute;z-index:15;top:18px;display:grid;place-items:center;height:42px;border:1px solid rgba(255,255,255,.16);border-radius:13px;color:#fff;background:rgba(7,5,14,.62);backdrop-filter:blur(10px);text-decoration:none;font-weight:850;font-size:12px;box-shadow:0 10px 26px rgba(0,0,0,.2)}
+    #back{left:18px;padding:0 16px}#sound{right:18px;width:42px;cursor:pointer}
+    #hud{position:absolute;z-index:10;inset:18px 76px auto;display:grid;grid-template-columns:1fr 250px 1fr;gap:12px;align-items:start;pointer-events:none;transition:.2s opacity}
+    #hud.hidden{opacity:0}.hud-card{min-height:58px;padding:10px 14px;border:1px solid rgba(255,255,255,.12);border-radius:15px;background:rgba(8,5,18,.68);backdrop-filter:blur(10px);box-shadow:0 12px 30px rgba(0,0,0,.2)}
+    .hud-card.right{text-align:right}.hud-card small{display:block;margin-bottom:3px;color:#a89dbc;font:850 8px/1.2 ui-monospace,monospace;letter-spacing:.12em}.hud-card strong{font:950 20px/1 ui-monospace,monospace}.hud-card strong span{color:var(--lime)}
+    .time-card{text-align:center}.time-row{display:flex;justify-content:space-between;align-items:baseline}.time-row strong{font-size:25px}.time-row span{color:var(--lime);font:900 9px ui-monospace,monospace;letter-spacing:.1em}.time-track{height:4px;margin-top:8px;overflow:hidden;border-radius:10px;background:rgba(255,255,255,.1)}.time-track i{display:block;width:100%;height:100%;border-radius:inherit;background:linear-gradient(90deg,#ff6a66,#ffc25b,#d9ff4a);box-shadow:0 0 14px #d9ff4a;transition:width .08s linear}
+    #toast{position:absolute;z-index:12;top:104px;left:50%;min-width:190px;padding:8px 15px;translate:-50% -8px;opacity:0;text-align:center;color:var(--lime);border:1px solid currentColor;border-radius:999px;background:rgba(7,5,15,.78);font:950 10px ui-monospace,monospace;letter-spacing:.12em;pointer-events:none;transition:.2s}.show#toast{translate:-50% 0;opacity:1}
+    #controls{position:absolute;z-index:13;left:50%;bottom:18px;display:flex;gap:10px;translate:-50% 0;transition:.18s opacity,.18s translate}#controls.hidden{opacity:0;translate:-50% 8px;pointer-events:none}.game-key{width:132px;height:54px;cursor:pointer;border:1px solid rgba(255,255,255,.2);border-radius:15px;background:linear-gradient(145deg,rgba(38,27,62,.92),rgba(14,9,26,.9));box-shadow:0 10px 26px rgba(0,0,0,.35),inset 0 1px rgba(255,255,255,.08);transition:.1s transform,.1s border-color,.1s background}.game-key:hover{border-color:#c7a2ff;background:linear-gradient(145deg,#58368a,#24143b)}.game-key:active,.game-key.active{transform:translateY(2px) scale(.97);border-color:var(--lime)}.game-key b{display:block;font:950 12px ui-monospace,monospace;letter-spacing:.08em}.game-key span{display:block;margin-top:3px;color:#968ca9;font:800 8px ui-monospace,monospace}.game-key.climb{background:linear-gradient(145deg,#b76036,#59264d)}
+    #ui-layer{position:absolute;z-index:20;inset:0;display:grid;place-items:center;pointer-events:none}.panel{display:none;width:min(560px,calc(100% - 34px));padding:34px 36px;border:1px solid rgba(255,255,255,.13);border-radius:25px;background:linear-gradient(145deg,rgba(21,13,38,.96),rgba(10,7,20,.94));box-shadow:0 32px 90px rgba(0,0,0,.58),inset 0 1px rgba(255,255,255,.05);backdrop-filter:blur(18px);pointer-events:auto}.panel.active{display:block}
+    .kicker{color:var(--lime);font:950 9px ui-monospace,monospace;letter-spacing:.15em}.panel h1,.panel h2{margin:9px 0 10px;font-size:43px;line-height:.96;letter-spacing:-.055em}.panel h1 span,.panel h2 span{-webkit-text-stroke:1px rgba(255,255,255,.5);color:transparent}.tagline{margin:0;color:#aca4bb;font-size:13px;line-height:1.65}.how{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:19px 0}.how div{padding:11px 12px;border:1px solid rgba(255,255,255,.1);border-radius:13px;background:rgba(255,255,255,.025)}.how strong{display:block;color:#fff;font:950 10px ui-monospace,monospace;letter-spacing:.08em}.how span{display:block;margin-top:5px;color:#958ca5;font-size:11px;line-height:1.4}
+    .mode{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px;border:1px solid rgba(255,255,255,.09);border-radius:14px;background:rgba(0,0,0,.16)}.mode button{height:36px;cursor:pointer;border-radius:10px;color:#8f879e;background:transparent;font:900 9px ui-monospace,monospace;letter-spacing:.1em}.mode button.active{color:#120c1d;background:linear-gradient(90deg,#d9ff4a,#ffbb56);box-shadow:0 5px 18px rgba(217,255,74,.18)}
+    .primary{width:100%;height:52px;margin-top:12px;cursor:pointer;border-radius:14px;color:#140d1d;background:linear-gradient(90deg,#d9ff4a,#ffb455);font:950 11px ui-monospace,monospace;letter-spacing:.1em;box-shadow:0 12px 30px rgba(218,255,74,.17)}.primary.alt{color:#ddd5e9;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.035);box-shadow:none}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.results{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:20px 0 2px}.result{padding:12px 8px;text-align:center;border:1px solid rgba(255,255,255,.09);border-radius:13px;background:rgba(255,255,255,.025)}.result span{display:block;color:#8f869f;font:850 8px ui-monospace,monospace;letter-spacing:.08em}.result strong{display:block;margin-top:6px;font:950 20px ui-monospace,monospace}.new-best{color:var(--lime)}
+    @media(max-width:700px){#game-shell{width:calc(100vw - 12px);border-radius:18px}#hud{inset:7px 40px auto;grid-template-columns:1fr 100px 1fr;gap:4px}.hud-card{min-height:34px;padding:5px 7px;border-radius:8px}.hud-card strong{font-size:10px}.hud-card small{font-size:4.8px}.time-row strong{font-size:12px}.time-row span{font-size:5px}.time-track{height:2px;margin-top:3px}.corner{top:7px;height:27px;border-radius:8px;font-size:7px}#back{left:7px;padding:0 8px}.back-label{display:none}#sound{right:7px;width:27px}#controls{display:none}#toast{top:50px;min-width:105px;padding:4px 7px;font-size:5px}.panel{padding:18px 20px;border-radius:15px}.panel h1,.panel h2{font-size:25px}.tagline{font-size:8px}.how{margin:10px 0}.how div{padding:7px}.how strong{font-size:6px}.how span{font-size:6px}.mode button{height:24px;font-size:5px}.primary{height:31px;margin-top:7px;font-size:6px}.results{margin:10px 0}.result{padding:7px 3px}.result span{font-size:5px}.result strong{font-size:11px}}
+  </style>
 </head>
-
 <body>
-    <a href="../" class="back-btn">← Arcade</a>
-    <div id="game-container">
-        <canvas id="gameCanvas"></canvas>
-
-        <div id="ui">
-            <div class="energy-bar-container">
-                <div id="timer-text">30.00s</div>
-                <div id="energy-fill"></div>
-            </div>
-            <div id="score-display">0</div>
-            <div class="controls">
-                <div class="btn" id="btn-turn">
-                    <div class="btn-icon">🔄</div>
-                    <div class="btn-label">TURN</div>
-                </div>
-                <div class="btn" id="btn-climb">
-                    <div class="btn-icon">🔼</div>
-                    <div class="btn-label">CLIMB</div>
-                </div>
-            </div>
-        </div>
-
-        <div id="start-screen">
-            <button class="start-btn">START</button>
-        </div>
-
-        <div id="game-over">
-            <h2>GAME OVER</h2>
-            <p>Score: <span id="final-score">0</span></p>
-
-            <div class="leaderboard">
-                <h3>Best Rankings</h3>
-                <div id="rank-list">
-                    <!-- Ranks will be injected here -->
-                </div>
-            </div>
-
-            <button class="retry-btn">RETRY</button>
-        </div>
+  <main id="game-shell">
+    <canvas id="game" width="1120" height="700" aria-label="우주를 가로지르는 무한 계단"></canvas>
+    <a id="back" class="corner" href="../">← <span class="back-label">Arcade</span></a><button id="sound" class="corner" type="button" aria-label="소리 끄기">♪</button>
+    <section id="hud" class="hidden"><div class="hud-card"><small>ALTITUDE</small><strong><span id="score">0</span> STEPS</strong></div><div class="hud-card time-card"><div class="time-row"><span id="sector">SECTOR 01</span><strong id="time">16.0</strong><span>OXYGEN</span></div><div class="time-track"><i id="time-fill"></i></div></div><div class="hud-card right"><small>FLOW CHAIN</small><strong><span id="combo">0</span> ×</strong></div></section>
+    <div id="toast">STAR STEP +2.0</div>
+    <div id="controls" class="hidden"><button id="turn" class="game-key" type="button"><b>↶ TURN + STEP</b><span>A / ← / ENTER</span></button><button id="climb" class="game-key climb" type="button"><b>▲ CLIMB</b><span>D / → / SPACE</span></button></div>
+    <div id="ui-layer">
+      <section id="main-menu" class="panel active"><div class="kicker">GENIUSKEY DEEP-SPACE ASCENT</div><h1>INFINITE <span>STARWAY</span></h1><p class="tagline">무너지는 우주 계단을 읽고 소용돌이까지 올라가세요. 다음 발판이 반대편이면 방향을 틀고, 같은 편이면 그대로 전진합니다.</p><div class="how"><div><strong>↶ TURN + STEP</strong><span>몸을 반대로 돌린 뒤 한 칸 오릅니다.</span></div><div><strong>▲ CLIMB</strong><span>현재 방향 그대로 한 칸 오릅니다.</span></div></div><div id="mode" class="mode"><button class="active" type="button" data-mode="voyage">VOYAGE · 16 SEC</button><button type="button" data-mode="rush">RUSH · 10 SEC</button></div><button id="start" class="primary" type="button">BEGIN ASCENT</button></section>
+      <section id="pause-menu" class="panel"><div class="kicker">TIME FROZEN</div><h2>ASCENT <span>PAUSED</span></h2><p class="tagline">계단과 산소 타이머가 멈췄습니다.</p><button id="resume" class="primary" type="button">RESUME</button></section>
+      <section id="game-over" class="panel"><div class="kicker" id="result-kicker">ASCENT COMPLETE</div><h2 id="result-title">STARWAY <span>LOST</span></h2><div class="results"><div class="result"><span>ALTITUDE</span><strong id="final-score">0</strong></div><div class="result"><span>BEST FLOW</span><strong id="final-combo">0</strong></div><div class="result"><span>PERSONAL BEST</span><strong id="best">0</strong></div></div><div class="actions"><button id="retry" class="primary" type="button">CLIMB AGAIN</button><button id="to-menu" class="primary alt" type="button">MENU</button></div></section>
     </div>
-
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const energyFill = document.getElementById('energy-fill');
-        const scoreDisplay = document.getElementById('score-display');
-        const finalScoreDisplay = document.getElementById('final-score');
-        const gameOverScreen = document.getElementById('game-over');
-        const startScreen = document.getElementById('start-screen');
-
-        // Constants
-        const STAIR_WIDTH = 80;
-        const STAIR_HEIGHT = 40;
-        const CHAR_WIDTH = 60;
-        const CHAR_HEIGHT = 80;
-        const MAX_ENERGY = 30; // 30 seconds
-        const ENERGY_RECOVERY = 0.2; // 0.2s recovery per step
-
-        // Game State
-        let score = 0;
-        let energy = MAX_ENERGY;
-        let stairs = [];
-        let charPos = { x: 0, y: 0 };
-        let charDir = 1; // 1: right, -1: left
-        let gameActive = false;
-        let cameraY = 0;
-        let targetCameraY = 0;
-        let lastTime = 0;
-
-        function initGame() {
-            score = 0;
-            energy = MAX_ENERGY;
-            charPos = { x: 0, y: 0 };
-            charDir = 1;
-            stairs = [{ x: 0, y: 0 }];
-            cameraY = 0;
-            targetCameraY = 0;
-            lastTime = performance.now();
-            for (let i = 0; i < 20; i++) {
-                generateStair();
-            }
-            updateUI();
-        }
-
-        function generateStair() {
-            const lastStair = stairs[stairs.length - 1];
-            let dir = Math.random() > 0.5 ? 1 : -1;
-
-            // Keep stairs within canvas bounds
-            const limit = Math.floor(canvas.width / STAIR_WIDTH) - 1;
-            if (lastStair.x + dir > limit) dir = -1;
-            else if (lastStair.x + dir < -limit) dir = 1;
-
-            stairs.push({
-                x: lastStair.x + dir,
-                y: lastStair.y + 1
-            });
-        }
-
-        function handleClimb() {
-            if (!gameActive) return;
-            const nextStair = stairs[score + 1];
-            const expectedX = stairs[score].x + charDir;
-
-            if (nextStair.x === expectedX) {
-                climbSuccess();
-            } else {
-                gameOver();
-            }
-        }
-
-        function handleTurn() {
-            if (!gameActive) return;
-            charDir *= -1;
-            const nextStair = stairs[score + 1];
-            const expectedX = stairs[score].x + charDir;
-
-            if (nextStair.x === expectedX) {
-                climbSuccess();
-            } else {
-                gameOver();
-            }
-        }
-
-        function climbSuccess() {
-            score++;
-            energy = Math.min(MAX_ENERGY, energy + ENERGY_RECOVERY);
-            charPos = { x: stairs[score].x, y: stairs[score].y };
-            targetCameraY = charPos.y * STAIR_HEIGHT;
-
-            if (stairs.length < score + 20) {
-                generateStair();
-            }
-            updateUI();
-        }
-
-        function gameOver() {
-            gameActive = false;
-            finalScoreDisplay.innerText = score;
-            saveScore(score);
-            displayRankings();
-            gameOverScreen.style.display = 'flex';
-        }
-
-        function saveScore(newScore) {
-            let scores = JSON.parse(localStorage.getItem('stairs_scores') || '[]');
-            scores.push(newScore);
-            scores.sort((a, b) => b - a);
-            scores = scores.slice(0, 5); // Keep top 5
-            localStorage.setItem('stairs_scores', JSON.stringify(scores));
-        }
-
-        function displayRankings() {
-            const rankList = document.getElementById('rank-list');
-            const scores = JSON.parse(localStorage.getItem('stairs_scores') || '[]');
-
-            rankList.innerHTML = scores.map((s, i) => `
-                <div class="rank-item">
-                    <span class="rank-num">${i + 1}</span>
-                    <span class="rank-score">${s} Steps</span>
-                </div>
-            `).join('');
-
-            if (scores.length === 0) {
-                rankList.innerHTML = '<div style="text-align:center; opacity:0.5;">No records yet</div>';
-            }
-        }
-
-        function updateUI() {
-            scoreDisplay.innerText = score;
-            const percentage = (energy / MAX_ENERGY) * 100;
-            energyFill.style.width = percentage + '%';
-            document.getElementById('timer-text').innerText = energy.toFixed(2) + 's';
-        }
-
-        function resize() {
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
-        }
-
-        window.addEventListener('resize', resize);
-        resize();
-
-        // Input
-        document.getElementById('btn-climb').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            handleClimb();
-        });
-        document.getElementById('btn-turn').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            handleTurn();
-        });
-
-        // Mouse/Click for desktop testing
-        document.getElementById('btn-climb').addEventListener('mousedown', (e) => {
-            handleClimb();
-        });
-        document.getElementById('btn-turn').addEventListener('mousedown', (e) => {
-            handleTurn();
-        });
-
-        function startGame() {
-            startScreen.style.display = 'none';
-            initGame();
-            gameActive = true;
-        }
-
-        document.querySelector('.start-btn').addEventListener('click', () => {
-            startGame();
-        });
-
-        document.querySelector('.retry-btn').addEventListener('click', () => {
-            gameOverScreen.style.display = 'none';
-            startGame();
-        });
-
-        // Keyboard controls
-        window.addEventListener('keydown', (e) => {
-            if (startScreen.style.display !== 'none') {
-                startGame();
-                return;
-            }
-            if (e.key === 'ArrowUp' || e.key === ' ') handleClimb();
-            if (e.key === 'ArrowDown') handleTurn();
-        });
-
-        function draw(timestamp) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            const deltaTime = (timestamp - lastTime) / 1000;
-            lastTime = timestamp;
-
-            // Smoothing camera
-            cameraY += (targetCameraY - cameraY) * 0.2;
-
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height * 0.7 - (targetCameraY - cameraY); // Fixed base position
-
-            ctx.save();
-            ctx.translate(centerX, canvas.height * 0.7 + cameraY);
-
-            // Draw Background elements (simple buildings or clouds)
-            drawBackground(ctx, cameraY);
-
-            // Draw Stairs
-            stairs.forEach((stair, index) => {
-                const screenX = stair.x * (STAIR_WIDTH / 2);
-                const screenY = -stair.y * STAIR_HEIGHT;
-
-                // Only draw visible stairs
-                if (screenY + cameraY > -canvas.height && screenY + cameraY < 200) {
-                    drawStair(ctx, screenX, screenY, index >= score);
-                }
-            });
-
-            // Draw Character
-            const charScreenX = charPos.x * (STAIR_WIDTH / 2);
-            const charScreenY = -charPos.y * STAIR_HEIGHT;
-            drawCharacter(ctx, charScreenX, charScreenY, charDir);
-
-            ctx.restore();
-
-            if (gameActive) {
-                energy -= deltaTime;
-                if (energy <= 0) {
-                    energy = 0;
-                    gameOver();
-                }
-                updateUI();
-            }
-
-            requestAnimationFrame(draw);
-        }
-
-        function drawStair(ctx, x, y, active) {
-            ctx.fillStyle = active ? '#fff' : '#ccc';
-            // Main stair block
-            ctx.fillRect(x - STAIR_WIDTH / 2, y, STAIR_WIDTH, STAIR_HEIGHT / 2);
-            // Side/Shadow
-            ctx.fillStyle = active ? '#ddd' : '#aaa';
-            ctx.fillRect(x - STAIR_WIDTH / 2, y + STAIR_HEIGHT / 2, STAIR_WIDTH, 4);
-
-            // Texture/Detail
-            ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(x - STAIR_WIDTH / 2, y, STAIR_WIDTH, STAIR_HEIGHT / 2);
-        }
-
-        function drawCharacter(ctx, x, y, dir) {
-            ctx.save();
-            ctx.translate(x, y - 5); // Offset slightly above stair
-
-            if (dir === -1) ctx.scale(-1, 1);
-
-            // Simple "Pixel Art" Character
-            // Body
-            ctx.fillStyle = '#333'; // Suit
-            ctx.fillRect(-15, -50, 30, 45);
-
-            // Head
-            ctx.fillStyle = '#ffdbac'; // Skin
-            ctx.fillRect(-12, -70, 24, 20);
-
-            // Hair
-            ctx.fillStyle = '#4b3621';
-            ctx.fillRect(-12, -75, 24, 8);
-
-            // Eyes
-            ctx.fillStyle = '#000';
-            ctx.fillRect(4, -65, 4, 4);
-
-            // Feet
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(-10, -5, 10, 6);
-            ctx.fillRect(5, -5, 10, 6);
-
-            ctx.restore();
-        }
-
-        function drawBackground(ctx, camY) {
-            // Draw some distant buildings
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-            for (let i = -5; i < 5; i++) {
-                const bx = i * 150;
-                const bh = 300 + Math.sin(i) * 100;
-                ctx.fillRect(bx - 40, -camY - 500, 80, bh + camY + 1000);
-            }
-        }
-
-        initGame();
-        draw();
-    </script>
+  </main>
+  <script>
+  (()=>{
+    'use strict';
+    const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d'),W=1120,H=700,TAU=Math.PI*2,$=s=>document.querySelector(s);
+    const ui={hud:$('#hud'),score:$('#score'),time:$('#time'),fill:$('#time-fill'),combo:$('#combo'),sector:$('#sector'),toast:$('#toast'),menu:$('#main-menu'),pause:$('#pause-menu'),over:$('#game-over'),title:$('#result-title'),kicker:$('#result-kicker'),finalScore:$('#final-score'),finalCombo:$('#final-combo'),best:$('#best'),controls:$('#controls'),turn:$('#turn'),climb:$('#climb')};
+    let seed=120947;const rand=()=>((seed=(seed*1664525+1013904223)>>>0)/4294967296),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),ease=t=>1-Math.pow(1-t,3);
+    const stars=Array.from({length:180},()=>({x:rand()*W,y:rand()*H,r:.35+rand()*1.7,a:rand()*TAU,c:rand()>.72?'#ff9366':rand()>.58?'#bd88ff':'#fff'}));
+    const dust=Array.from({length:34},()=>({a:rand()*TAU,r:80+rand()*470,s:2+rand()*8,v:(rand()-.5)*.00008,c:rand()>.5?'#ff693f':'#9d57ff'}));
+    const palettes=[['#ff9b62','#8b315e','#40152f'],['#b986ff','#512d8b','#27143f'],['#64ddff','#256a91','#16334e'],['#ffe16a','#a95338','#52272e']];
+    let state='menu',paused=false,mode='voyage',steps=[],current=0,facing=1,time=16,maxTime=16,combo=0,bestCombo=0,moveT=1,moveFrom=null,fallT=0,shake=0,flash=0,last=performance.now(),toastTimer=0,audioOn=true,audioCtx=null,particles=[],rings=[],best=Number(localStorage.getItem('stairs_best')||0),newBest=false;
+    function tone(f,d=.06,type='sine',vol=.025){if(!audioOn)return;try{audioCtx??=new(window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(vol,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+d);o.connect(g).connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+d)}catch{}}
+    function setPanel(p){[ui.menu,ui.pause,ui.over].forEach(x=>x.classList.toggle('active',x===p))}
+    function notify(text,color='#d9ff4a'){ui.toast.textContent=text;ui.toast.style.color=color;ui.toast.classList.remove('show');void ui.toast.offsetWidth;ui.toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>ui.toast.classList.remove('show'),700)}
+    function generate(to){while(steps.length<=to){const prev=steps.at(-1)||{x:0};let dir=Math.random()<.5?-1:1;if(prev.x>=4)dir=-1;if(prev.x<=-4)dir=1;const i=steps.length;steps.push({i,x:prev.x+(i?dir:0),dir:i?dir:0,star:i>5&&i%12===0,crack:rand(),tilt:(rand()-.5)*.035})}}
+    function resetWorld(){seed=(Date.now()^0x51a7)>>>0;steps=[];steps.push({i:0,x:0,dir:0,star:false,crack:rand(),tilt:0});generate(55);current=0;facing=1;combo=0;bestCombo=0;moveT=1;fallT=0;particles=[];rings=[];shake=0;flash=0;newBest=false;maxTime=mode==='rush'?10:16;time=maxTime;updateHud()}
+    function startGame(){resetWorld();state='playing';paused=false;setPanel(null);ui.hud.classList.remove('hidden');ui.controls.classList.remove('hidden');window.setStairsMobile?.(true);last=performance.now();notify('READ THE STARWAY');tone(520,.12,'triangle',.035)}
+    function menu(){state='menu';paused=false;resetWorld();ui.hud.classList.add('hidden');ui.controls.classList.add('hidden');setPanel(ui.menu);window.setStairsMobile?.(false)}
+    function burst(x,y,color,n=18,power=150){for(let i=0;i<n;i++){const a=Math.random()*TAU,s=20+Math.random()*power;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.8+Math.random()*.35,r:1+Math.random()*3,color})}}
+    function stepScreen(s,progress=0){const rel=s.i-current+progress,scale=clamp(1-rel*.021,.58,1.13),converge=clamp(1-rel*.025,.43,1.1);return{x:W/2+(s.x-steps[current].x)*61*converge,y:530-rel*31.5,scale,rel}}
+    function choose(turn){if(state!=='playing'||paused||moveT<1)return;const next=steps[current+1];const wanted=turn?-facing:facing;if(wanted!==next.dir){facing=wanted;ui[turn?'turn':'climb'].classList.add('active');setTimeout(()=>ui[turn?'turn':'climb'].classList.remove('active'),100);fail('MISSED STEP');return}if(turn)facing*=-1;moveFrom=steps[current];current++;generate(current+55);moveT=0;combo++;bestCombo=Math.max(bestCombo,combo);const gain=(mode==='rush'?.27:.36)+(combo>=8?.08:0);time=Math.min(maxTime,time+gain);const p=stepScreen(steps[current]);burst(p.x,p.y-18,steps[current].star?'#ffe96b':'#ff9b62',steps[current].star?34:13,steps[current].star?230:100);rings.push({x:p.x,y:p.y,r:10,life:1,color:steps[current].star?'#ffe96b':'#d9ff4a'});if(steps[current].star){time=Math.min(maxTime,time+2);notify('STAR STEP · +2.0 SEC','#ffe66b');shake=9;tone(780,.12,'triangle',.045)}else if(combo%10===0){notify(`${combo} FLOW CHAIN`);tone(680,.08,'square',.03)}else tone(240+Math.min(360,combo*9),.035,'triangle',.018);updateHud()}
+    function fail(reason){state='falling';fallT=0;combo=Math.max(0,combo-1);shake=15;flash=.7;notify(reason,'#ff6d77');tone(82,.3,'sawtooth',.06)}
+    function finish(){if(state==='gameover')return;state='gameover';const score=current;newBest=score>best;if(newBest){best=score;localStorage.setItem('stairs_best',String(best))}ui.finalScore.textContent=score;ui.finalCombo.textContent=bestCombo;ui.best.textContent=best;ui.best.classList.toggle('new-best',newBest);ui.kicker.textContent=newBest?'NEW PERSONAL RECORD':'ASCENT COMPLETE';ui.title.innerHTML=newBest?'NEW <span>ORBIT</span>':time<=0?'OXYGEN <span>DEPLETED</span>':'STARWAY <span>LOST</span>';ui.controls.classList.add('hidden');setPanel(ui.over);window.setStairsMobile?.(false);tone(newBest?760:150,.28,newBest?'triangle':'sawtooth',.05)}
+    function togglePause(){if(paused){paused=false;state='playing';ui.controls.classList.remove('hidden');setPanel(null);window.setStairsMobile?.(true);last=performance.now()}else if(state==='playing'){paused=true;state='paused';ui.controls.classList.add('hidden');setPanel(ui.pause);window.setStairsMobile?.(false)}}
+    function updateHud(){ui.score.textContent=current;ui.combo.textContent=combo;ui.time.textContent=time.toFixed(1);ui.sector.textContent=`SECTOR ${String(Math.floor(current/20)+1).padStart(2,'0')}`;ui.fill.style.width=`${clamp(time/maxTime,0,1)*100}%`;ui.fill.style.filter=time<3?'hue-rotate(120deg) saturate(2)':'none'}
+    function update(dt){if(state==='playing'){time-=dt;if(moveT<1)moveT=Math.min(1,moveT+dt/0.16);if(time<=0){time=0;updateHud();finish();return}updateHud()}else if(state==='falling'){fallT+=dt;if(fallT>.82)finish()}for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=90*dt;p.vx*=Math.pow(.08,dt);p.life-=dt}for(const r of rings){r.r+=190*dt;r.life-=1.45*dt}particles=particles.filter(p=>p.life>0);rings=rings.filter(r=>r.life>0);shake*=Math.pow(.001,dt);flash*=Math.pow(.003,dt)}
+    function drawSpace(t){const sector=Math.floor(current/20)%palettes.length,pal=palettes[sector],g=ctx.createRadialGradient(560,105,10,560,320,700);g.addColorStop(0,pal[1]);g.addColorStop(.38,'#251036');g.addColorStop(.72,'#0d0719');g.addColorStop(1,'#020106');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);const ng=ctx.createRadialGradient(180,410,15,180,410,300);ng.addColorStop(0,'rgba(255,91,59,.28)');ng.addColorStop(.45,'rgba(139,40,102,.12)');ng.addColorStop(1,'transparent');ctx.fillStyle=ng;ctx.fillRect(0,80,470,600);for(const s of stars){ctx.globalAlpha=.28+Math.sin(t*.0017+s.a)*.28;ctx.fillStyle=s.c;ctx.fillRect(s.x,s.y,s.r,s.r)}ctx.globalAlpha=1;for(const d of dust){const a=d.a+t*d.v,x=560+Math.cos(a)*d.r,y=145+Math.sin(a)*d.r*.5;ctx.save();ctx.translate(x,y);ctx.rotate(a+t*.00003);ctx.fillStyle=d.c;ctx.globalAlpha=.18;ctx.beginPath();ctx.moveTo(-d.s,0);ctx.lineTo(0,-d.s*.65);ctx.lineTo(d.s,0);ctx.lineTo(0,d.s*.5);ctx.closePath();ctx.fill();ctx.restore()}ctx.globalAlpha=1}
+    function drawVortex(t){ctx.save();ctx.translate(560,101);ctx.globalCompositeOperation='screen';for(let i=7;i>=0;i--){const r=20+i*12+Math.sin(t*.003+i)*4;ctx.strokeStyle=`hsla(${22+i*12},100%,${65+i*2}%,${.08+i*.025})`;ctx.lineWidth=6-i*.45;ctx.beginPath();ctx.ellipse(0,0,r,r*.43,t*.00025*(i%2?1:-1),0,TAU);ctx.stroke()}const g=ctx.createRadialGradient(0,0,1,0,0,45);g.addColorStop(0,'#fff');g.addColorStop(.12,'#fff4a8');g.addColorStop(.4,'#ff9b48');g.addColorStop(1,'transparent');ctx.fillStyle=g;ctx.fillRect(-50,-50,100,100);ctx.restore()}
+    function drawStep(s,t,alpha=1){const p=stepScreen(s),w=90*p.scale,h=25*p.scale,d=15*p.scale,pal=palettes[Math.floor(s.i/20)%palettes.length];if(p.y<-15||p.y>650)return;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(s.tilt);ctx.globalAlpha=alpha*clamp((22-p.rel)/7,0,1);ctx.shadowColor='#000';ctx.shadowBlur=13*p.scale;ctx.fillStyle=pal[2];ctx.beginPath();ctx.moveTo(-w/2,h/2);ctx.lineTo(w/2,h/2);ctx.lineTo(w*.42,h/2+d);ctx.lineTo(-w*.42,h/2+d);ctx.closePath();ctx.fill();ctx.shadowBlur=0;const top=ctx.createLinearGradient(-w/2,-h/2,w/2,h/2);top.addColorStop(0,s.star?'#fff38a':pal[0]);top.addColorStop(.55,s.star?'#ffb747':'#cf674e');top.addColorStop(1,pal[1]);ctx.fillStyle=top;ctx.strokeStyle=s.star?'#fff5a6':'rgba(255,209,172,.45)';ctx.lineWidth=1.5*p.scale;ctx.beginPath();ctx.moveTo(0,-h/2);ctx.lineTo(w/2,0);ctx.lineTo(0,h/2);ctx.lineTo(-w/2,0);ctx.closePath();ctx.fill();ctx.stroke();ctx.strokeStyle='rgba(67,27,54,.42)';ctx.lineWidth=1*p.scale;ctx.beginPath();ctx.moveTo(-w*.22,-h*.23);ctx.lineTo(w*.08,h*.03);ctx.lineTo(w*.27,-h*.08);ctx.moveTo(w*.05,h*.04);ctx.lineTo(-w*.08,h*.3);ctx.stroke();if(s.star){ctx.fillStyle='#fff7ad';ctx.shadowColor='#ffe05a';ctx.shadowBlur=14;ctx.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,r=i%2?5*p.scale:11*p.scale;i?ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r):ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r)}ctx.closePath();ctx.fill()}ctx.restore()}
+    function drawRunner(t){const target=stepScreen(steps[current]),from=moveFrom?stepScreen(moveFrom):target,m=moveT<1?ease(moveT):1;let x=from.x+(target.x-from.x)*m,y=from.y+(target.y-from.y)*m-22-Math.sin(Math.min(1,moveT)*Math.PI)*34;if(state==='falling'){x+=facing*fallT*120;y+=fallT*fallT*420}ctx.save();ctx.translate(x,y);ctx.scale(facing,1);ctx.rotate(state==='falling'?fallT*2.5:Math.sin(t*.015)*.025);ctx.shadowColor='#000';ctx.shadowBlur=13;ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(0,25,21,7,0,0,TAU);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#242038';ctx.lineWidth=8;ctx.lineCap='round';const run=Math.sin(t*.018+(moveT<1?moveT*9:0))*7;ctx.beginPath();ctx.moveTo(-5,17);ctx.lineTo(-10-run,30);ctx.moveTo(6,17);ctx.lineTo(12+run,30);ctx.stroke();ctx.fillStyle='#171527';ctx.beginPath();ctx.roundRect(-14,-15,29,38,10);ctx.fill();ctx.fillStyle='#e95242';ctx.beginPath();ctx.roundRect(-17,-13,34,25,8);ctx.fill();ctx.fillStyle='#ff7450';ctx.fillRect(-19,-8,7,14);ctx.fillStyle='#f2b284';ctx.beginPath();ctx.arc(0,-24,12,0,TAU);ctx.fill();ctx.fillStyle='#20162b';ctx.beginPath();ctx.arc(-2,-28,13,Math.PI,TAU);ctx.lineTo(11,-23);ctx.lineTo(5,-19);ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(7,-25,3,3);ctx.restore()}
+    function drawEffects(){for(const r of rings){ctx.globalAlpha=Math.max(0,r.life);ctx.strokeStyle=r.color;ctx.lineWidth=4*r.life;ctx.beginPath();ctx.arc(r.x,r.y,r.r,0,TAU);ctx.stroke()}for(const p of particles){ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.r*p.life,0,TAU);ctx.fill()}ctx.globalAlpha=1}
+    function draw(t){ctx.clearRect(0,0,W,H);ctx.save();if(shake>.1)ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);drawSpace(t);drawVortex(t);for(let i=Math.min(steps.length-1,current+23);i>=Math.max(0,current-4);i--)drawStep(steps[i],t,i<current?.35:1);drawRunner(t);drawEffects();ctx.restore();if(flash>.01){ctx.fillStyle=`rgba(255,255,255,${flash*.16})`;ctx.fillRect(0,0,W,H)}}
+    function loop(now){const dt=clamp((now-last)/1000,.001,.034);last=now;if(!paused)update(dt);draw(now);requestAnimationFrame(loop)}
+    const press=(turn)=>choose(turn);ui.turn.addEventListener('pointerdown',e=>{e.preventDefault();press(true)});ui.climb.addEventListener('pointerdown',e=>{e.preventDefault();press(false)});
+    addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','Space','Enter'].includes(e.code))e.preventDefault();if(e.repeat)return;if(['KeyA','ArrowLeft','Enter'].includes(e.code))press(true);if(['KeyD','ArrowRight','Space'].includes(e.code))press(false);if(['KeyP','Escape'].includes(e.code)){e.preventDefault();togglePause()}});addEventListener('blur',()=>{if(state==='playing')togglePause()});
+    $('#mode').addEventListener('click',e=>{const b=e.target.closest('button[data-mode]');if(!b)return;mode=b.dataset.mode;document.querySelectorAll('#mode button').forEach(x=>x.classList.toggle('active',x===b));tone(380,.04,'sine',.018)});$('#start').onclick=startGame;$('#retry').onclick=startGame;$('#to-menu').onclick=menu;$('#resume').onclick=togglePause;$('#sound').onclick=()=>{audioOn=!audioOn;$('#sound').textContent=audioOn?'♪':'×';$('#sound').setAttribute('aria-label',audioOn?'소리 끄기':'소리 켜기')};
+    window.startStairs=startGame;window.resetStairs=menu;resetWorld();loop(last);
+  })();
+  </script>
+  <script src="../mobile-arcade.js"></script>
+  <script>
+  (()=>{if(!window.MobileArcade)return;const turn=MobileArcade.actions([{label:'↶<br>TURN',key:'a'}],{side:'left',bottom:'28px'}),climb=MobileArcade.actions([{label:'▲<br>CLIMB',key:'d'}],{side:'right',bottom:'28px'});window.setStairsMobile=active=>{turn.style.display=active?'':'none';climb.style.display=active?'':'none'};window.setStairsMobile(false)})();
+  </script>
 </body>
-
 </html>

@@ -1,560 +1,117 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tile Fall Survival - Cosmic Arcade</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap"
-        rel="stylesheet">
-    <style>
-        :root {
-            --p1-color: #00f3ff;
-            --p2-color: #bc13fe;
-            --tile-color: rgba(255, 255, 255, 0.1);
-            --warn-color: #ff0055;
-            --bg-dark: #020010;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-        }
-
-        body {
-            background-color: var(--bg-dark);
-            color: white;
-            font-family: 'Orbitron', sans-serif;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-        }
-
-        #game-container {
-            position: relative;
-            width: 600px;
-            height: 600px;
-            border: 2px solid rgba(255, 255, 255, 0.05);
-            background: radial-gradient(circle at center, #0a0a2a 0%, #020010 100%);
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
-            overflow: hidden;
-        }
-
-        canvas {
-            display: block;
-        }
-
-        .back-btn {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 1000;
-            text-decoration: none;
-            color: white;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 14px;
-            transition: all 0.3s;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .back-btn:hover {
-            background: rgba(0, 243, 255, 0.2);
-            border-color: var(--p1-color);
-            box-shadow: 0 0 15px var(--p1-color);
-        }
-
-        #ui {
-            position: absolute;
-            top: 20px;
-            width: 100%;
-            display: flex;
-            justify-content: space-around;
-            pointer-events: none;
-        }
-
-        .status-box {
-            background: rgba(0, 0, 0, 0.6);
-            padding: 10px 20px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            text-align: center;
-            min-width: 150px;
-        }
-
-        .p1-status {
-            border-color: var(--p1-color);
-        }
-
-        .p2-status {
-            border-color: var(--p2-color);
-        }
-
-        .label {
-            font-size: 10px;
-            opacity: 0.7;
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .stat {
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        .overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            text-align: center;
-            padding: 20px;
-        }
-
-        h1 {
-            font-size: 40px;
-            margin-bottom: 20px;
-            background: linear-gradient(to right, var(--p1-color), var(--p2-color));
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .instructions {
-            font-family: 'Share Tech Mono', monospace;
-            color: #888;
-            margin-bottom: 30px;
-            line-height: 1.6;
-            max-width: 450px;
-        }
-
-        .btn {
-            background: transparent;
-            border: 2px solid white;
-            color: white;
-            padding: 12px 40px;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 18px;
-            cursor: pointer;
-            transition: all 0.3s;
-            border-radius: 4px;
-        }
-
-        .btn:hover {
-            background: white;
-            color: black;
-            box-shadow: 0 0 30px white;
-        }
-
-        .controls-row {
-            display: flex;
-            gap: 40px;
-            margin-top: 20px;
-        }
-
-        .key {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 2px 8px;
-            border-radius: 4px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            font-family: 'Share Tech Mono', monospace;
-            margin-top: 5px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Fracture Arena — Tile Fall Survival</title>
+  <style>
+    :root{color-scheme:dark;--cyan:#39e8ff;--orange:#ff9c24;--lime:#d9ff57;--red:#ff465c;--ink:#070812}
+    *{box-sizing:border-box}
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#03040a}
+    body{display:grid;place-items:center;color:#fff;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;touch-action:none;background:radial-gradient(circle at 50% 35%,#2a1a42 0,#0c0b18 47%,#030309 100%)}
+    button,a{font:inherit}
+    #game-shell{position:relative;width:min(1120px,100vw,calc(100dvh * 16 / 10));aspect-ratio:16/10;overflow:hidden;border:1px solid #ffffff12;border-radius:28px;background:#090913;box-shadow:0 36px 110px #000d,0 0 80px #7b4dd421;isolation:isolate}
+    canvas{display:block;width:100%;height:100%}
+    .corner{position:absolute;top:16px;z-index:50;display:grid;place-items:center;height:41px;padding:0 15px;border:1px solid #ffffff20;border-radius:13px;background:#080811dc;color:#fff;text-decoration:none;font-size:11px;font-weight:900;letter-spacing:.04em;backdrop-filter:blur(12px);box-shadow:0 9px 25px #0008;cursor:pointer}
+    #back{left:16px}#sound{right:16px;width:41px;padding:0}
+    #hud{position:absolute;inset:15px 72px auto 112px;z-index:22;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;pointer-events:none;transition:.2s}
+    #hud.hidden{opacity:0;transform:translateY(-10px)}
+    .fighter-card{display:flex;align-items:center;gap:10px;min-width:0;padding:8px 11px;border:1px solid #ffffff15;border-radius:14px;background:#080811df;backdrop-filter:blur(13px);box-shadow:0 10px 28px #0006}.fighter-card.right{flex-direction:row-reverse;text-align:right}.avatar{display:grid;place-items:center;width:35px;height:35px;border-radius:12px;background:linear-gradient(145deg,#65f4ff,#138eda);color:#041116;font:1000 11px/1 ui-monospace,monospace;box-shadow:inset 0 1px #fff8,0 0 18px #35e8ff44}.right .avatar{background:linear-gradient(145deg,#ffc849,#ff6d22);color:#1b0b02;box-shadow:inset 0 1px #fff8,0 0 18px #ff8c2944}.fighter-data{min-width:0;flex:1}.fighter-line{display:flex;justify-content:space-between;gap:8px;font-size:8px;font-weight:950;letter-spacing:.11em}.right .fighter-line{flex-direction:row-reverse}.fighter-line span:last-child{color:#827b90;font-size:7px}.dash-track{height:5px;margin-top:6px;overflow:hidden;border-radius:8px;background:#ffffff12}.dash-track i{display:block;width:100%;height:100%;border-radius:inherit;background:linear-gradient(90deg,#159bff,var(--cyan));box-shadow:0 0 10px var(--cyan)}.right .dash-track i{background:linear-gradient(90deg,#ff6524,#ffc543);box-shadow:0 0 10px var(--orange)}.round-pips{display:flex;gap:5px;margin-top:6px}.right .round-pips{justify-content:flex-end}.pip{width:20px;height:4px;border-radius:5px;background:#ffffff13}.pip.on{background:var(--cyan);box-shadow:0 0 8px var(--cyan)}.right .pip.on{background:var(--orange);box-shadow:0 0 8px var(--orange)}
+    .match-card{min-width:165px;padding:8px 14px;text-align:center;border:1px solid #ffffff15;border-radius:14px;background:#080811e8;backdrop-filter:blur(13px)}.match-card strong{display:block;color:var(--lime);font:950 8px/1 ui-monospace,monospace;letter-spacing:.15em}.match-card span{display:block;margin-top:5px;font:950 13px/1 ui-monospace,monospace}.match-card small{display:block;margin-top:4px;color:#81798f;font:800 7px/1 ui-monospace,monospace;letter-spacing:.08em}
+    #hint{position:absolute;left:50%;bottom:15px;z-index:24;transform:translateX(-50%);padding:8px 12px;border:1px solid #ffffff14;border-radius:10px;background:#070710c9;color:#aaa2b8;font:800 8px/1 ui-monospace,monospace;letter-spacing:.08em;pointer-events:none;white-space:nowrap}#hint.hidden{display:none}
+    #countdown{position:absolute;inset:0;z-index:27;display:none;place-items:center;color:#fff;font:1000 130px/1 ui-monospace,monospace;text-shadow:0 14px 45px #000,0 0 45px #ad6dff;pointer-events:none}#countdown.show{display:grid;animation:punch .38s ease-out}@keyframes punch{from{opacity:.1;transform:scale(1.55)}to{opacity:1;transform:scale(1)}}
+    #callout{position:absolute;top:27%;left:50%;z-index:28;transform:translate(-50%,-50%) scale(.96);padding:9px 16px;border:1px solid currentColor;border-radius:11px;background:#070710e9;color:var(--lime);font:1000 10px/1 ui-monospace,monospace;letter-spacing:.15em;opacity:0;pointer-events:none;transition:.2s}#callout.show{opacity:1;transform:translate(-50%,-58%) scale(1)}
+    #ui-layer{position:absolute;inset:0;z-index:35;display:grid;place-items:center;pointer-events:none}
+    .panel{display:none;width:min(540px,calc(100% - 34px));padding:31px 35px 28px;border:1px solid #ffffff17;border-radius:27px;background:linear-gradient(155deg,#171229f5,#080811fa);box-shadow:0 31px 90px #000d,inset 0 1px #ffffff0e;text-align:center;pointer-events:auto;backdrop-filter:blur(17px)}.panel.active{display:block;animation:panel-in .25s ease-out}@keyframes panel-in{from{opacity:0;transform:translateY(11px) scale(.98)}}
+    .kicker{color:var(--orange);font:950 8px/1 ui-monospace,monospace;letter-spacing:.21em}.title{margin:10px 0 0;font-size:46px;line-height:.88;font-weight:1000;letter-spacing:-.06em}.title span{color:transparent;-webkit-text-stroke:1px #ffffff7c}.tagline{margin:17px auto 20px;max-width:420px;color:#aca5b8;font-size:12px;line-height:1.65}
+    .intensity{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:13px;padding:5px;border:1px solid #ffffff12;border-radius:14px;background:#ffffff04}.intensity button{height:34px;border:0;border-radius:9px;background:transparent;color:#7f778c;font-size:8px;font-weight:950;letter-spacing:.1em;cursor:pointer}.intensity button.active{background:linear-gradient(145deg,#ffc54a,#ff7627);color:#160901;box-shadow:0 5px 19px #ff812d3e}
+    .actions{display:grid;grid-template-columns:1.15fr 1fr;gap:9px}.primary{height:52px;border:1px solid #ffffff19;border-radius:15px;background:linear-gradient(145deg,#4cecff,#178ee4);color:#061116;font-size:11px;font-weight:1000;letter-spacing:.05em;cursor:pointer;box-shadow:0 12px 28px #26cce233;transition:.16s}.primary:hover{transform:translateY(-2px);filter:brightness(1.1)}.primary.alt{background:#ffffff08;color:#f2eef8;box-shadow:none}.panel-foot{display:flex;justify-content:center;gap:17px;margin-top:15px;color:#776f83;font:800 7px/1 ui-monospace,monospace;letter-spacing:.08em}
+    .result-title{margin:9px 0 0;font-size:41px;line-height:1;font-weight:1000;letter-spacing:-.05em}.result-title span{color:var(--lime)}.results{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:20px 0}.result{padding:12px 6px;border:1px solid #ffffff12;border-radius:13px;background:#ffffff05}.result span{display:block;color:#837b90;font-size:7px;font-weight:900;letter-spacing:.09em}.result strong{display:block;margin-top:5px;font:950 17px/1 ui-monospace,monospace}
+    @media(max-aspect-ratio:4/5){#game-shell{width:calc(100vw - 12px);border-radius:18px}#hud{inset:7px 38px auto;gap:3px}.fighter-card{padding:4px 5px;border-radius:8px}.avatar{width:18px;height:18px;border-radius:5px;font-size:6px}.fighter-line{font-size:5px}.fighter-line span:last-child,.dash-track{display:none}.round-pips{margin-top:3px;gap:2px}.pip{width:8px;height:2px}.match-card{min-width:62px;padding:5px}.match-card strong{font-size:5px}.match-card span{font-size:7px;margin-top:3px}.match-card small{display:none}.corner{top:7px;height:28px;padding:0 8px;border-radius:8px;font-size:7px}#back{left:7px;width:28px;padding:0}.back-label{display:none}#sound{right:7px;width:28px}#hint{display:none}#countdown{font-size:65px}.panel{padding:21px 17px;border-radius:19px}.title{font-size:35px}.tagline{font-size:10px;margin:13px auto 16px}.intensity button{height:29px}.actions{grid-template-columns:1fr}.primary{height:41px}.panel-foot{margin-top:11px}#callout{top:24%;font-size:7px;padding:6px 9px}}
+  </style>
 </head>
-
 <body>
-    <a href="../" class="back-btn">← Arcade</a>
+  <main id="game-shell">
+    <canvas id="game" width="1120" height="700" aria-label="Tile Fall Survival arena"></canvas>
+    <a id="back" class="corner" href="../"><span>← <span class="back-label">Arcade</span></span></a>
+    <button id="sound" class="corner" type="button" aria-label="소리 끄기">♪</button>
 
-    <div id="game-container">
-        <canvas id="gameCanvas"></canvas>
+    <section id="hud" class="hidden" aria-label="생존 대결 상태">
+      <div class="fighter-card"><strong class="avatar">P1</strong><div class="fighter-data"><div class="fighter-line"><span>CYAN · P1</span><span>WASD + SPACE</span></div><div class="dash-track"><i id="p1-dash"></i></div><div class="round-pips"><i id="p1-pip1" class="pip"></i><i id="p1-pip2" class="pip"></i></div></div></div>
+      <div class="match-card"><strong id="phase-label">ROUND 1</strong><span id="tile-label">117 TILES</span><small id="time-label">SURVIVE · 00:00</small></div>
+      <div class="fighter-card right"><strong class="avatar">P2</strong><div class="fighter-data"><div class="fighter-line"><span id="p2-name">EMBER · P2</span><span id="p2-control">ARROWS + ENTER</span></div><div class="dash-track"><i id="p2-dash"></i></div><div class="round-pips"><i id="p2-pip1" class="pip"></i><i id="p2-pip2" class="pip"></i></div></div></div>
+    </section>
+    <div id="hint" class="hidden">MOVE · STRESS TILES &nbsp; SPACE / ENTER · DASH & PUSH &nbsp; P · PAUSE</div>
+    <div id="countdown">3</div><div id="callout" role="status">FRACTURE WAVE</div>
 
-        <div id="ui">
-            <div class="status-box p1-status">
-                <div class="label">P1: WASD</div>
-                <div id="p1-state" class="stat">STANDING</div>
-            </div>
-            <div class="status-box p2-status">
-                <div class="label">P2: ARROWS</div>
-                <div id="p2-state" class="stat">STANDING</div>
-            </div>
-        </div>
-
-        <div id="start-overlay" class="overlay">
-            <h1>TILE FALL SURVIVAL</h1>
-            <p class="instructions">
-                The floor is a lie. Random tiles will flash <span style="color:var(--warn-color)">RED</span> before
-                vanishing into the void.
-                <br><br>
-                Bump into your opponent to push them off!
-                Last one on the platform wins.
-            </p>
-            <button class="btn" onclick="startGame()">INITIATE</button>
-            <div class="controls-row">
-                <div>
-                    <div class="label" style="color:var(--p1-color)">Player 1</div>
-                    <span class="key">W A S D</span>
-                </div>
-                <div>
-                    <div class="label" style="color:var(--p2-color)">Player 2</div>
-                    <span class="key">ARROWS</span>
-                </div>
-            </div>
-        </div>
-
-        <div id="game-over-overlay" class="overlay" style="display:none">
-            <h1 id="winner-text">GAME OVER</h1>
-            <button class="btn" onclick="startGame()">RETRY</button>
-        </div>
+    <div id="ui-layer">
+      <section id="main-menu" class="panel active">
+        <div class="kicker">GENIUSKEY VOID SPORTS</div>
+        <h1 class="title">TILE FALL <span>SURVIVAL</span></h1>
+        <p class="tagline">밟은 발판은 갈라지고 붉게 빛난 발판은 곧 추락합니다. 대시로 상대를 밀어내고 3판 중 두 라운드를 먼저 살아남으세요.</p>
+        <div id="intensity" class="intensity"><button type="button" data-level="calm">CALM</button><button class="active" type="button" data-level="standard">STANDARD</button><button type="button" data-level="mayhem">MAYHEM</button></div>
+        <div class="actions"><button id="solo" class="primary" type="button">1P vs AI</button><button id="versus" class="primary alt" type="button">2P LOCAL</button></div>
+        <div class="panel-foot"><span>BREAKING FLOOR</span><span>DASH IMPACT</span><span>BEST OF 3</span></div>
+      </section>
+      <section id="pause-menu" class="panel"><div class="kicker">ARENA SUSPENDED</div><h2 class="result-title">VOID <span>PAUSED</span></h2><p class="tagline">발판 붕괴와 대결 시간이 모두 멈췄습니다.</p><button id="resume" class="primary" type="button">RESUME</button></section>
+      <section id="game-over" class="panel"><div class="kicker">MATCH COMPLETE</div><h2 id="winner" class="result-title">CYAN <span>WINS</span></h2><div class="results"><div class="result"><span>ROUNDS</span><strong id="final-rounds">2 : 0</strong></div><div class="result"><span>SURVIVAL</span><strong id="final-time">00:00</strong></div><div class="result"><span>DASH KOs</span><strong id="final-kos">0</strong></div></div><div class="actions"><button id="rematch" class="primary" type="button">REMATCH</button><button id="to-menu" class="primary alt" type="button">MENU</button></div></section>
     </div>
+  </main>
 
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 600;
-        canvas.height = 600;
-
-        // Constants
-        const GRID_SIZE = 8;
-        const TILE_GAP = 4;
-        const TILE_DIM = (canvas.width - (GRID_SIZE + 1) * TILE_GAP) / GRID_SIZE;
-
-        // Game State
-        let gameRunning = false;
-        let p1, p2;
-        let tiles = [];
-        let particles = [];
-        let timeToNextFall = 2000;
-        let lastFallTime = 0;
-        let lastFrameTime = 0;
-        const fpsInterval = 1000 / 60;
-
-        const keys = {};
-        window.addEventListener('keydown', e => {
-            keys[e.code] = true;
-            // Allow starting game with Enter
-            if (e.code === 'Enter' && !gameRunning) {
-                startGame();
-            }
-        });
-        window.addEventListener('keyup', e => keys[e.code] = false);
-
-        class Player {
-            constructor(x, y, color, controls) {
-                this.x = x;
-                this.y = y;
-                this.radius = 24; // Doubled from 12
-                this.color = color;
-                this.controls = controls;
-                this.vx = 0;
-                this.vy = 0;
-                this.accel = 0.8;
-                this.friction = 0.92;
-                this.isFalling = false;
-                this.scale = 1;
-                this.opacity = 1;
-            }
-
-            update() {
-                if (this.isFalling) {
-                    this.scale -= 0.05;
-                    this.opacity -= 0.05;
-                    if (this.scale <= 0) this.scale = 0;
-                    return;
-                }
-
-                if (keys[this.controls.up]) this.vy -= this.accel;
-                if (keys[this.controls.down]) this.vy += this.accel;
-                if (keys[this.controls.left]) this.vx -= this.accel;
-                if (keys[this.controls.right]) this.vx += this.accel;
-
-                this.vx *= this.friction;
-                this.vy *= this.friction;
-
-                this.x += this.vx;
-                this.y += this.vy;
-
-                // Wall Bounce
-                if (this.x - this.radius < 0) {
-                    this.x = this.radius;
-                    this.vx *= -0.5; // Bounce with energy loss
-                } else if (this.x + this.radius > canvas.width) {
-                    this.x = canvas.width - this.radius;
-                    this.vx *= -0.5;
-                }
-
-                if (this.y - this.radius < 0) {
-                    this.y = this.radius;
-                    this.vy *= -0.5;
-                } else if (this.y + this.radius > canvas.height) {
-                    this.y = canvas.height - this.radius;
-                    this.vy *= -0.5;
-                }
-
-                // Check Tile Collision (Falling)
-                const gridX = Math.floor(this.x / (TILE_DIM + TILE_GAP));
-                const gridY = Math.floor(this.y / (TILE_DIM + TILE_GAP));
-
-                let onSolidGround = false;
-                if (gridX >= 0 && gridX < GRID_SIZE && gridY >= 0 && gridY < GRID_SIZE) {
-                    const tile = tiles[gridY * GRID_SIZE + gridX];
-                    if (tile && tile.state !== 'vanished') {
-                        onSolidGround = true;
-                    }
-                }
-
-                if (!onSolidGround) {
-                    this.isFalling = true;
-                }
-            }
-
-            draw() {
-                ctx.save();
-                ctx.globalAlpha = this.opacity;
-                ctx.translate(this.x, this.y);
-                ctx.scale(this.scale, this.scale);
-
-                // Glow
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = this.color;
-                ctx.fillStyle = this.color;
-
-                ctx.beginPath();
-                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Highlight
-                ctx.fillStyle = 'white';
-                ctx.beginPath();
-                ctx.arc(-4, -4, 3, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.restore();
-            }
-        }
-
-        class Tile {
-            constructor(r, c) {
-                this.r = r;
-                this.c = c;
-                this.x = c * (TILE_DIM + TILE_GAP) + TILE_GAP;
-                this.y = r * (TILE_DIM + TILE_GAP) + TILE_GAP;
-                this.state = 'safe'; // safe, warning, vanished
-                this.warningStartTime = 0;
-                this.warningDuration = 1500;
-            }
-
-            update(now) {
-                if (this.state === 'warning') {
-                    if (now - this.warningStartTime > this.warningDuration) {
-                        this.state = 'vanished';
-                        // Spawn some dust/particles
-                        for (let i = 0; i < 5; i++) {
-                            particles.push(new Particle(this.x + TILE_DIM / 2, this.y + TILE_DIM / 2, 'rgba(255,255,255,0.3)'));
-                        }
-                    }
-                }
-            }
-
-            draw(now) {
-                if (this.state === 'vanished') return;
-
-                ctx.save();
-                if (this.state === 'warning') {
-                    const flash = Math.sin((now - this.warningStartTime) * 0.02) * 0.5 + 0.5;
-                    ctx.fillStyle = `rgba(255, 0, 85, ${0.3 + flash * 0.5})`;
-                    ctx.shadowBlur = 10 * flash;
-                    ctx.shadowColor = '#ff0055';
-                } else {
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-                    ctx.lineWidth = 1;
-                    ctx.strokeRect(this.x, this.y, TILE_DIM, TILE_DIM);
-                }
-
-                ctx.fillRect(this.x, this.y, TILE_DIM, TILE_DIM);
-                ctx.restore();
-            }
-        }
-
-        class Particle {
-            constructor(x, y, color) {
-                this.x = x;
-                this.y = y;
-                this.vx = (Math.random() - 0.5) * 4;
-                this.vy = (Math.random() - 0.5) * 4;
-                this.life = 1.0;
-                this.color = color;
-            }
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                this.life -= 0.02;
-            }
-            draw() {
-                ctx.globalAlpha = this.life;
-                ctx.fillStyle = this.color;
-                ctx.fillRect(this.x, this.y, 2, 2);
-            }
-        }
-
-        function resolveCollision(a, b) {
-            if (a.isFalling || b.isFalling) return;
-
-            let dx = b.x - a.x;
-            let dy = b.y - a.y;
-            let distance = Math.sqrt(dx * dx + dy * dy);
-            let minDist = a.radius + b.radius;
-
-            if (distance < minDist) {
-                // 1. Static Resolution: Push balls apart so they don't overlap
-                let overlap = minDist - distance;
-                let nx = dx / distance; // Normal X
-                let ny = dy / distance; // Normal Y
-                
-                // Move each ball away by half the overlap
-                a.x -= nx * overlap / 2;
-                a.y -= ny * overlap / 2;
-                b.x += nx * overlap / 2;
-                b.y += ny * overlap / 2;
-
-                // 2. Dynamic Resolution: Swap momentum or push back
-                // Relative velocity
-                let rvx = b.vx - a.vx;
-                let rvy = b.vy - a.vy;
-                
-                // Dot product of relative velocity and normal
-                let velAlongNormal = rvx * nx + rvy * ny;
-
-                // Do not resolve if velocities are separating
-                if (velAlongNormal > 0) return;
-
-                // Simple elastic bounce
-                let restitution = 0.8;
-                let j = -(1 + restitution) * velAlongNormal;
-                j /= 2; // Assuming equal mass
-
-                let impulseX = j * nx;
-                let impulseY = j * ny;
-
-                a.vx -= impulseX;
-                a.vy -= impulseY;
-                b.vx += impulseX;
-                b.vy += impulseY;
-            }
-        }
-
-        function startGame() {
-            document.getElementById('start-overlay').style.display = 'none';
-            document.getElementById('game-over-overlay').style.display = 'none';
-
-            p1 = new Player(150, 300, '#00f3ff', { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD' });
-            p2 = new Player(450, 300, '#bc13fe', { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' });
-
-            tiles = [];
-            for (let r = 0; r < GRID_SIZE; r++) {
-                for (let c = 0; c < GRID_SIZE; c++) {
-                    tiles.push(new Tile(r, c));
-                }
-            }
-
-            particles = [];
-            const now = performance.now();
-            lastFallTime = now;
-            lastFrameTime = now;
-            timeToNextFall = 2000;
-            gameRunning = true;
-            requestAnimationFrame(gameLoop);
-        }
-
-        function gameLoop(now) {
-            if (!gameRunning) return;
-
-            const elapsed = now - lastFrameTime;
-
-            if (elapsed < fpsInterval) {
-                requestAnimationFrame(gameLoop);
-                return;
-            }
-
-            lastFrameTime = now - (elapsed % fpsInterval);
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Handle Tile Falling Logic
-            if (now - lastFallTime > timeToNextFall) {
-                const availableTiles = tiles.filter(t => t.state === 'safe');
-                if (availableTiles.length > 1) {
-                    const randomTile = availableTiles[Math.floor(Math.random() * availableTiles.length)];
-                    randomTile.state = 'warning';
-                    randomTile.warningStartTime = now;
-
-                    lastFallTime = now;
-                    // Slightly speed up
-                    timeToNextFall = Math.max(400, timeToNextFall - 50);
-                }
-            }
-
-            // Draw & Update Tiles
-            tiles.forEach(t => {
-                t.update(now);
-                t.draw(now);
-            });
-
-            // Physics
-            resolveCollision(p1, p2);
-            p1.update();
-            p2.update();
-
-            // Draw Players
-            p1.draw();
-            p2.draw();
-
-            // Update UI
-            document.getElementById('p1-state').innerText = p1.isFalling ? 'FALLING' : 'SAFE';
-            document.getElementById('p2-state').innerText = p2.isFalling ? 'FALLING' : 'SAFE';
-
-            // Particles
-            for (let i = particles.length - 1; i >= 0; i--) {
-                particles[i].update();
-                particles[i].draw();
-                if (particles[i].life <= 0) particles.splice(i, 1);
-            }
-
-            // Game Over Check
-            if (p1.opacity <= 0 || p2.opacity <= 0) {
-                gameRunning = false;
-                const winner = p1.opacity > 0 ? 'PLAYER 1' : (p2.opacity > 0 ? 'PLAYER 2' : 'DRAW');
-                document.getElementById('winner-text').innerText = winner === 'DRAW' ? 'NO SURVIVORS' : winner + ' WINS';
-                document.getElementById('game-over-overlay').style.display = 'flex';
-            } else {
-                requestAnimationFrame(gameLoop);
-            }
-        }
-    </script>
-    <script src="../mobile-arcade.js"></script>
-    <script>
-        MobileArcade.fit('#game-container');
-        MobileArcade.dpad({ up: 'w', down: 's', left: 'a', right: 'd' }, { side: 'left', tag: 'P1' });
-        MobileArcade.dpad({ up: 'up', down: 'down', left: 'left', right: 'right' }, { side: 'right', tag: 'P2' });
-    </script>
+  <script>
+  (()=>{
+    'use strict';
+    const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d'),W=1120,H=700,TAU=Math.PI*2,R=43,DX=Math.sqrt(3)*R,DY=1.5*R,COLS=13,ROWS=9;
+    const $=s=>document.querySelector(s),ui={hud:$('#hud'),p1Dash:$('#p1-dash'),p2Dash:$('#p2-dash'),p1Pips:[$('#p1-pip1'),$('#p1-pip2')],p2Pips:[$('#p2-pip1'),$('#p2-pip2')],p2Name:$('#p2-name'),p2Control:$('#p2-control'),phase:$('#phase-label'),tiles:$('#tile-label'),time:$('#time-label'),hint:$('#hint'),countdown:$('#countdown'),callout:$('#callout'),menu:$('#main-menu'),pause:$('#pause-menu'),over:$('#game-over'),winner:$('#winner'),finalRounds:$('#final-rounds'),finalTime:$('#final-time'),finalKos:$('#final-kos')};
+    const LEVEL={calm:{hazard:2.25,min:.7,warn:1.55,stress:1.55,ai:185},standard:{hazard:1.75,min:.45,warn:1.15,stress:1.15,ai:215},mayhem:{hazard:1.3,min:.3,warn:.82,stress:.82,ai:245}},keys={},pressed=new Set(),tiles=[],particles=[],rings=[],stars=[];
+    let seed=41877;const rand=()=>((seed=(seed*1664525+1013904223)>>>0)/4294967296);for(let i=0;i<130;i++)stars.push({x:rand()*W,y:rand()*H,s:.5+rand()*1.7,a:rand()*TAU,c:rand()>.52?'#a687ff':'#ff9b5b'});
+    let mode=1,level='standard',state='menu',paused=false,round=0,roundWins=[0,0],matchTime=0,roundTime=0,hazardClock=0,hazardInterval=0,countdownRun=0,calloutTimer=0,last=performance.now(),shake=0,flash=0,audioOn=true,audioCtx=null,dashKos=0,roundTimer=0;
+    const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t;
+    function tone(freq,d=.05,type='sine',vol=.025){if(!audioOn)return;try{audioCtx??=new(window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(vol,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+d);o.connect(g).connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+d)}catch{}}
+    function setPanel(panel){[ui.menu,ui.pause,ui.over].forEach(x=>x.classList.toggle('active',x===panel))}
+    function setCallout(text,color='#d9ff57',ms=720){ui.callout.textContent=text;ui.callout.style.color=color;ui.callout.classList.remove('show');void ui.callout.offsetWidth;ui.callout.classList.add('show');clearTimeout(calloutTimer);calloutTimer=setTimeout(()=>ui.callout.classList.remove('show'),ms)}
+    function burst(x,y,color,count=15,power=180){for(let i=0;i<count;i++){const a=Math.random()*TAU,s=35+Math.random()*power;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,size:1.5+Math.random()*4,color})}}
+    function makeTiles(){tiles.length=0;for(let c=0;c<COLS;c++)for(let r=0;r<ROWS;r++)tiles.push({c,r,x:112+c*DX,y:76+r*DY+(c%2)*DY/2,state:'solid',stress:0,timer:0,drop:0,rot:0,seed:rand()*TAU})}
+    class Fighter{
+      constructor(id,name,x,color,controls,ai=false){this.id=id;this.name=name;this.spawnX=x;this.color=color;this.controls=controls;this.ai=ai;this.roundWins=0;this.reset()}
+      reset(){this.x=this.spawnX;this.y=350;this.vx=0;this.vy=0;this.facing=this.id===1?0:Math.PI;this.r=22;this.falling=false;this.fallDelay=0;this.scale=1;this.opacity=1;this.dashCooldown=0;this.dashTimer=0;this.lastHitBy=0;this.hitAge=99;this.aiClock=0;this.aiTarget=null}
+      humanInput(){const c=this.controls,dx=(keys[c.right]?1:0)-(keys[c.left]?1:0),dy=(keys[c.down]?1:0)-(keys[c.up]?1:0);return{dx,dy,dash:pressed.has(c.dash)}}
+      aiInput(dt){this.aiClock-=dt;const cfg=LEVEL[level],other=p1;let target=this.aiTarget;if(this.aiClock<=0||!target||target.state!=='solid'){this.aiClock=.12;const safe=tiles.filter(t=>t.state==='solid'),scored=safe.map(t=>{const d=Math.hypot(t.x-this.x,t.y-this.y),opp=Math.hypot(t.x-other.x,t.y-other.y),edge=Math.min(t.x, W-t.x,t.y,H-t.y);return{t,s:-d*.32+edge*.2+(t.stress<.35?45:0)-Math.max(0,105-opp)*.2+Math.random()*30}}).sort((a,b)=>b.s-a.s);this.aiTarget=scored[0]?.t||null;target=this.aiTarget}if(!target)return{dx:0,dy:0,dash:false};let tx=target.x,ty=target.y,dash=false,od=Math.hypot(other.x-this.x,other.y-this.y);if(od<115&&this.dashCooldown<=0&&Math.random()>.93){tx=other.x;ty=other.y;dash=true}const dx=tx-this.x,dy=ty-this.y,m=Math.hypot(dx,dy);return{dx:m?dx/m:0,dy:m?dy/m:0,dash,speed:cfg.ai}}
+      update(dt){if(this.falling){this.vy+=520*dt;this.y+=this.vy*dt;this.scale=Math.max(0,this.scale-1.7*dt);this.opacity=Math.max(0,this.opacity-1.3*dt);return}this.hitAge+=dt;this.dashCooldown=Math.max(0,this.dashCooldown-dt);this.dashTimer=Math.max(0,this.dashTimer-dt);const input=this.ai?this.aiInput(dt):this.humanInput(),mag=Math.hypot(input.dx,input.dy);if(mag){const dx=input.dx/mag,dy=input.dy/mag,speed=input.speed||215,acc=this.dashTimer>0?600:1250;this.vx+=dx*acc*dt;this.vy+=dy*acc*dt;this.facing=Math.atan2(dy,dx);const v=Math.hypot(this.vx,this.vy),max=this.dashTimer>0?470:speed;if(v>max){this.vx=this.vx/v*max;this.vy=this.vy/v*max}}if(input.dash&&this.dashCooldown<=0){this.dashCooldown=2.15;this.dashTimer=.22;this.vx=Math.cos(this.facing)*470;this.vy=Math.sin(this.facing)*470;rings.push({x:this.x,y:this.y,r:18,life:1,color:this.color});burst(this.x,this.y,this.color,12,120);tone(this.id===1?170:200,.09,'sawtooth',.035)}const drag=Math.pow(this.dashTimer>0?.18:.007,dt);this.vx*=drag;this.vy*=drag;this.x+=this.vx*dt;this.y+=this.vy*dt;const tile=tileUnder(this.x,this.y);if(tile&&(tile.state==='solid'||tile.state==='warning')){this.fallDelay=0;tile.stress=Math.min(1.2,tile.stress+dt/LEVEL[level].stress*(this.dashTimer>0?2.5:1));if(tile.state==='solid'&&tile.stress>=1)warnTile(tile,LEVEL[level].warn*.72)}else{this.fallDelay+=dt;if(this.fallDelay>.09)this.startFall()}}
+      startFall(){if(this.falling)return;this.falling=true;this.vy=55;burst(this.x,this.y,this.color,22,210);rings.push({x:this.x,y:this.y,r:20,life:1,color:this.color});shake=11;flash=.35;tone(90,.16,'sawtooth',.04)}
+    }
+    const p1=new Fighter(1,'CYAN',330,'#39e8ff',{up:'KeyW',down:'KeyS',left:'KeyA',right:'KeyD',dash:'Space'}),p2=new Fighter(2,'EMBER',790,'#ff9c24',{up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight',dash:'Enter'});
+    function tileUnder(x,y){let best=null,d=Infinity;for(const t of tiles){const td=(x-t.x)*(x-t.x)+(y-t.y)*(y-t.y);if(td<d){d=td;best=t}}return d<(R*.93)*(R*.93)?best:null}
+    function warnTile(t,duration=LEVEL[level].warn){if(!t||t.state!=='solid')return;t.state='warning';t.timer=duration;t.stress=1;setCallout('TILE FRACTURE','#ff5a55',430);tone(270,.04,'square',.015)}
+    function dropTile(t){if(t.state==='gone'||t.state==='falling')return;t.state='falling';t.drop=0;t.rot=(Math.random()-.5)*.7;burst(t.x,t.y,'#ff8352',9,130);shake=Math.max(shake,3)}
+    function updateTiles(dt){for(const t of tiles){if(t.state==='solid')t.stress=Math.max(0,t.stress-.08*dt);else if(t.state==='warning'){t.timer-=dt;if(t.timer<=0)dropTile(t)}else if(t.state==='falling'){t.drop+=1.15*dt;if(t.drop>=1)t.state='gone'}}hazardClock-=dt;if(hazardClock<=0){const safe=tiles.filter(t=>t.state==='solid');if(safe.length>8){const count=roundTime>22?3:roundTime>10?2:1;for(let i=0;i<count&&safe.length;i++){const idx=Math.floor(Math.random()*safe.length),t=safe.splice(idx,1)[0];warnTile(t)}hazardInterval=Math.max(LEVEL[level].min,hazardInterval-.045);hazardClock=hazardInterval}}}
+    function collide(a,b){if(a.falling||b.falling)return;const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),min=a.r+b.r;if(d<=0||d>=min)return;const nx=dx/d,ny=dy/d,over=(min-d)*.52;a.x-=nx*over;a.y-=ny*over;b.x+=nx*over;b.y+=ny*over;const rvx=b.vx-a.vx,rvy=b.vy-a.vy,along=rvx*nx+rvy*ny;if(along<0){const impulse=-(1.25)*along/2;a.vx-=nx*impulse;a.vy-=ny*impulse;b.vx+=nx*impulse;b.vy+=ny*impulse}if(a.dashTimer>0){b.vx+=nx*340;b.vy+=ny*340;b.lastHitBy=a.id;b.hitAge=0;impact(a,b)}if(b.dashTimer>0){a.vx-=nx*340;a.vy-=ny*340;a.lastHitBy=b.id;a.hitAge=0;impact(b,a)}}
+    function impact(attacker,target){attacker.dashTimer=0;shake=12;flash=.55;burst((attacker.x+target.x)/2,(attacker.y+target.y)/2,'#ffffff',25,280);rings.push({x:target.x,y:target.y,r:16,life:1,color:attacker.color});setCallout(`${attacker.name} IMPACT!`,attacker.color,550);tone(105,.12,'square',.055)}
+    function startMatch(nextMode=mode){mode=nextMode;round=0;roundWins=[0,0];matchTime=0;dashKos=0;p1.roundWins=0;p2.roundWins=0;ui.p2Name.textContent=mode===1?'EMBER · CPU':'EMBER · P2';ui.p2Control.textContent=mode===1?'ARENA AI':'ARROWS + ENTER';ui.hud.classList.remove('hidden');ui.hint.classList.remove('hidden');setPanel(null);window.setTileMobileControls?.(mode,true);startRound()}
+    function startRound(){clearTimeout(roundTimer);makeTiles();p1.ai=false;p2.ai=mode===1;p1.reset();p2.reset();round++;roundTime=0;hazardInterval=LEVEL[level].hazard;hazardClock=hazardInterval;state='countdown';paused=false;updateHud();runCountdown(++countdownRun)}
+    async function runCountdown(run){for(let n=3;n>0;n--){ui.countdown.textContent=n;ui.countdown.classList.remove('show');void ui.countdown.offsetWidth;ui.countdown.classList.add('show');tone(250+n*45,.07,'square',.02);await new Promise(r=>setTimeout(r,650));if(run!==countdownRun||state!=='countdown')return}ui.countdown.textContent='GO!';ui.countdown.classList.remove('show');void ui.countdown.offsetWidth;ui.countdown.classList.add('show');tone(620,.14,'square',.035);state='playing';setTimeout(()=>{if(run===countdownRun)ui.countdown.classList.remove('show')},480)}
+    function finishRound(){if(state!=='playing')return;state='roundover';let winner=0;if(p1.opacity>0&&p2.opacity<=0)winner=1;else if(p2.opacity>0&&p1.opacity<=0)winner=2;if(winner){roundWins[winner-1]++;if((winner===1?p2:p1).lastHitBy===winner&&(winner===1?p2:p1).hitAge<2.2)dashKos++;setCallout(`${winner===1?'CYAN':'EMBER'} TAKES ROUND`,winner===1?'#39e8ff':'#ff9c24',1050);tone(winner===1?660:540,.18,'triangle',.045)}else setCallout('DOUBLE FALL · REPLAY','#ffffff',900);updateHud();roundTimer=setTimeout(()=>{if(roundWins[0]>=2||roundWins[1]>=2)finishMatch();else startRound()},1300)}
+    function finishMatch(){state='gameover';const side=roundWins[0]>roundWins[1]?1:2,winner=side===1?'CYAN':mode===1?'CPU EMBER':'EMBER';ui.winner.innerHTML=`${winner} <span>WINS</span>`;ui.finalRounds.textContent=`${roundWins[0]} : ${roundWins[1]}`;ui.finalTime.textContent=formatTime(matchTime);ui.finalKos.textContent=dashKos;ui.hint.classList.add('hidden');setPanel(ui.over);for(let i=0;i<100;i++)particles.push({x:Math.random()*W,y:-20-Math.random()*250,vx:(Math.random()-.5)*120,vy:90+Math.random()*190,life:1.7,size:2+Math.random()*6,color:['#39e8ff','#ff9c24','#d9ff57','#ffffff'][i%4]});tone(side===1?740:620,.3,'triangle',.05)}
+    function formatTime(s){const m=Math.floor(s/60),sec=Math.floor(s%60);return`${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`}
+    function resetMenu(){countdownRun++;clearTimeout(roundTimer);state='menu';paused=false;makeTiles();p1.ai=false;p2.ai=false;p1.reset();p2.reset();ui.hud.classList.add('hidden');ui.hint.classList.add('hidden');ui.countdown.classList.remove('show');setPanel(ui.menu);window.setTileMobileControls?.(mode,false)}
+    function togglePause(){if(paused){paused=false;state='playing';setPanel(null);last=performance.now();return}if(state!=='playing')return;paused=true;state='paused';setPanel(ui.pause)}
+    function updateHud(){const remaining=tiles.filter(t=>t.state!=='gone').length;ui.phase.textContent=`ROUND ${round} · FIRST TO 2`;ui.tiles.textContent=`${remaining} TILES`;ui.time.textContent=`SURVIVE · ${formatTime(roundTime)}`;ui.p1Dash.style.width=`${(1-clamp(p1.dashCooldown/2.15,0,1))*100}%`;ui.p2Dash.style.width=`${(1-clamp(p2.dashCooldown/2.15,0,1))*100}%`;ui.p1Pips.forEach((x,i)=>x.classList.toggle('on',i<roundWins[0]));ui.p2Pips.forEach((x,i)=>x.classList.toggle('on',i<roundWins[1]))}
+    function update(dt){if(state!=='playing')return;roundTime+=dt;matchTime+=dt;updateTiles(dt);p1.update(dt);p2.update(dt);collide(p1,p2);updateHud();if((p1.opacity<=0||p2.opacity<=0)&&state==='playing')finishRound()}
+    function hexPath(x,y,r=R){ctx.beginPath();for(let i=0;i<6;i++){const a=-Math.PI/2+i*TAU/6,px=x+Math.cos(a)*r,py=y+Math.sin(a)*r;i?ctx.lineTo(px,py):ctx.moveTo(px,py)}ctx.closePath()}
+    function drawSpace(time){const g=ctx.createLinearGradient(0,0,W,H);g.addColorStop(0,'#160d3f');g.addColorStop(.45,'#1b1025');g.addColorStop(1,'#47150a');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);for(const s of stars){ctx.globalAlpha=.35+Math.sin(time*.0015+s.a)*.25;ctx.fillStyle=s.c;ctx.fillRect(s.x,s.y,s.s,s.s)}ctx.globalAlpha=1;const left=ctx.createRadialGradient(160,90,10,160,90,250);left.addColorStop(0,'rgba(113,81,255,.24)');left.addColorStop(1,'transparent');ctx.fillStyle=left;ctx.fillRect(0,0,500,500);const vortex=ctx.createRadialGradient(1040,75,5,1040,75,170);vortex.addColorStop(0,'#fff19b');vortex.addColorStop(.08,'#ff9d2c');vortex.addColorStop(.34,'rgba(255,73,18,.3)');vortex.addColorStop(1,'transparent');ctx.fillStyle=vortex;ctx.fillRect(820,-120,300,330);ctx.strokeStyle='rgba(255,150,45,.32)';ctx.lineWidth=6;for(let i=0;i<4;i++){ctx.beginPath();ctx.arc(1040,75,32+i*26,time*.0003+i,time*.0003+i+Math.PI*1.45);ctx.stroke()}}
+    function drawTile(t,time){if(t.state==='gone')return;let scale=1,y=t.y,alpha=1;if(t.state==='falling'){scale=Math.max(.15,1-t.drop*.72);y+=t.drop*74;alpha=Math.max(0,1-t.drop)}ctx.save();ctx.globalAlpha=alpha;ctx.translate(t.x,y);ctx.scale(scale,scale);ctx.rotate(t.rot*t.drop);ctx.shadowColor='#000';ctx.shadowBlur=10;ctx.fillStyle='#100b18';hexPath(0,9,R);ctx.fill();ctx.shadowBlur=0;let top=ctx.createLinearGradient(-R,-R,R,R);if(t.state==='warning'){const pulse=.5+Math.sin(time*.018+t.seed)*.5;top.addColorStop(0,`rgba(255,205,62,${.78+pulse*.2})`);top.addColorStop(1,'#c02b35');ctx.shadowColor='#ff533b';ctx.shadowBlur=18*pulse}else{top.addColorStop(0,t.c<COLS/2?'#37306c':'#5c2c31');top.addColorStop(.55,'#241b3d');top.addColorStop(1,t.c<COLS/2?'#171739':'#3e171c')}ctx.fillStyle=top;hexPath(0,0,R-2);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle=t.state==='warning'?'#ffd058':'rgba(170,137,231,.28)';ctx.lineWidth=2;ctx.stroke();const cracks=Math.floor(t.stress*4);ctx.strokeStyle=t.state==='warning'?'#5b1721':'rgba(255,178,115,.55)';ctx.lineWidth=1.8;for(let i=0;i<cracks;i++){const a=t.seed+i*1.7;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*R*.35,Math.sin(a)*R*.35);ctx.lineTo(Math.cos(a+.3)*R*.72,Math.sin(a+.3)*R*.72);ctx.stroke()}ctx.restore();ctx.globalAlpha=1}
+    function drawFighter(p,time){const tile=tileUnder(p.x,p.y);if(!p.falling&&tile){ctx.globalAlpha=.35;ctx.fillStyle='#000';ctx.beginPath();ctx.ellipse(p.x,p.y+17,25,10,0,0,TAU);ctx.fill();ctx.globalAlpha=1}ctx.save();ctx.translate(p.x,p.y);ctx.scale(p.scale,p.scale);ctx.globalAlpha=p.opacity;ctx.rotate(p.facing);if(p.dashTimer>0){ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=18;ctx.beginPath();ctx.moveTo(-28,-10);ctx.lineTo(-52,0);ctx.lineTo(-28,10);ctx.fill()}ctx.shadowColor=p.color;ctx.shadowBlur=18;const g=ctx.createRadialGradient(5,-9,2,0,0,28);g.addColorStop(0,'#fff');g.addColorStop(.18,p.color);g.addColorStop(1,p.id===1?'#087caf':'#bd4a12');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(0,0,24,28,0,0,TAU);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#f7f7ff';for(const ey of [-8,8]){ctx.beginPath();ctx.ellipse(8,ey,6,7,0,0,TAU);ctx.fill();ctx.fillStyle='#15121d';ctx.beginPath();ctx.arc(10,ey,3,0,TAU);ctx.fill();ctx.fillStyle='#f7f7ff'}ctx.strokeStyle='#331a1d';ctx.lineWidth=2;ctx.beginPath();ctx.arc(11,0,6,-.8,.8);ctx.stroke();ctx.strokeStyle=p.color;ctx.lineWidth=7;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-4,-21);ctx.lineTo(4,-34);ctx.moveTo(-4,21);ctx.lineTo(4,34);ctx.stroke();ctx.restore();ctx.globalAlpha=1}
+    function drawEffects(dt){for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=70*dt;p.vx*=Math.pow(.16,dt);p.life-=1.3*dt;const life=Math.max(0,p.life);ctx.globalAlpha=life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size*life,0,TAU);ctx.fill()}for(const r of rings){r.r+=190*dt;r.life-=1.5*dt;ctx.globalAlpha=Math.max(0,r.life);ctx.strokeStyle=r.color;ctx.lineWidth=4*r.life;ctx.beginPath();ctx.arc(r.x,r.y,r.r,0,TAU);ctx.stroke()}ctx.globalAlpha=1;for(let i=particles.length-1;i>=0;i--)if(particles[i].life<=0)particles.splice(i,1);for(let i=rings.length-1;i>=0;i--)if(rings[i].life<=0)rings.splice(i,1)}
+    function draw(time,dt){ctx.clearRect(0,0,W,H);ctx.save();if(shake>.2)ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);drawSpace(time);const sorted=[...tiles].sort((a,b)=>a.y-b.y);sorted.forEach(t=>drawTile(t,time));drawEffects(dt);drawFighter(p1,time);drawFighter(p2,time);ctx.restore();if(flash>.01){ctx.fillStyle=`rgba(255,255,255,${flash*.18})`;ctx.fillRect(0,0,W,H)}shake*=Math.pow(.001,dt);flash*=Math.pow(.002,dt)}
+    function loop(now){const dt=clamp((now-last)/1000,.001,.034);last=now;if(!paused)update(dt);draw(now,dt);pressed.clear();requestAnimationFrame(loop)}
+    addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','Enter'].includes(e.code))e.preventDefault();if(!keys[e.code]&&!e.repeat)pressed.add(e.code);keys[e.code]=true;if(['KeyP','Escape'].includes(e.code)){e.preventDefault();togglePause()}});addEventListener('keyup',e=>keys[e.code]=false);addEventListener('blur',()=>{Object.keys(keys).forEach(k=>keys[k]=false);if(state==='playing')togglePause()});
+    $('#intensity').addEventListener('click',e=>{const b=e.target.closest('button[data-level]');if(!b)return;level=b.dataset.level;document.querySelectorAll('#intensity button').forEach(x=>x.classList.toggle('active',x===b));tone(360,.04,'sine',.018)});$('#solo').onclick=()=>startMatch(1);$('#versus').onclick=()=>startMatch(2);$('#resume').onclick=togglePause;$('#rematch').onclick=()=>startMatch(mode);$('#to-menu').onclick=resetMenu;$('#sound').onclick=()=>{audioOn=!audioOn;$('#sound').textContent=audioOn?'♪':'×';$('#sound').setAttribute('aria-label',audioOn?'소리 끄기':'소리 켜기')};
+    window.startTileFall=startMatch;window.resetTileFall=resetMenu;makeTiles();p1.reset();p2.reset();last=performance.now();loop(last);
+  })();
+  </script>
+  <script src="../mobile-arcade.js"></script>
+  <script>
+  (()=>{if(!window.MobileArcade)return;const p1Pad=MobileArcade.dpad({up:'w',down:'s',left:'a',right:'d'},{side:'left',tag:'P1'}),p1Act=MobileArcade.actions([{label:'DASH',key:'space'}],{side:'left',bottom:'190px'}),p2Pad=MobileArcade.dpad({up:'up',down:'down',left:'left',right:'right'},{side:'right',tag:'P2'}),p2Act=MobileArcade.actions([{label:'DASH',key:'enter'}],{side:'right',bottom:'190px'}),tags=[...document.querySelectorAll('.ma-tag')];window.setTileMobileControls=(mode,active)=>{p1Pad.style.display=active?'':'none';p1Act.style.display=active?'':'none';p2Pad.style.display=active&&mode===2?'':'none';p2Act.style.display=active&&mode===2?'':'none';if(tags[0])tags[0].style.display=active?'':'none';if(tags[1])tags[1].style.display=active&&mode===2?'':'none'};window.setTileMobileControls(2,false)})();
+  </script>
 </body>
-
 </html>

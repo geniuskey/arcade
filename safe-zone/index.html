@@ -1,639 +1,109 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Safe Zone Scramble - Cosmic Arcade</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap"
-        rel="stylesheet">
-    <style>
-        :root {
-            --p1-color: #00f3ff;
-            --p2-color: #bc13fe;
-            --safe-color: #00ff88;
-            --hazard-color: #ff0055;
-            --bg-dark: #020010;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-        }
-
-        body {
-            background-color: var(--bg-dark);
-            color: white;
-            font-family: 'Orbitron', sans-serif;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-        }
-
-        #game-container {
-            position: relative;
-            width: 600px;
-            height: 600px;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            background: radial-gradient(circle at center, #0a0a2a 0%, #020010 100%);
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
-            overflow: hidden;
-        }
-
-        canvas {
-            display: block;
-        }
-
-        .back-btn {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 1000;
-            text-decoration: none;
-            color: white;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 14px;
-            transition: all 0.3s;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .back-btn:hover {
-            background: rgba(0, 243, 255, 0.2);
-            border-color: var(--p1-color);
-            box-shadow: 0 0 15px var(--p1-color);
-        }
-
-        #ui {
-            position: absolute;
-            top: 20px;
-            width: 100%;
-            display: flex;
-            justify-content: space-around;
-            pointer-events: none;
-        }
-
-        .stat-box {
-            background: rgba(0, 0, 0, 0.6);
-            padding: 10px 20px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            text-align: center;
-            min-width: 150px;
-        }
-
-        .p1-stat {
-            border-color: var(--p1-color);
-            box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
-        }
-
-        .p2-stat {
-            border-color: var(--p2-color);
-            box-shadow: 0 0 10px rgba(188, 19, 254, 0.2);
-        }
-
-        .stat-label {
-            font-size: 10px;
-            opacity: 0.7;
-            margin-bottom: 5px;
-        }
-
-        .stat-value {
-            font-size: 20px;
-            font-weight: bold;
-        }
-
-        #timer-container {
-            position: absolute;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            text-align: center;
-        }
-
-        #timer-progress {
-            width: 200px;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-            margin-top: 10px;
-            overflow: hidden;
-        }
-
-        #timer-bar {
-            width: 100%;
-            height: 100%;
-            background: var(--safe-color);
-            transition: width 0.1s linear, background-color 0.3s;
-        }
-
-        #message {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 40px;
-            text-align: center;
-            text-shadow: 0 0 20px white;
-            pointer-events: none;
-            display: none;
-        }
-
-        .overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-        }
-
-        h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
-            background: linear-gradient(to right, var(--p1-color), var(--p2-color));
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-align: center;
-        }
-
-        .instructions {
-            font-family: 'Share Tech Mono', monospace;
-            max-width: 80%;
-            text-align: center;
-            margin-bottom: 30px;
-            line-height: 1.6;
-            color: #aaa;
-        }
-
-        .btn {
-            background: transparent;
-            border: 2px solid white;
-            color: white;
-            padding: 15px 40px;
-            font-size: 20px;
-            font-family: 'Orbitron', sans-serif;
-            cursor: pointer;
-            transition: all 0.3s;
-            border-radius: 5px;
-        }
-
-        .btn:hover {
-            background: white;
-            color: black;
-            box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
-        }
-
-        .controls-hint {
-            display: flex;
-            gap: 40px;
-            margin-top: 20px;
-        }
-
-        .control-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .key-box {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 5px 10px;
-            border-radius: 4px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            font-family: 'Share Tech Mono', monospace;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Core Lock — Safe Zone Scramble</title>
+  <style>
+    :root{color-scheme:dark;--cyan:#3deaff;--pink:#ff4d8f;--green:#67ff72;--red:#ff354f;--lime:#d9ff57;--ink:#070812}
+    *{box-sizing:border-box}
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#03040a}
+    body{display:grid;place-items:center;color:#fff;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;touch-action:none;background:radial-gradient(circle at 50% 35%,#241638 0,#0c0b17 47%,#030309 100%)}
+    button,a{font:inherit}
+    #game-shell{position:relative;width:min(1120px,100vw,calc(100dvh * 16 / 10));aspect-ratio:16/10;overflow:hidden;border:1px solid #ffffff12;border-radius:28px;background:#090913;box-shadow:0 36px 110px #000d,0 0 80px #b1365b20;isolation:isolate}
+    canvas{display:block;width:100%;height:100%}
+    .corner{position:absolute;top:16px;z-index:50;display:grid;place-items:center;height:41px;padding:0 15px;border:1px solid #ffffff20;border-radius:13px;background:#080811dc;color:#fff;text-decoration:none;font-size:11px;font-weight:900;letter-spacing:.04em;backdrop-filter:blur(12px);box-shadow:0 9px 25px #0008;cursor:pointer}
+    #back{left:16px}#sound{right:16px;width:41px;padding:0}
+    #hud{position:absolute;inset:15px 72px auto 112px;z-index:22;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;pointer-events:none;transition:.2s}
+    #hud.hidden{opacity:0;transform:translateY(-10px)}
+    .player-card{display:flex;align-items:center;gap:10px;min-width:0;padding:8px 11px;border:1px solid #ffffff15;border-radius:14px;background:#080811df;backdrop-filter:blur(13px);box-shadow:0 10px 28px #0006}.player-card.right{flex-direction:row-reverse;text-align:right}.avatar{display:grid;place-items:center;width:35px;height:35px;border-radius:12px;background:linear-gradient(145deg,#68f4ff,#148dd8);color:#041116;font:1000 11px/1 ui-monospace,monospace;box-shadow:inset 0 1px #fff8,0 0 18px #35e8ff44}.right .avatar{background:linear-gradient(145deg,#ff79af,#e22567);color:#19050c;box-shadow:inset 0 1px #fff8,0 0 18px #ff4b8e44}.player-data{min-width:0;flex:1}.player-line{display:flex;justify-content:space-between;gap:8px;font-size:8px;font-weight:950;letter-spacing:.11em}.right .player-line{flex-direction:row-reverse}.player-line span:last-child{color:#81798e;font-size:7px}.dash-track{height:5px;margin-top:6px;overflow:hidden;border-radius:8px;background:#ffffff12}.dash-track i{display:block;width:100%;height:100%;border-radius:inherit;background:linear-gradient(90deg,#168eff,var(--cyan));box-shadow:0 0 10px var(--cyan)}.right .dash-track i{background:linear-gradient(90deg,#e12264,#ff75ad);box-shadow:0 0 10px var(--pink)}.shields{display:flex;gap:5px;margin-top:6px}.right .shields{justify-content:flex-end}.shield{width:20px;height:5px;border-radius:6px;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}.right .shield{background:var(--pink);box-shadow:0 0 8px var(--pink)}.shield.lost{background:#ffffff12;box-shadow:none}
+    .phase-card{min-width:175px;padding:8px 14px;text-align:center;border:1px solid #ffffff15;border-radius:14px;background:#080811e8;backdrop-filter:blur(13px)}.phase-card strong{display:block;color:var(--green);font:950 8px/1 ui-monospace,monospace;letter-spacing:.15em}.phase-card span{display:block;margin-top:5px;font:950 15px/1 ui-monospace,monospace}.phase-card small{display:block;margin-top:4px;color:#81798f;font:800 7px/1 ui-monospace,monospace;letter-spacing:.08em}.timer-track{height:3px;margin-top:6px;overflow:hidden;border-radius:4px;background:#ffffff12}.timer-track i{display:block;width:100%;height:100%;background:var(--green);box-shadow:0 0 8px var(--green)}
+    #hint{position:absolute;left:50%;bottom:15px;z-index:24;transform:translateX(-50%);padding:8px 12px;border:1px solid #ffffff14;border-radius:10px;background:#070710c9;color:#aaa2b8;font:800 8px/1 ui-monospace,monospace;letter-spacing:.08em;pointer-events:none;white-space:nowrap}#hint.hidden{display:none}
+    #callout{position:absolute;top:27%;left:50%;z-index:28;transform:translate(-50%,-50%) scale(.96);padding:9px 16px;border:1px solid currentColor;border-radius:11px;background:#070710e9;color:var(--green);font:1000 10px/1 ui-monospace,monospace;letter-spacing:.15em;opacity:0;pointer-events:none;transition:.2s}#callout.show{opacity:1;transform:translate(-50%,-58%) scale(1)}
+    #ui-layer{position:absolute;inset:0;z-index:35;display:grid;place-items:center;pointer-events:none}
+    .panel{display:none;width:min(540px,calc(100% - 34px));padding:31px 35px 28px;border:1px solid #ffffff17;border-radius:27px;background:linear-gradient(155deg,#171229f5,#080811fa);box-shadow:0 31px 90px #000d,inset 0 1px #ffffff0e;text-align:center;pointer-events:auto;backdrop-filter:blur(17px)}.panel.active{display:block;animation:panel-in .25s ease-out}@keyframes panel-in{from{opacity:0;transform:translateY(11px) scale(.98)}}
+    .kicker{color:var(--green);font:950 8px/1 ui-monospace,monospace;letter-spacing:.21em}.title{margin:10px 0 0;font-size:45px;line-height:.88;font-weight:1000;letter-spacing:-.06em}.title span{color:transparent;-webkit-text-stroke:1px #ffffff7c}.tagline{margin:17px auto 20px;max-width:420px;color:#aca5b8;font-size:12px;line-height:1.65}
+    .intensity{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:13px;padding:5px;border:1px solid #ffffff12;border-radius:14px;background:#ffffff04}.intensity button{height:34px;border:0;border-radius:9px;background:transparent;color:#7f778c;font-size:8px;font-weight:950;letter-spacing:.1em;cursor:pointer}.intensity button.active{background:linear-gradient(145deg,#8dff76,#39c96d);color:#04120a;box-shadow:0 5px 19px #53ef7640}
+    .actions{display:grid;grid-template-columns:1.15fr 1fr;gap:9px}.primary{height:52px;border:1px solid #ffffff19;border-radius:15px;background:linear-gradient(145deg,#4cecff,#178ee4);color:#061116;font-size:11px;font-weight:1000;letter-spacing:.05em;cursor:pointer;box-shadow:0 12px 28px #26cce233;transition:.16s}.primary:hover{transform:translateY(-2px);filter:brightness(1.1)}.primary.alt{background:#ffffff08;color:#f2eef8;box-shadow:none}.panel-foot{display:flex;justify-content:center;gap:17px;margin-top:15px;color:#776f83;font:800 7px/1 ui-monospace,monospace;letter-spacing:.08em}
+    .result-title{margin:9px 0 0;font-size:41px;line-height:1;font-weight:1000;letter-spacing:-.05em}.result-title span{color:var(--lime)}.results{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:20px 0}.result{padding:12px 6px;border:1px solid #ffffff12;border-radius:13px;background:#ffffff05}.result span{display:block;color:#837b90;font-size:7px;font-weight:900;letter-spacing:.09em}.result strong{display:block;margin-top:5px;font:950 17px/1 ui-monospace,monospace}
+    @media(max-aspect-ratio:4/5){#game-shell{width:calc(100vw - 12px);border-radius:18px}#hud{inset:7px 38px auto;gap:3px}.player-card{padding:4px 5px;border-radius:8px}.avatar{width:18px;height:18px;border-radius:5px;font-size:6px}.player-line{font-size:5px}.player-line span:last-child,.dash-track{display:none}.shields{margin-top:3px;gap:2px}.shield{width:8px;height:2px}.phase-card{min-width:65px;padding:5px}.phase-card strong{font-size:5px}.phase-card span{font-size:7px;margin-top:3px}.phase-card small{display:none}.timer-track{margin-top:3px}.corner{top:7px;height:28px;padding:0 8px;border-radius:8px;font-size:7px}#back{left:7px;width:28px;padding:0}.back-label{display:none}#sound{right:7px;width:28px}#hint{display:none}.panel{padding:21px 17px;border-radius:19px}.title{font-size:35px}.tagline{font-size:10px;margin:13px auto 16px}.intensity button{height:29px}.actions{grid-template-columns:1fr}.primary{height:41px}.panel-foot{margin-top:11px}#callout{top:24%;font-size:7px;padding:6px 9px}}
+  </style>
 </head>
-
 <body>
-    <a href="../" class="back-btn">← Arcade</a>
+  <main id="game-shell">
+    <canvas id="game" width="1120" height="700" aria-label="Safe Zone Scramble arena"></canvas>
+    <a id="back" class="corner" href="../"><span>← <span class="back-label">Arcade</span></span></a>
+    <button id="sound" class="corner" type="button" aria-label="소리 끄기">♪</button>
 
-    <div id="game-container">
-        <canvas id="gameCanvas"></canvas>
+    <section id="hud" class="hidden" aria-label="생존 상태">
+      <div class="player-card"><strong class="avatar">P1</strong><div class="player-data"><div class="player-line"><span>CYAN · P1</span><span>WASD + SPACE</span></div><div class="dash-track"><i id="p1-dash"></i></div><div id="p1-shields" class="shields"><i class="shield"></i><i class="shield"></i><i class="shield"></i></div></div></div>
+      <div class="phase-card"><strong id="phase-label">CORE SEARCH</strong><span id="timer-label">4.8 SEC</span><small id="cycle-label">CYCLE 1 · 2 ZONES</small><div class="timer-track"><i id="timer-fill"></i></div></div>
+      <div class="player-card right"><strong class="avatar">P2</strong><div class="player-data"><div class="player-line"><span id="p2-name">ROSE · P2</span><span id="p2-control">ARROWS + ENTER</span></div><div class="dash-track"><i id="p2-dash"></i></div><div id="p2-shields" class="shields"><i class="shield"></i><i class="shield"></i><i class="shield"></i></div></div></div>
+    </section>
+    <div id="hint" class="hidden">MOVE TO GREEN · ONE PILOT PER CORE &nbsp; SPACE / ENTER · DASH & PUSH &nbsp; P · PAUSE</div><div id="callout" role="status">CORE LOCKED</div>
 
-        <div id="ui">
-            <div class="stat-box p1-stat">
-                <div class="stat-label">PLAYER 1 (WASD)</div>
-                <div id="p1-hp" class="stat-value">100</div>
-            </div>
-            <div class="stat-box p2-stat">
-                <div class="stat-label">PLAYER 2 (ARROWS)</div>
-                <div id="p2-hp" class="stat-value">100</div>
-            </div>
-        </div>
-
-        <div id="timer-container">
-            <div id="timer-label" class="stat-label">VOID BREACH IN</div>
-            <div id="cycle-timer" style="font-size: 24px; font-weight: bold;">5.0s</div>
-            <div id="timer-progress">
-                <div id="timer-bar"></div>
-            </div>
-        </div>
-
-        <div id="message"></div>
-
-        <div id="start-overlay" class="overlay">
-            <h1>SAFE ZONE SCRAMBLE</h1>
-            <p class="instructions">
-                The cosmic void is unstable. When the timer hits zero, only those inside the
-                <span style="color: var(--safe-color)">Green Safe Zones</span> will survive.
-                <br><br>
-                <span style="color: #ff0055; font-weight: bold;">WARNING:</span> Only one person can fit in a zone!
-                Physically push your opponent out to claim your spot.
-            </p>
-            <button class="btn" onclick="startGame()">INITIATE</button>
-
-            <div class="controls-hint">
-                <div class="control-item">
-                    <span class="stat-label" style="color: var(--p1-color)">BLUE PLAYER</span>
-                    <span class="key-box">W A S D</span>
-                </div>
-                <div class="control-item">
-                    <span class="stat-label" style="color: var(--p2-color)">PURPLE PLAYER</span>
-                    <span class="key-box">ARROWS</span>
-                </div>
-            </div>
-        </div>
-
-        <div id="game-over-overlay" class="overlay" style="display: none;">
-            <h1 id="winner-text">GAME OVER</h1>
-            <p id="final-stats" class="instructions"></p>
-            <button class="btn" onclick="startGame()">REBOOT</button>
-        </div>
+    <div id="ui-layer">
+      <section id="main-menu" class="panel active">
+        <div class="kicker">GENIUSKEY EMERGENCY PROTOCOL</div>
+        <h1 class="title">SAFE ZONE <span>SCRAMBLE</span></h1>
+        <p class="tagline">침식 파동이 오기 전에 녹색 코어를 선점하세요. 각 코어는 단 한 명만 보호하며, 대시 충돌로 상대를 밀어낼 수 있습니다.</p>
+        <div id="intensity" class="intensity"><button type="button" data-level="calm">CALM</button><button class="active" type="button" data-level="standard">STANDARD</button><button type="button" data-level="chaos">CHAOS</button></div>
+        <div class="actions"><button id="solo" class="primary" type="button">1P vs AI</button><button id="versus" class="primary alt" type="button">2P LOCAL</button></div>
+        <div class="panel-foot"><span>SINGLE OCCUPANCY</span><span>3 SHIELDS</span><span>DASH IMPACT</span></div>
+      </section>
+      <section id="pause-menu" class="panel"><div class="kicker">BREACH SUSPENDED</div><h2 class="result-title">ARENA <span>PAUSED</span></h2><p class="tagline">침식 타이머와 모든 조종사가 멈췄습니다.</p><button id="resume" class="primary" type="button">RESUME</button></section>
+      <section id="game-over" class="panel"><div class="kicker">PROTOCOL COMPLETE</div><h2 id="winner" class="result-title">CYAN <span>SURVIVES</span></h2><div class="results"><div class="result"><span>CYCLES</span><strong id="final-cycles">5</strong></div><div class="result"><span>SAFE STREAK</span><strong id="final-streak">3</strong></div><div class="result"><span>DASH HITS</span><strong id="final-hits">0</strong></div></div><div class="actions"><button id="rematch" class="primary" type="button">REDEPLOY</button><button id="to-menu" class="primary alt" type="button">MENU</button></div></section>
     </div>
+  </main>
 
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const container = document.getElementById('game-container');
-
-        canvas.width = 600;
-        canvas.height = 600;
-
-        // Audio Context for sound effects
-        let audioCtx;
-        function initAudio() {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-
-        function playSound(freq, type, duration, vol) {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
-        }
-
-        const keys = {};
-        window.addEventListener('keydown', e => {
-            keys[e.code] = true;
-            if (e.code === 'Enter' && !gameRunning) {
-                startGame();
-            }
-        });
-        window.addEventListener('keyup', e => keys[e.code] = false);
-
-        let gameRunning = false;
-        let players = [];
-        let safeZones = [];
-        let particles = [];
-        let timer = 5.0;
-        let maxTimer = 5.0;
-        let phase = 'waiting'; // 'waiting' or 'danger'
-        let round = 1;
-
-        class Player {
-            constructor(id, x, y, color, controls) {
-                this.id = id;
-                this.x = x;
-                this.y = y;
-                this.radius = 15;
-                this.color = color;
-                this.controls = controls;
-                this.hp = 100;
-                this.speed = 2;
-                this.vx = 0;
-                this.vy = 0;
-            }
-
-            update() {
-                if (keys[this.controls.up]) this.vy -= this.speed;
-                if (keys[this.controls.down]) this.vy += this.speed;
-                if (keys[this.controls.left]) this.vx -= this.speed;
-                if (keys[this.controls.right]) this.vx += this.speed;
-
-                this.x += this.vx;
-                this.y += this.vy;
-
-                // Friction
-                this.vx *= 0.8;
-                this.vy *= 0.8;
-
-                // Bounds
-                this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
-                this.y = Math.max(this.radius, Math.min(canvas.height - this.radius, this.y));
-            }
-
-            draw() {
-                ctx.save();
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = this.color;
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Inner highlight
-                ctx.fillStyle = 'white';
-                ctx.beginPath();
-                ctx.arc(this.x - 4, this.y - 4, 4, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-            }
-        }
-
-        class SafeZone {
-            constructor(x, y, radius) {
-                this.x = x;
-                this.y = y;
-                this.radius = radius;
-                this.occupant = null;
-                this.pulse = 0;
-            }
-
-            draw() {
-                this.pulse += 0.05;
-                let s = Math.sin(this.pulse) * 5;
-
-                ctx.save();
-                ctx.shadowBlur = 20 + s;
-                ctx.shadowColor = '#00ff88';
-                ctx.strokeStyle = '#00ff88';
-                ctx.lineWidth = 3;
-
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius + s, 0, Math.PI * 2);
-                ctx.stroke();
-
-                // Fill translucent
-                ctx.fillStyle = 'rgba(0, 255, 136, 0.1)';
-                ctx.fill();
-
-                if (this.occupant) {
-                    ctx.fillStyle = 'rgba(0, 255, 136, 0.3)';
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.radius - 5, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                ctx.restore();
-            }
-        }
-
-        class Particle {
-            constructor(x, y, color) {
-                this.x = x;
-                this.y = y;
-                this.color = color;
-                this.vx = (Math.random() - 0.5) * 10;
-                this.vy = (Math.random() - 0.5) * 10;
-                this.life = 1.0;
-            }
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                this.life -= 0.02;
-            }
-            draw() {
-                ctx.fillStyle = this.color;
-                ctx.globalAlpha = this.life;
-                ctx.fillRect(this.x, this.y, 4, 4);
-                ctx.globalAlpha = 1;
-            }
-        }
-
-        function resolvePlayerCollision(p1, p2) {
-            let dx = p2.x - p1.x;
-            let dy = p2.y - p1.y;
-            let dist = Math.sqrt(dx * dx + dy * dy);
-            let minDist = p1.radius + p2.radius;
-
-            if (dist < minDist) {
-                let overlap = minDist - dist;
-                let nx = dx / dist;
-                let ny = dy / dist;
-
-                // Push apart
-                p1.x -= nx * overlap / 2;
-                p1.y -= ny * overlap / 2;
-                p2.x += nx * overlap / 2;
-                p2.y += ny * overlap / 2;
-
-                // Transfer momentum
-                let vdiffX = p1.vx - p2.vx;
-                let vdiffY = p1.vy - p2.vy;
-                let dot = vdiffX * nx + vdiffY * ny;
-
-                if (dot > 0) {
-                    p1.vx -= nx * dot;
-                    p1.vy -= ny * dot;
-                    p2.vx += nx * dot;
-                    p2.vy += ny * dot;
-
-                    if (gameRunning) playSound(150, 'square', 0.1, 0.05);
-                }
-            }
-        }
-
-        function spawnZones() {
-            safeZones = [];
-            // Round 1-3: 2 zones, Round 4-6: 1 zone (musical chairs!), Round 7+: 1 tiny zone
-            let count = round <= 3 ? 2 : 1;
-            let baseRadius = 40;
-            if (round >= 7) baseRadius = 30;
-            if (round >= 10) baseRadius = 25;
-
-            for (let i = 0; i < count; i++) {
-                let margin = 100;
-                let x = margin + Math.random() * (canvas.width - margin * 2);
-                let y = margin + Math.random() * (canvas.height - margin * 2);
-                safeZones.push(new SafeZone(x, y, baseRadius));
-            }
-        }
-
-        function startGame() {
-            initAudio();
-            document.getElementById('start-overlay').style.display = 'none';
-            document.getElementById('game-over-overlay').style.display = 'none';
-
-            gameRunning = true;
-            round = 1;
-            timer = 5.0;
-            maxTimer = 5.0;
-            phase = 'waiting';
-
-            players = [
-                new Player(1, 200, 300, '#00f3ff', { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD' }),
-                new Player(2, 400, 300, '#bc13fe', { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' })
-            ];
-
-            spawnZones();
-            requestAnimationFrame(gameLoop);
-        }
-
-        function gameOver() {
-            gameRunning = false;
-            let winner = players[0].hp > 0 ? "PLAYER 1" : "PLAYER 2";
-            if (players[0].hp <= 0 && players[1].hp <= 0) winner = "DRAW";
-
-            document.getElementById('winner-text').innerText = winner === "DRAW" ? "MUTUAL ANNIHILATION" : winner + " VICTORIOUS";
-            document.getElementById('final-stats').innerText = `Survived through Round ${round}`;
-            document.getElementById('game-over-overlay').style.display = 'flex';
-
-            playSound(100, 'sawtooth', 0.5, 0.1);
-        }
-
-        let lastTime = 0;
-        const fps = 60;
-        const fpsInterval = 1000 / fps;
-
-        function gameLoop(currentTime) {
-            if (!gameRunning) return;
-
-            requestAnimationFrame(gameLoop);
-
-            const elapsed = currentTime - lastTime;
-            if (elapsed < fpsInterval) return;
-
-            lastTime = currentTime - (elapsed % fpsInterval);
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw grid
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-            for (let i = 0; i < canvas.width; i += 50) {
-                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
-            }
-
-            // Update Timer
-            timer -= 1 / 60;
-            if (timer <= 0) {
-                if (phase === 'waiting') {
-                    phase = 'danger';
-                    timer = 1.0; // Danger duration
-                    playSound(400, 'sawtooth', 0.3, 0.1);
-
-                    // Check survivors
-                    players.forEach(p => {
-                        let safe = false;
-                        safeZones.forEach(z => {
-                            let dx = p.x - z.x;
-                            let dy = p.y - z.y;
-                            if (Math.sqrt(dx * dx + dy * dy) < z.radius) safe = true;
-                        });
-                        if (!safe) {
-                            p.hp -= 34; // 3 hits and out
-                            // Effects
-                            for (let i = 0; i < 20; i++) particles.push(new Particle(p.x, p.y, p.color));
-                        }
-                    });
-                } else {
-                    phase = 'waiting';
-                    round++;
-                    maxTimer = Math.max(2.0, 5.0 - (round * 0.2));
-                    timer = maxTimer;
-                    spawnZones();
-                    playSound(600, 'sine', 0.2, 0.05);
-                }
-            }
-
-            // UI Update
-            document.getElementById('p1-hp').innerText = Math.max(0, players[0].hp);
-            document.getElementById('p2-hp').innerText = Math.max(0, players[1].hp);
-            document.getElementById('cycle-timer').innerText = timer.toFixed(1) + 's';
-
-            let bar = document.getElementById('timer-bar');
-            bar.style.width = (timer / maxTimer * 100) + '%';
-            bar.style.backgroundColor = phase === 'danger' ? '#ff0055' : '#00ff88';
-            document.getElementById('timer-label').innerText = phase === 'danger' ? 'VOID BREACH ACTIVE!' : 'VOID BREACH IN';
-
-            // Flash Screen in Danger phase
-            if (phase === 'danger') {
-                ctx.fillStyle = 'rgba(255, 0, 85, 0.15)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            }
-
-            // Zones
-            safeZones.forEach(z => {
-                // One per tile logic
-                z.occupant = null;
-                players.forEach(p => {
-                    let dx = p.x - z.x;
-                    let dy = p.y - z.y;
-                    if (Math.sqrt(dx * dx + dy * dy) < z.radius) {
-                        z.occupant = p;
-                    }
-                });
-                z.draw();
-            });
-
-            // Resolve Player-Player Collision
-            resolvePlayerCollision(players[0], players[1]);
-
-            // Safe Zone "Solid" constraint - Only one person can be inside
-            // In this version, we use physics naturally: since players collide with each other,
-            // they can push each other out of the zones. 
-            // The prompt says "One person per square", so if someone is in the center, 
-            // the other person hitting them will be blocked by their collision radius.
-
-            // Players
-            players.forEach(p => {
-                if (p.hp > 0) {
-                    p.update();
-                    p.draw();
-                }
-            });
-
-            // Particles
-            for (let i = particles.length - 1; i >= 0; i--) {
-                particles[i].update();
-                particles[i].draw();
-                if (particles[i].life <= 0) particles.splice(i, 1);
-            }
-
-            if (players[0].hp <= 0 || players[1].hp <= 0) {
-                gameOver();
-            }
-        }
-    </script>
-    <script src="../mobile-arcade.js"></script>
-    <script>
-        MobileArcade.fit('#game-container');
-        MobileArcade.dpad({ up: 'w', down: 's', left: 'a', right: 'd' }, { side: 'left', tag: 'P1' });
-        MobileArcade.dpad({ up: 'up', down: 'down', left: 'left', right: 'right' }, { side: 'right', tag: 'P2' });
-    </script>
+  <script>
+  (()=>{
+    'use strict';
+    const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d'),W=1120,H=700,TAU=Math.PI*2,ARENA={x:560,y:360,r:278};
+    const $=s=>document.querySelector(s),ui={hud:$('#hud'),p1Dash:$('#p1-dash'),p2Dash:$('#p2-dash'),p1Shields:[...$('#p1-shields').children],p2Shields:[...$('#p2-shields').children],p2Name:$('#p2-name'),p2Control:$('#p2-control'),phase:$('#phase-label'),timer:$('#timer-label'),cycle:$('#cycle-label'),timerFill:$('#timer-fill'),hint:$('#hint'),callout:$('#callout'),menu:$('#main-menu'),pause:$('#pause-menu'),over:$('#game-over'),winner:$('#winner'),finalCycles:$('#final-cycles'),finalStreak:$('#final-streak'),finalHits:$('#final-hits')};
+    const LEVEL={calm:{base:5.6,min:3.3,ai:185},standard:{base:4.8,min:2.5,ai:220},chaos:{base:4,min:1.9,ai:255}},keys={},pressed=new Set(),zones=[],particles=[],rings=[],debris=[],stars=[];
+    let seed=51309;const rand=()=>((seed=(seed*1664525+1013904223)>>>0)/4294967296);for(let i=0;i<130;i++)stars.push({x:rand()*W,y:rand()*H,s:.5+rand()*1.8,a:rand()*TAU,c:rand()>.64?'#ff668c':'#a69bff'});for(let i=0;i<26;i++)debris.push({a:rand()*TAU,r:310+rand()*190,s:5+rand()*13,spin:(rand()-.5)*.3,shape:Math.floor(rand()*3)});
+    let mode=1,level='standard',state='menu',paused=false,cycle=1,phase='search',timer=0,maxTimer=0,matchTime=0,breachApplied=false,calloutTimer=0,last=performance.now(),shake=0,flash=0,audioOn=true,audioCtx=null,dashHits=0,bestStreak=0,phaseToken=0;
+    const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t;
+    function tone(freq,d=.05,type='sine',vol=.025){if(!audioOn)return;try{audioCtx??=new(window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(vol,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+d);o.connect(g).connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+d)}catch{}}
+    function setPanel(panel){[ui.menu,ui.pause,ui.over].forEach(x=>x.classList.toggle('active',x===panel))}
+    function setCallout(text,color='#67ff72',ms=720){ui.callout.textContent=text;ui.callout.style.color=color;ui.callout.classList.remove('show');void ui.callout.offsetWidth;ui.callout.classList.add('show');clearTimeout(calloutTimer);calloutTimer=setTimeout(()=>ui.callout.classList.remove('show'),ms)}
+    function burst(x,y,color,count=16,power=190){for(let i=0;i<count;i++){const a=Math.random()*TAU,s=35+Math.random()*power;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,size:1.5+Math.random()*4,color})}}
+    class Pilot{
+      constructor(id,name,x,color,controls,ai=false){this.id=id;this.name=name;this.spawnX=x;this.color=color;this.controls=controls;this.ai=ai;this.reset(true)}
+      reset(full=false){this.x=this.spawnX;this.y=ARENA.y;this.vx=0;this.vy=0;this.facing=this.id===1?0:Math.PI;this.r=23;this.dashCooldown=0;this.dashTimer=0;this.aiClock=0;this.aiTarget=null;this.lastHitBy=0;this.hitAge=99;if(full){this.shields=3;this.streak=0;this.maxStreak=0}}
+      humanInput(){const c=this.controls,dx=(keys[c.right]?1:0)-(keys[c.left]?1:0),dy=(keys[c.down]?1:0)-(keys[c.up]?1:0);return{dx,dy,dash:pressed.has(c.dash)}}
+      aiInput(dt){this.aiClock-=dt;const alive=zones,op=p1;if(this.aiClock<=0||!this.aiTarget||!alive.includes(this.aiTarget)){this.aiClock=.12;this.aiTarget=[...alive].sort((a,b)=>Math.hypot(a.x-this.x,a.y-this.y)-Math.hypot(b.x-this.x,b.y-this.y))[0]||null}const z=this.aiTarget;if(!z)return{dx:0,dy:0,dash:false};let tx=z.x,ty=z.y,dash=false,od=Math.hypot(op.x-this.x,op.y-this.y);if(z.occupant===op.id&&od<120&&this.dashCooldown<=0&&Math.random()>.9){tx=op.x;ty=op.y;dash=true}const dx=tx-this.x,dy=ty-this.y,m=Math.hypot(dx,dy);return{dx:m?dx/m:0,dy:m?dy/m:0,dash,speed:LEVEL[level].ai}}
+      update(dt){this.hitAge+=dt;this.dashCooldown=Math.max(0,this.dashCooldown-dt);this.dashTimer=Math.max(0,this.dashTimer-dt);const input=this.ai?this.aiInput(dt):this.humanInput(),mag=Math.hypot(input.dx,input.dy);if(mag){const dx=input.dx/mag,dy=input.dy/mag,speed=input.speed||215,acc=this.dashTimer>0?650:1250;this.vx+=dx*acc*dt;this.vy+=dy*acc*dt;this.facing=Math.atan2(dy,dx);const v=Math.hypot(this.vx,this.vy),max=this.dashTimer>0?500:speed;if(v>max){this.vx=this.vx/v*max;this.vy=this.vy/v*max}}if(input.dash&&this.dashCooldown<=0){this.dashCooldown=2.15;this.dashTimer=.22;this.vx=Math.cos(this.facing)*500;this.vy=Math.sin(this.facing)*500;rings.push({x:this.x,y:this.y,r:18,life:1,color:this.color});burst(this.x,this.y,this.color,12,130);tone(this.id===1?170:205,.09,'sawtooth',.035)}const drag=Math.pow(this.dashTimer>0?.18:.007,dt);this.vx*=drag;this.vy*=drag;this.x+=this.vx*dt;this.y+=this.vy*dt;const dx=this.x-ARENA.x,dy=this.y-ARENA.y,d=Math.hypot(dx,dy),limit=ARENA.r-this.r;if(d>limit){const nx=dx/d,ny=dy/d;this.x=ARENA.x+nx*limit;this.y=ARENA.y+ny*limit;const outward=this.vx*nx+this.vy*ny;if(outward>0){this.vx-=nx*outward*1.55;this.vy-=ny*outward*1.55;shake=Math.max(shake,3);tone(135,.03,'square',.012)}}}
+    }
+    const p1=new Pilot(1,'CYAN',365,'#3deaff',{up:'KeyW',down:'KeyS',left:'KeyA',right:'KeyD',dash:'Space'}),p2=new Pilot(2,'ROSE',755,'#ff4d8f',{up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight',dash:'Enter'});
+    function collide(a,b){const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),min=a.r+b.r;if(d<=0||d>=min)return;const nx=dx/d,ny=dy/d,over=(min-d)*.52;a.x-=nx*over;a.y-=ny*over;b.x+=nx*over;b.y+=ny*over;const rvx=b.vx-a.vx,rvy=b.vy-a.vy,along=rvx*nx+rvy*ny;if(along<0){const impulse=-(1.3)*along/2;a.vx-=nx*impulse;a.vy-=ny*impulse;b.vx+=nx*impulse;b.vy+=ny*impulse}if(a.dashTimer>0){b.vx+=nx*350;b.vy+=ny*350;b.lastHitBy=a.id;b.hitAge=0;impact(a,b)}if(b.dashTimer>0){a.vx-=nx*350;a.vy-=ny*350;a.lastHitBy=b.id;a.hitAge=0;impact(b,a)}}
+    function impact(attacker,target){attacker.dashTimer=0;dashHits++;shake=13;flash=.5;burst((attacker.x+target.x)/2,(attacker.y+target.y)/2,'#ffffff',25,280);rings.push({x:target.x,y:target.y,r:16,life:1,color:attacker.color});setCallout(`${attacker.name} IMPACT!`,attacker.color,520);tone(105,.12,'square',.055)}
+    function spawnZones(){zones.length=0;const count=cycle<=2?2:1,radius=count===2?58:Math.max(43,66-(cycle-3)*3);for(let i=0;i<count;i++){let z,tries=0;do{const a=Math.random()*TAU,r=Math.sqrt(Math.random())*(ARENA.r-radius-35);z={x:ARENA.x+Math.cos(a)*r,y:ARENA.y+Math.sin(a)*r,r:radius,occupant:0,pulse:Math.random()*TAU,index:i}}while(++tries<40&&zones.some(o=>Math.hypot(o.x-z.x,o.y-z.y)<radius*2.4));zones.push(z)}}
+    function updateOccupants(){for(const z of zones){const candidates=[p1,p2].filter(p=>p.shields>0&&Math.hypot(p.x-z.x,p.y-z.y)<z.r-6).sort((a,b)=>Math.hypot(a.x-z.x,a.y-z.y)-Math.hypot(b.x-z.x,b.y-z.y));z.occupant=candidates[0]?.id||0}}
+    function beginCycle(){spawnZones();phase='search';maxTimer=Math.max(LEVEL[level].min,LEVEL[level].base-(cycle-1)*.23);timer=maxTimer;breachApplied=false;setCallout(cycle<=2?'TWO CORES ONLINE':'SINGLE CORE · FIGHT!','#67ff72',850);tone(560,.1,'sine',.03);updateHud()}
+    function triggerBreach(){phase='breach';timer=1.15;maxTimer=1.15;breachApplied=true;updateOccupants();const safeIds=new Set(zones.map(z=>z.occupant).filter(Boolean));for(const p of [p1,p2]){if(p.shields<=0)continue;if(safeIds.has(p.id)){p.streak++;p.maxStreak=Math.max(p.maxStreak,p.streak);bestStreak=Math.max(bestStreak,p.maxStreak);burst(p.x,p.y,'#67ff72',20,150);tone(p.id===1?620:700,.09,'triangle',.025)}else{p.shields--;p.streak=0;const dx=p.x-ARENA.x,dy=p.y-ARENA.y,d=Math.max(1,Math.hypot(dx,dy));p.vx+=dx/d*240;p.vy+=dy/d*240;burst(p.x,p.y,p.color,34,280)}}shake=18;flash=1;rings.push({x:ARENA.x,y:ARENA.y,r:30,life:1,color:'#ff354f'});setCallout('VOID BREACH!','#ff4b60',900);tone(82,.25,'sawtooth',.06);updateHud()}
+    function startMatch(nextMode=mode){mode=nextMode;cycle=1;matchTime=0;dashHits=0;bestStreak=0;p1.ai=false;p2.ai=mode===1;p1.reset(true);p2.reset(true);ui.p2Name.textContent=mode===1?'ROSE · CPU':'ROSE · P2';ui.p2Control.textContent=mode===1?'CORE AI':'ARROWS + ENTER';ui.hud.classList.remove('hidden');ui.hint.classList.remove('hidden');setPanel(null);window.setSafeMobileControls?.(mode,true);state='playing';paused=false;beginCycle()}
+    function finishMatch(){state='gameover';const winner=p1.shields>p2.shields?1:p2.shields>p1.shields?2:0,name=winner===1?'CYAN':winner===2?(mode===1?'CPU ROSE':'ROSE'):'BOTH LOST';ui.winner.innerHTML=winner?`${name} <span>SURVIVES</span>`:'MUTUAL <span>ANNIHILATION</span>';ui.finalCycles.textContent=cycle;ui.finalStreak.textContent=bestStreak;ui.finalHits.textContent=dashHits;ui.hint.classList.add('hidden');setPanel(ui.over);for(let i=0;i<100;i++)particles.push({x:Math.random()*W,y:-20-Math.random()*250,vx:(Math.random()-.5)*120,vy:90+Math.random()*190,life:1.7,size:2+Math.random()*6,color:['#3deaff','#ff4d8f','#67ff72','#ffffff'][i%4]});tone(winner===1?740:620,.3,'triangle',.05)}
+    function resetMenu(){phaseToken++;state='menu';paused=false;cycle=1;p1.ai=false;p2.ai=false;p1.reset(true);p2.reset(true);spawnZones();ui.hud.classList.add('hidden');ui.hint.classList.add('hidden');setPanel(ui.menu);window.setSafeMobileControls?.(mode,false)}
+    function togglePause(){if(paused){paused=false;state='playing';setPanel(null);last=performance.now();return}if(state!=='playing')return;paused=true;state='paused';setPanel(ui.pause)}
+    function updateHud(){ui.phase.textContent=phase==='breach'?'VOID BREACH ACTIVE':'CORE SEARCH';ui.timer.textContent=`${timer.toFixed(1)} SEC`;ui.cycle.textContent=`CYCLE ${cycle} · ${zones.length} ZONE${zones.length===1?'':'S'}`;ui.timerFill.style.width=`${clamp(timer/maxTimer,0,1)*100}%`;ui.timerFill.style.background=phase==='breach'?'#ff354f':'#67ff72';ui.p1Dash.style.width=`${(1-clamp(p1.dashCooldown/2.15,0,1))*100}%`;ui.p2Dash.style.width=`${(1-clamp(p2.dashCooldown/2.15,0,1))*100}%`;ui.p1Shields.forEach((x,i)=>x.classList.toggle('lost',i>=p1.shields));ui.p2Shields.forEach((x,i)=>x.classList.toggle('lost',i>=p2.shields))}
+    function update(dt){if(state!=='playing')return;matchTime+=dt;timer-=dt;p1.update(dt);p2.update(dt);collide(p1,p2);updateOccupants();if(phase==='search'&&timer<=0)triggerBreach();else if(phase==='breach'&&timer<=0){if(p1.shields<=0||p2.shields<=0){finishMatch();return}cycle++;beginCycle()}updateHud()}
+    function drawSpace(time){const g=ctx.createRadialGradient(W/2,H/2,80,W/2,H/2,720);g.addColorStop(0,'#22102c');g.addColorStop(.52,'#0d0916');g.addColorStop(1,'#020207');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);for(const s of stars){ctx.globalAlpha=.34+Math.sin(time*.0015+s.a)*.26;ctx.fillStyle=s.c;ctx.fillRect(s.x,s.y,s.s,s.s)}ctx.globalAlpha=1;debris.forEach((d,i)=>{const a=d.a+time*.00008*d.spin,x=ARENA.x+Math.cos(a)*d.r,y=ARENA.y+Math.sin(a)*d.r;ctx.save();ctx.translate(x,y);ctx.rotate(a*1.7);ctx.fillStyle=i%3?'#261628':'#451723';ctx.strokeStyle='rgba(255,75,96,.28)';ctx.lineWidth=2;ctx.beginPath();for(let k=0;k<6;k++){const q=k*TAU/6,rr=d.s*(k%2?1:.65);k?ctx.lineTo(Math.cos(q)*rr,Math.sin(q)*rr):ctx.moveTo(Math.cos(q)*rr,Math.sin(q)*rr)}ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()})}
+    function drawArena(time){ctx.save();ctx.translate(ARENA.x,ARENA.y);ctx.shadowColor='#000';ctx.shadowBlur=35;ctx.fillStyle='#080912';ctx.beginPath();ctx.arc(0,9,ARENA.r+17,0,TAU);ctx.fill();ctx.shadowBlur=0;const floor=ctx.createRadialGradient(0,0,20,0,0,ARENA.r);floor.addColorStop(0,'#1d2135');floor.addColorStop(.72,'#101322');floor.addColorStop(1,'#2d0c16');ctx.fillStyle=floor;ctx.beginPath();ctx.arc(0,0,ARENA.r,0,TAU);ctx.fill();ctx.strokeStyle='#ff3c55';ctx.shadowColor='#ff354f';ctx.shadowBlur=phase==='breach'?28:12;ctx.lineWidth=phase==='breach'?10:6;ctx.beginPath();ctx.arc(0,0,ARENA.r,0,TAU);ctx.stroke();ctx.shadowBlur=0;ctx.strokeStyle='rgba(155,127,209,.12)';ctx.lineWidth=1;for(let r=70;r<ARENA.r;r+=55){ctx.beginPath();ctx.arc(0,0,r,0,TAU);ctx.stroke()}for(let a=0;a<TAU;a+=Math.PI/8){ctx.beginPath();ctx.moveTo(Math.cos(a)*40,Math.sin(a)*40);ctx.lineTo(Math.cos(a)*(ARENA.r-8),Math.sin(a)*(ARENA.r-8));ctx.stroke()}if(phase==='breach'){const pulse=.14+Math.sin(time*.025)*.07;ctx.fillStyle=`rgba(255,30,60,${pulse})`;ctx.beginPath();ctx.arc(0,0,ARENA.r,0,TAU);ctx.fill()}ctx.restore()}
+    function drawZone(z,time){const pulse=1+Math.sin(time*.006+z.pulse)*.055,claimed=z.occupant>0;ctx.save();ctx.translate(z.x,z.y);ctx.scale(pulse,pulse);ctx.shadowColor='#67ff72';ctx.shadowBlur=claimed?32:20;ctx.fillStyle=claimed?'rgba(70,255,100,.24)':'rgba(70,255,100,.09)';ctx.beginPath();ctx.arc(0,0,z.r,0,TAU);ctx.fill();ctx.strokeStyle='#6fff79';ctx.lineWidth=claimed?5:3;ctx.stroke();ctx.setLineDash([7,8]);ctx.strokeStyle='rgba(192,255,192,.68)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,z.r-12,0,TAU);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#76ff7e';ctx.beginPath();ctx.arc(0,0,10,0,TAU);ctx.fill();ctx.shadowBlur=0;if(claimed){ctx.fillStyle='#06120a';ctx.font='1000 10px ui-monospace,monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(`P${z.occupant} LOCK`,0,0)}ctx.restore()}
+    function drawPilot(p,time){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.facing);ctx.shadowColor=p.color;ctx.shadowBlur=18;if(p.dashTimer>0){ctx.fillStyle=p.color;ctx.beginPath();ctx.moveTo(-28,-11);ctx.lineTo(-60,0);ctx.lineTo(-28,11);ctx.fill()}ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(-2,8,25,13,0,0,TAU);ctx.fill();const g=ctx.createRadialGradient(5,-8,2,0,0,29);g.addColorStop(0,'#fff');g.addColorStop(.17,p.color);g.addColorStop(1,p.id===1?'#087aa8':'#a4184b');ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(-25,-23,50,46,17);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#08121a';ctx.beginPath();ctx.roundRect(2,-13,20,26,8);ctx.fill();ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=10;ctx.fillRect(10,-8,7,16);ctx.shadowBlur=0;ctx.strokeStyle=p.color;ctx.lineWidth=7;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-5,-20);ctx.lineTo(3,-34);ctx.moveTo(-5,20);ctx.lineTo(3,34);ctx.stroke();ctx.restore()}
+    function drawEffects(dt){for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=40*dt;p.vx*=Math.pow(.16,dt);p.life-=1.3*dt;const life=Math.max(0,p.life);ctx.globalAlpha=life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size*life,0,TAU);ctx.fill()}for(const r of rings){r.r+=phase==='breach'?420*dt:190*dt;r.life-=1.35*dt;ctx.globalAlpha=Math.max(0,r.life);ctx.strokeStyle=r.color;ctx.lineWidth=5*r.life;ctx.beginPath();ctx.arc(r.x,r.y,r.r,0,TAU);ctx.stroke()}ctx.globalAlpha=1;for(let i=particles.length-1;i>=0;i--)if(particles[i].life<=0)particles.splice(i,1);for(let i=rings.length-1;i>=0;i--)if(rings[i].life<=0)rings.splice(i,1)}
+    function draw(time,dt){ctx.clearRect(0,0,W,H);ctx.save();if(shake>.2)ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);drawSpace(time);drawArena(time);zones.forEach(z=>drawZone(z,time));drawEffects(dt);drawPilot(p1,time);drawPilot(p2,time);ctx.restore();if(flash>.01){ctx.fillStyle=`rgba(255,255,255,${flash*.18})`;ctx.fillRect(0,0,W,H)}shake*=Math.pow(.001,dt);flash*=Math.pow(.002,dt)}
+    function loop(now){const dt=clamp((now-last)/1000,.001,.034);last=now;if(!paused)update(dt);draw(now,dt);pressed.clear();requestAnimationFrame(loop)}
+    addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','Enter'].includes(e.code))e.preventDefault();if(!keys[e.code]&&!e.repeat)pressed.add(e.code);keys[e.code]=true;if(['KeyP','Escape'].includes(e.code)){e.preventDefault();togglePause()}});addEventListener('keyup',e=>keys[e.code]=false);addEventListener('blur',()=>{Object.keys(keys).forEach(k=>keys[k]=false);if(state==='playing')togglePause()});
+    $('#intensity').addEventListener('click',e=>{const b=e.target.closest('button[data-level]');if(!b)return;level=b.dataset.level;document.querySelectorAll('#intensity button').forEach(x=>x.classList.toggle('active',x===b));tone(360,.04,'sine',.018)});$('#solo').onclick=()=>startMatch(1);$('#versus').onclick=()=>startMatch(2);$('#resume').onclick=togglePause;$('#rematch').onclick=()=>startMatch(mode);$('#to-menu').onclick=resetMenu;$('#sound').onclick=()=>{audioOn=!audioOn;$('#sound').textContent=audioOn?'♪':'×';$('#sound').setAttribute('aria-label',audioOn?'소리 끄기':'소리 켜기')};
+    window.startSafeZone=startMatch;window.resetSafeZone=resetMenu;p1.reset(true);p2.reset(true);spawnZones();last=performance.now();loop(last);
+  })();
+  </script>
+  <script src="../mobile-arcade.js"></script>
+  <script>
+  (()=>{if(!window.MobileArcade)return;const p1Pad=MobileArcade.dpad({up:'w',down:'s',left:'a',right:'d'},{side:'left',tag:'P1'}),p1Act=MobileArcade.actions([{label:'DASH',key:'space'}],{side:'left',bottom:'190px'}),p2Pad=MobileArcade.dpad({up:'up',down:'down',left:'left',right:'right'},{side:'right',tag:'P2'}),p2Act=MobileArcade.actions([{label:'DASH',key:'enter'}],{side:'right',bottom:'190px'}),tags=[...document.querySelectorAll('.ma-tag')];window.setSafeMobileControls=(mode,active)=>{p1Pad.style.display=active?'':'none';p1Act.style.display=active?'':'none';p2Pad.style.display=active&&mode===2?'':'none';p2Act.style.display=active&&mode===2?'':'none';if(tags[0])tags[0].style.display=active?'':'none';if(tags[1])tags[1].style.display=active&&mode===2?'':'none'};window.setSafeMobileControls(2,false)})();
+  </script>
 </body>
-
 </html>

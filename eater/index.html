@@ -306,8 +306,9 @@
 
         @media (max-width: 768px) {
             #joystick-container {
-                display: block;
+                display: none;
             }
+            #joystick-container.active { display: block; }
         }
 
         .back-btn {
@@ -330,6 +331,20 @@
         .back-btn:hover {
             background: rgba(0, 0, 0, 0.8);
         }
+
+        /* 2026 visual pass — preserve the simulation, elevate the cosmic read. */
+        body { background: radial-gradient(circle at 50% 42%, #32133f 0, #101128 46%, #02030a 100%); }
+        #top-bar { top: 18px; width: min(760px, calc(100% - 180px)); border: 1px solid rgba(255,255,255,.13); border-radius: 16px; background: rgba(6,7,20,.74); box-shadow: 0 16px 40px rgba(0,0,0,.3); }
+        #leaderboard { top: 92px; border: 1px solid rgba(255,255,255,.1); border-left: 3px solid var(--neon-blue); background: rgba(5,7,18,.72); box-shadow: 0 18px 45px rgba(0,0,0,.28); }
+        .screen { width: min(570px, calc(100% - 32px)); padding: 36px; border: 1px solid rgba(255,255,255,.14); border-radius: 25px; background: linear-gradient(145deg, rgba(18,10,34,.96), rgba(5,7,19,.95)); box-shadow: 0 34px 100px rgba(0,0,0,.65), inset 0 1px rgba(255,255,255,.06); }
+        h2 { font-size: 46px; letter-spacing: -.055em; background: none; -webkit-text-fill-color: white; }
+        .difficulty-selector { padding: 4px; border: 1px solid rgba(255,255,255,.09); border-radius: 14px; background: rgba(0,0,0,.18); }
+        .diff-btn { flex: 1; border: 0; font: 900 10px ui-monospace, monospace; letter-spacing: .08em; }
+        .diff-btn.active { color: #07151a; background: linear-gradient(90deg, #49ffb0, #43eaff); box-shadow: 0 7px 22px rgba(67,234,255,.2); }
+        .btn { width: 100%; color: #071217; background: linear-gradient(90deg, #43eaff, #c9ff4c); font: 950 12px ui-monospace, monospace; letter-spacing: .1em; box-shadow: 0 14px 32px rgba(67,234,255,.17); }
+        .back-btn { top: 18px; left: 18px; padding: 12px 16px; border-radius: 13px; background: rgba(5,7,18,.72); }
+        #mobile-hint { padding: 7px 12px; border: 1px solid rgba(255,255,255,.09); border-radius: 10px; background: rgba(5,7,18,.68); }
+        @media (max-width: 768px) { #top-bar { top: 6px; width: calc(100% - 80px); padding: 5px 8px; border-radius: 8px; } .stat-label { font-size: 5px; } .stat-value { font-size: 9px; } #leaderboard { top: 46px; left: 7px; padding: 7px; min-width: 95px; transform: scale(.72); transform-origin: top left; } .back-btn { top: 6px; left: 6px; padding: 7px 8px; font-size: 7px; } .screen { padding: 20px; gap: 10px; } h2 { font-size: 26px; } .screen p { font-size: 8px; } .diff-btn { padding: 7px 5px; font-size: 6px; } .btn { padding: 10px; font-size: 7px; } }
     </style>
 </head>
 
@@ -414,6 +429,7 @@
         const FOOD_COUNT = 150;
         const ENEMY_COUNT = 15;
         const WORLD_SIZE = 3000;
+        const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
         const CELESTIAL_NAMES = [
             'Sirius', 'Canopus', 'Arcturus', 'Vega', 'Capella', 'Rigel', 'Procyon', 'Achernar', 
             'Betelgeuse', 'Hadar', 'Altair', 'Aldebaran', 'Antares', 'Spica', 'Pollux', 'Fomalhaut',
@@ -447,6 +463,15 @@
         let camera = { x: 0, y: 0 };
         let keys = {};
         let joystick = { active: false, x: 0, y: 0 };
+        let effects = [];
+        let screenShake = 0;
+        const spaceDust = Array.from({ length: 260 }, (_, i) => ({
+            x: (i * 977 + 113) % WORLD_SIZE,
+            y: (i * 619 + 347) % WORLD_SIZE,
+            size: .5 + (i % 5) * .38,
+            hue: (i * 47) % 360,
+            phase: i * .73
+        }));
 
         function addLog(msg) {
             const logContainer = document.getElementById('game-log');
@@ -455,6 +480,14 @@
             entry.innerText = msg;
             logContainer.prepend(entry);
             setTimeout(() => entry.remove(), 3000);
+        }
+
+        function consumeFx(x, y, color, count = 12, power = 7) {
+            for (let i = 0; i < count; i++) {
+                const a = Math.random() * Math.PI * 2;
+                const speed = 1 + Math.random() * power;
+                effects.push({ x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, life: .7 + Math.random() * .5, size: 1 + Math.random() * 3, color });
+            }
         }
 
         function setDifficulty(diff) {
@@ -501,6 +534,7 @@
                 x, y,
                 radius,
                 color: '#ff3e3e',
+                hue: Math.floor(Math.random() * 360),
                 vx: (Math.random() - 0.5),
                 vy: (Math.random() - 0.5)
             };
@@ -522,6 +556,8 @@
             spawnFood();
 
             enemies = [];
+            effects = [];
+            screenShake = 0;
             for (let i = 0; i < ENEMY_COUNT; i++) {
                 spawnEnemy(true);
             }
@@ -534,6 +570,10 @@
         function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+            if (!gameActive) {
+                camera.x = player.x - canvas.width / 2;
+                camera.y = player.y - canvas.height / 2;
+            }
         }
 
         window.addEventListener('resize', resize);
@@ -543,10 +583,16 @@
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             initGame();
             gameActive = true;
+            joystickContainer.classList.add('active');
+            document.getElementById('mobile-hint').style.display = '';
         }
 
         function gameOver() {
             gameActive = false;
+            joystick.active = false;
+            joystickContainer.classList.remove('active');
+            joystickKnob.style.transform = 'translate(-50%, -50%)';
+            document.getElementById('mobile-hint').style.display = 'none';
             const finalMass = Math.floor(player.radius * player.radius);
             finalScoreEl.innerText = finalMass;
             const bestKey = `eater_best_${currentDifficulty}`;
@@ -627,6 +673,7 @@
                 food = food.filter(f => {
                     const d = Math.hypot(player.x - f.x, player.y - f.y);
                     if (d < player.radius) {
+                        consumeFx(f.x, f.y, f.color, 5, 4);
                         player.radius = Math.sqrt(player.radius * player.radius + f.radius * f.radius * config.foodValue);
                         scoreEl.innerText = Math.floor(player.radius * player.radius);
                         return false;
@@ -654,6 +701,8 @@
                         if (player.radius > en.radius) {
                             // Player eats enemy
                             addLog(`You consumed ${en.name}`);
+                            consumeFx(en.x, en.y, `hsl(${en.hue}, 90%, 65%)`, 42, 13);
+                            screenShake = Math.min(20, 6 + en.radius * .12);
                             player.radius = Math.sqrt(player.radius * player.radius + en.radius * en.radius);
                             scoreEl.innerText = Math.floor(player.radius * player.radius);
                             enemies.splice(i, 1);
@@ -662,6 +711,8 @@
                         } else if (en.radius > player.radius) {
                             // Enemy eats player
                             addLog(`${en.name} absorbed you`);
+                            consumeFx(player.x, player.y, '#43eaff', 55, 16);
+                            screenShake = 22;
                             gameOver();
                             return;
                         }
@@ -693,6 +744,16 @@
                     nextStage();
                 }
             }
+
+            effects.forEach(p => {
+                p.x += p.vx * f;
+                p.y += p.vy * f;
+                p.vx *= Math.pow(.91, f);
+                p.vy *= Math.pow(.91, f);
+                p.life -= deltaTime / 900;
+            });
+            effects = effects.filter(p => p.life > 0);
+            screenShake *= Math.pow(.82, f);
 
             draw();
             requestAnimationFrame(update);
@@ -749,97 +810,167 @@
         }
 
         function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const time = performance.now();
+            const cw = canvas.width, ch = canvas.height;
+            const backdrop = ctx.createRadialGradient(cw * .55, ch * .46, 20, cw * .5, ch * .5, Math.max(cw, ch) * .72);
+            backdrop.addColorStop(0, '#2f1244');
+            backdrop.addColorStop(.38, '#11152f');
+            backdrop.addColorStop(.76, '#070916');
+            backdrop.addColorStop(1, '#010207');
+            ctx.fillStyle = backdrop;
+            ctx.fillRect(0, 0, cw, ch);
 
+            // Far parallax dust makes movement readable even before nearby objects enter view.
+            spaceDust.forEach(s => {
+                const x = ((s.x - camera.x * .12) % cw + cw) % cw;
+                const y = ((s.y - camera.y * .12) % ch + ch) % ch;
+                ctx.globalAlpha = .22 + Math.sin(time * .0016 + s.phase) * .18;
+                ctx.fillStyle = `hsl(${s.hue}, 80%, 76%)`;
+                ctx.fillRect(x, y, s.size, s.size);
+            });
+            ctx.globalAlpha = 1;
+
+            const jitterX = (Math.random() - .5) * screenShake;
+            const jitterY = (Math.random() - .5) * screenShake;
             ctx.save();
-            ctx.translate(-camera.x, -camera.y);
+            ctx.translate(-camera.x + jitterX, -camera.y + jitterY);
 
-            // World Boundary
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-            ctx.lineWidth = 10;
+            // Fixed nebulae anchor the 3000×3000 world and give the arena a sense of place.
+            [[520, 470, '#4e1a67'], [2470, 650, '#174b6a'], [2250, 2440, '#682334'], [580, 2380, '#1f5b51']].forEach(([x, y, color]) => {
+                const ng = ctx.createRadialGradient(x, y, 20, x, y, 520);
+                ng.addColorStop(0, color + '99');
+                ng.addColorStop(.48, color + '35');
+                ng.addColorStop(1, 'transparent');
+                ctx.fillStyle = ng;
+                ctx.fillRect(x - 540, y - 540, 1080, 1080);
+            });
+
+            ctx.strokeStyle = 'rgba(67, 234, 255, .32)';
+            ctx.shadowColor = '#43eaff';
+            ctx.shadowBlur = 12;
+            ctx.lineWidth = 8;
             ctx.strokeRect(0, 0, WORLD_SIZE, WORLD_SIZE);
-
-            // Grid
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'rgba(106, 139, 192, .075)';
             ctx.lineWidth = 1;
             for (let i = 0; i <= WORLD_SIZE; i += 100) {
                 ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, WORLD_SIZE); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(WORLD_SIZE, i); ctx.stroke();
             }
 
-            // Food
-            food.forEach(f => {
+            // Edible stardust is rendered as luminous crystal fragments instead of dots.
+            food.forEach((f, index) => {
+                if (f.x < camera.x - 30 || f.x > camera.x + cw + 30 || f.y < camera.y - 30 || f.y > camera.y + ch + 30) return;
+                ctx.save();
+                ctx.translate(f.x, f.y);
+                ctx.rotate(time * .001 + index * .73);
                 ctx.fillStyle = f.color;
+                ctx.shadowColor = f.color;
+                ctx.shadowBlur = 10;
+                const s = f.radius * 1.45;
                 ctx.beginPath();
-                ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
+                ctx.moveTo(0, -s); ctx.lineTo(s * .7, 0); ctx.lineTo(0, s); ctx.lineTo(-s * .7, 0); ctx.closePath();
                 ctx.fill();
+                ctx.fillStyle = 'rgba(255,255,255,.72)';
+                ctx.beginPath(); ctx.moveTo(-1, -s * .65); ctx.lineTo(s * .25, 0); ctx.lineTo(-1, s * .2); ctx.closePath(); ctx.fill();
+                ctx.restore();
             });
 
-            // Enemies
-            enemies.forEach(en => {
-                const gradient = ctx.createRadialGradient(en.x, en.y, 0, en.x, en.y, en.radius);
-                gradient.addColorStop(0, '#000');
-                gradient.addColorStop(0.8, en.color);
-                gradient.addColorStop(1, 'rgba(255, 62, 62, 0)');
+            enemies.forEach((en, index) => {
+                const prey = player.radius > en.radius;
+                const relation = prey ? '#54ffad' : '#ff526d';
+                const hue = en.hue ?? (index * 53 % 360);
+                ctx.save();
+                ctx.translate(en.x, en.y);
+                ctx.shadowColor = relation;
+                ctx.shadowBlur = prey ? 9 : 17;
+                const planet = ctx.createRadialGradient(-en.radius * .35, -en.radius * .38, en.radius * .08, 0, 0, en.radius);
+                planet.addColorStop(0, `hsl(${hue}, 90%, 76%)`);
+                planet.addColorStop(.38, `hsl(${hue}, 64%, 43%)`);
+                planet.addColorStop(1, `hsl(${(hue + 35) % 360}, 72%, 12%)`);
+                ctx.fillStyle = planet;
+                ctx.beginPath(); ctx.arc(0, 0, en.radius, 0, Math.PI * 2); ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = relation;
+                ctx.lineWidth = prey ? 2 : 3;
+                if (!prey) ctx.setLineDash([8, 7]);
+                ctx.beginPath(); ctx.arc(0, 0, en.radius * 1.13, time * .001 + index, time * .001 + index + Math.PI * 1.65); ctx.stroke();
+                ctx.setLineDash([]);
+                if (index % 3 === 0 && en.radius > 24) {
+                    ctx.strokeStyle = `hsla(${hue}, 90%, 75%, .55)`;
+                    ctx.lineWidth = Math.max(2, en.radius * .1);
+                    ctx.beginPath(); ctx.ellipse(0, 0, en.radius * 1.45, en.radius * .35, -.25, 0, Math.PI * 2); ctx.stroke();
+                }
+                ctx.fillStyle = 'rgba(10,7,20,.3)';
+                ctx.beginPath(); ctx.arc(en.radius * .2, en.radius * .1, en.radius * .18, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
 
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.arc(en.x, en.y, en.radius * 1.2, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Red Glow
-                ctx.strokeStyle = en.color;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(en.x, en.y, en.radius, 0, Math.PI * 2);
-                ctx.stroke();
-
-                // Enemy Name Tag
-                ctx.fillStyle = 'white';
-                ctx.font = `bold ${Math.max(12, en.radius / 2)}px 'Space Grotesk'`;
                 ctx.textAlign = 'center';
-                ctx.shadowBlur = 5;
-                ctx.shadowColor = 'black';
-                ctx.fillText(en.name, en.x, en.y - en.radius - 10);
+                ctx.fillStyle = '#fff';
+                ctx.font = `800 ${Math.max(10, Math.min(16, en.radius * .42))}px 'Space Grotesk'`;
+                ctx.shadowColor = '#000'; ctx.shadowBlur = 6;
+                ctx.fillText(en.name, en.x, en.y - en.radius - 16);
+                ctx.fillStyle = relation;
+                ctx.font = `800 ${Math.max(8, Math.min(11, en.radius * .3))}px 'Space Grotesk'`;
+                ctx.fillText(`${Math.floor(en.radius * en.radius)} MASS`, en.x, en.y - en.radius - 5);
                 ctx.shadowBlur = 0;
             });
 
-            // Player (Black Hole)
-            const pX = player.x;
-            const pY = player.y;
-            const r = player.radius;
+            effects.forEach(p => {
+                ctx.globalAlpha = Math.max(0, p.life);
+                ctx.fillStyle = p.color;
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur = 7;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2); ctx.fill();
+            });
+            ctx.globalAlpha = 1; ctx.shadowBlur = 0;
 
-            // Event Horizon Glow
-            const glow = ctx.createRadialGradient(pX, pY, r * 0.8, pX, pY, r * 1.5);
-            glow.addColorStop(0, 'rgba(0, 243, 255, 0.5)');
-            glow.addColorStop(1, 'rgba(188, 19, 254, 0)');
-            ctx.fillStyle = glow;
-            ctx.beginPath();
-            ctx.arc(pX, pY, r * 1.5, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Singularity
-            ctx.fillStyle = '#000';
-            ctx.beginPath();
-            ctx.arc(pX, pY, r, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.strokeStyle = '#00f3ff';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.arc(pX, pY, r, 0, Math.PI * 2);
-            ctx.stroke();
-
-            // Player Name Tag
-            ctx.fillStyle = '#00f3ff';
-            ctx.font = `bold ${Math.max(14, r / 2)}px 'Space Grotesk'`;
-            ctx.textAlign = 'center';
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = 'black';
-            ctx.fillText(player.name, pX, pY - r - 15);
-            ctx.shadowBlur = 0;
-
+            // Player black hole: event horizon, animated accretion disc, and warped outer rings.
+            const pX = player.x, pY = player.y, r = player.radius, disc = Math.max(28, r * 2.15);
+            ctx.save();
+            ctx.translate(pX, pY);
+            ctx.rotate(-.18);
+            ctx.globalCompositeOperation = 'screen';
+            for (let i = 0; i < 6; i++) {
+                ctx.strokeStyle = `hsla(${18 + i * 24}, 100%, ${68 + i * 3}%, ${.2 + i * .08})`;
+                ctx.lineWidth = Math.max(2, r * (.09 + i * .014));
+                ctx.shadowColor = i < 3 ? '#ff6b3e' : '#bd66ff';
+                ctx.shadowBlur = 12;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, disc * (1 - i * .055), Math.max(6, r * (.42 + i * .025)), time * .00035 * (i % 2 ? 1 : -1), 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.rotate(.18);
+            const horizon = ctx.createRadialGradient(-r * .25, -r * .25, 1, 0, 0, r * 1.28);
+            horizon.addColorStop(0, '#000'); horizon.addColorStop(.62, '#010105'); horizon.addColorStop(.76, '#43eaff'); horizon.addColorStop(.84, '#a54fff'); horizon.addColorStop(1, 'transparent');
+            ctx.fillStyle = horizon; ctx.shadowColor = '#43eaff'; ctx.shadowBlur = 18;
+            ctx.beginPath(); ctx.arc(0, 0, r * 1.3, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#000'; ctx.shadowBlur = 0; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
             ctx.restore();
+            ctx.fillStyle = '#62efff';
+            ctx.font = `900 ${Math.max(12, Math.min(18, r * .55))}px 'Space Grotesk'`;
+            ctx.textAlign = 'center'; ctx.shadowColor = '#000'; ctx.shadowBlur = 8;
+            ctx.fillText(player.name, pX, pY - disc * .72 - 12);
+            ctx.fillStyle = '#c9ff4c'; ctx.font = `800 ${Math.max(9, Math.min(12, r * .34))}px 'Space Grotesk'`;
+            ctx.fillText(`${Math.floor(r * r)} MASS`, pX, pY - disc * .72 + 2); ctx.shadowBlur = 0;
+            ctx.restore();
+
+            // Directional warnings for larger off-screen bodies prevent unfair deaths.
+            enemies.filter(en => en.radius > player.radius * 1.02).forEach(en => {
+                const sx = en.x - camera.x, sy = en.y - camera.y;
+                if (sx > 70 && sx < cw - 70 && sy > 85 && sy < ch - 70) return;
+                const a = Math.atan2(sy - ch / 2, sx - cw / 2);
+                const x = clamp(cw / 2 + Math.cos(a) * Math.min(cw * .43, 480), 42, cw - 42);
+                const y = clamp(ch / 2 + Math.sin(a) * Math.min(ch * .39, 280), 88, ch - 42);
+                ctx.save(); ctx.translate(x, y); ctx.rotate(a); ctx.fillStyle = '#ff526d'; ctx.shadowColor = '#ff526d'; ctx.shadowBlur = 12;
+                ctx.beginPath(); ctx.moveTo(13, 0); ctx.lineTo(-9, -8); ctx.lineTo(-9, 8); ctx.closePath(); ctx.fill(); ctx.restore();
+                ctx.fillStyle = '#ff8d9f'; ctx.font = '800 8px ui-monospace, monospace'; ctx.textAlign = 'center';
+                ctx.fillText(`${Math.floor(en.radius * en.radius)}`, x, y + 20);
+            });
+
+            const vignette = ctx.createRadialGradient(cw / 2, ch / 2, Math.min(cw, ch) * .24, cw / 2, ch / 2, Math.max(cw, ch) * .66);
+            vignette.addColorStop(0, 'transparent'); vignette.addColorStop(1, 'rgba(0,0,7,.52)'); ctx.fillStyle = vignette; ctx.fillRect(0, 0, cw, ch);
         }
 
         // Controls
