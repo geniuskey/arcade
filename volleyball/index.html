@@ -249,6 +249,7 @@
       const W = canvas.width, H = canvas.height;
       const GROUND = 528, NET_X = W / 2, NET_TOP = 326, NET_W = 14;
       const PLAYER_R = 43, BALL_R = 19;
+      const BALL_TIME_SCALE = .82, HUMAN_JUMP_VELOCITY = -14;
       const keys = Object.create(null), pressed = new Set();
       const ui = {
         hud: document.getElementById('hud'), menu: document.getElementById('main-menu'), over: document.getElementById('game-over'), pause: document.getElementById('pause-menu'),
@@ -283,9 +284,10 @@
         constructor(){ this.trail=[]; this.reset(1); }
         reset(side){ this.x=side===1?235:725;this.y=210;this.vx=0;this.vy=0;this.rotation=0;this.hitCooldown=0;this.trail=[]; }
         update(dt){
+          const step=dt*BALL_TIME_SCALE;
           if(this.hitCooldown>0) this.hitCooldown-=dt;
           this.trail.unshift({x:this.x,y:this.y}); if(this.trail.length>9)this.trail.pop();
-          this.vy += .39*dt; this.x += this.vx*dt; this.y += this.vy*dt; this.rotation += this.vx*.022*dt;
+          this.vy += .39*step; this.x += this.vx*step; this.y += this.vy*step; this.rotation += this.vx*.022*step;
           if(this.x-BALL_R<7){this.x=7+BALL_R;this.vx=Math.abs(this.vx)*.82;tone(170,.035,'triangle',.015)}
           if(this.x+BALL_R>W-7){this.x=W-7-BALL_R;this.vx=-Math.abs(this.vx)*.82;tone(170,.035,'triangle',.015)}
           const capDx=this.x-NET_X, capDy=this.y-NET_TOP;
@@ -303,7 +305,7 @@
         reset(){this.x=this.spawn;this.y=GROUND;this.vx=0;this.vy=0;this.grounded=true;this.spikeWindow=0;this.squash=0;}
         human(left,right,jump,spike){
           if(keys[left])this.vx-=.82;if(keys[right])this.vx+=.82;
-          if(pressed.has(jump)&&this.grounded){this.vy=-12.2;this.grounded=false;this.squash=-.14;tone(250,.04,'sine',.018)}
+          if(pressed.has(jump)&&this.grounded){this.vy=HUMAN_JUMP_VELOCITY;this.grounded=false;this.squash=-.14;tone(250,.04,'sine',.018)}
           if(pressed.has(spike))this.spikeWindow=12;
         }
         computer(dt){
