@@ -32,21 +32,15 @@
     }
 
     body {
-      display: grid;
-      place-items: center;
       color: var(--paper);
       font-family: "Arial Narrow", "Noto Sans KR", Arial, sans-serif;
-      background:
-        linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.014) 1px, transparent 1px),
-        #050706;
-      background-size: 36px 36px;
+      background: #050706;
     }
 
     .back-button {
       position: fixed;
-      top: 14px;
-      left: 14px;
+      top: max(14px, env(safe-area-inset-top));
+      left: max(14px, env(safe-area-inset-left));
       z-index: 20;
       width: 38px;
       height: 38px;
@@ -68,21 +62,20 @@
     }
 
     #game-shell {
-      position: relative;
-      width: min(900px, calc(100vw - 18px));
-      aspect-ratio: 900 / 620;
-      max-height: calc(100vh - 18px);
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
       overflow: hidden;
-      border: 1px solid #3f4943;
-      border-radius: 8px;
       background: #0a0d0b;
-      box-shadow: 0 26px 80px rgba(0, 0, 0, 0.72), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
     }
 
     canvas {
       display: block;
       width: 100%;
       height: 100%;
+      object-fit: fill;
       touch-action: none;
     }
 
@@ -109,35 +102,11 @@
     }
 
     .helmet-mark {
-      position: relative;
-      width: 82px;
-      height: 82px;
+      width: 112px;
+      height: 112px;
       margin-bottom: 18px;
-      border: 8px solid #d2a84f;
-      border-radius: 48% 48% 42% 42%;
-      background: #2e3531;
-      box-shadow: 0 0 36px rgba(247, 185, 85, 0.22);
-    }
-
-    .helmet-mark::before {
-      content: "";
-      position: absolute;
-      inset: 13px 9px 20px;
-      border: 3px solid #93a39b;
-      border-radius: 45% 45% 34% 34%;
-      background: linear-gradient(145deg, #b9e7d8 0 13%, #29473f 18% 68%, #13201c 100%);
-    }
-
-    .helmet-mark::after {
-      content: "";
-      position: absolute;
-      width: 25px;
-      height: 8px;
-      left: 21px;
-      bottom: 3px;
-      border-radius: 2px;
-      background: var(--amber);
-      box-shadow: 0 0 14px var(--amber);
+      object-fit: contain;
+      filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.72)) drop-shadow(0 0 16px rgba(247, 185, 85, 0.2));
     }
 
     .eyebrow {
@@ -186,6 +155,12 @@
       transform: translateY(-1px);
     }
 
+    .start-button:disabled {
+      cursor: wait;
+      filter: grayscale(0.45) brightness(0.72);
+      transform: none;
+    }
+
     .controls {
       display: flex;
       align-items: center;
@@ -213,7 +188,7 @@
     #toast {
       position: absolute;
       left: 50%;
-      bottom: 28px;
+      bottom: max(28px, env(safe-area-inset-bottom));
       z-index: 7;
       min-width: 260px;
       max-width: calc(100% - 40px);
@@ -238,8 +213,8 @@
 
     @media (max-width: 700px) {
       .back-button {
-        top: 8px;
-        left: 8px;
+        top: max(8px, env(safe-area-inset-top));
+        left: max(8px, env(safe-area-inset-left));
       }
 
       .controls {
@@ -247,13 +222,8 @@
       }
 
       #toast {
-        bottom: 76px;
-      }
-    }
-
-    @media (max-height: 650px) and (orientation: landscape) {
-      #game-shell {
-        width: min(900px, calc((100vh - 12px) * 1.4516));
+        top: max(82px, calc(env(safe-area-inset-top) + 72px));
+        bottom: auto;
       }
     }
   </style>
@@ -267,7 +237,7 @@
     <div id="toast"></div>
 
     <section id="overlay" class="overlay active">
-      <div class="helmet-mark" aria-hidden="true"></div>
+      <img class="helmet-mark" src="assets/miner-down-idle.webp" alt="" aria-hidden="true">
       <div id="overlay-kicker" class="eyebrow">MINE 01 // DESCENT READY</div>
       <h1 id="overlay-title">광산 탈출</h1>
       <div id="overlay-route" class="mission-route"><b>광물 5개</b> → 열쇠함 → 탈출문</div>
@@ -290,6 +260,105 @@
     const startButton = document.getElementById('start-button');
     const toast = document.getElementById('toast');
 
+    const SPRITE_PATHS = {
+      key: 'assets/key.webp',
+      chestClosed: 'assets/chest-closed.webp',
+      chestOpen: 'assets/chest-open.webp',
+      doorLocked: 'assets/door-locked.webp',
+      doorOpen: 'assets/door-open.webp',
+      spikeRoller: 'assets/spike-roller.webp',
+      spikeSlider: 'assets/spike-slider.webp',
+      mineRail: 'assets/mine-rail.webp',
+      minecart: 'assets/minecart.webp',
+      crusher: 'assets/crusher.webp',
+      steamVent: 'assets/steam-vent.webp',
+      boulder: 'assets/boulder.webp',
+      lavaVent: 'assets/lava-vent.webp',
+      repairKit: 'assets/repair-kit.webp',
+      floorEntrance: 'assets/floor-entrance.webp',
+      floorCrusher: 'assets/floor-crusher.webp',
+      floorForge: 'assets/floor-forge.webp',
+      mineWall: 'assets/mine-wall.webp',
+      caveEdge: 'assets/cave-edge.webp',
+      minerUpIdle: 'assets/miner-up-idle.webp',
+      minerUpWalk1: 'assets/miner-up-walk-1.webp',
+      minerUpWalk2: 'assets/miner-up-walk-2.webp',
+      minerUpWalk3: 'assets/miner-up-walk-3.webp',
+      minerUpWalk4: 'assets/miner-up-walk-4.webp',
+      minerDownIdle: 'assets/miner-down-idle.webp',
+      minerDownWalk1: 'assets/miner-down-walk-1.webp',
+      minerDownWalk2: 'assets/miner-down-walk-2.webp',
+      minerDownWalk3: 'assets/miner-down-walk-3.webp',
+      minerDownWalk4: 'assets/miner-down-walk-4.webp',
+      minerLeftIdle: 'assets/miner-left-idle.webp',
+      minerLeftWalk1: 'assets/miner-left-walk-1.webp',
+      minerLeftWalk2: 'assets/miner-left-walk-2.webp',
+      minerLeftWalk3: 'assets/miner-left-walk-3.webp',
+      minerLeftWalk4: 'assets/miner-left-walk-4.webp',
+      minerRightIdle: 'assets/miner-right-idle.webp',
+      minerRightWalk1: 'assets/miner-right-walk-1.webp',
+      minerRightWalk2: 'assets/miner-right-walk-2.webp',
+      minerRightWalk3: 'assets/miner-right-walk-3.webp',
+      minerRightWalk4: 'assets/miner-right-walk-4.webp',
+      mineralCyan: 'assets/mineral-cyan.webp',
+      mineralGold: 'assets/mineral-gold.webp',
+      mineralRuby: 'assets/mineral-ruby.webp',
+      mineralEmerald: 'assets/mineral-emerald.webp',
+      mineralAmethyst: 'assets/mineral-amethyst.webp'
+    };
+    const FLOOR_SPRITES = [
+      'floorEntrance', 'floorCrusher', 'floorForge', 'floorEntrance', 'floorCrusher',
+      'floorEntrance', 'floorCrusher', 'floorForge', 'floorCrusher', 'floorForge'
+    ];
+    const ENVIRONMENT_FILTERS = [
+      'brightness(0.82) saturate(0.82)',
+      'brightness(0.76) saturate(0.78) hue-rotate(5deg)',
+      'brightness(0.78) saturate(0.9) sepia(0.08)',
+      'brightness(0.74) saturate(0.78) hue-rotate(-8deg)',
+      'brightness(0.72) saturate(0.82) hue-rotate(9deg)',
+      'brightness(0.7) saturate(0.72) hue-rotate(15deg)',
+      'brightness(0.68) saturate(0.68) sepia(0.08)',
+      'brightness(0.72) saturate(1.02) sepia(0.18)',
+      'brightness(0.65) saturate(0.78) hue-rotate(-12deg)',
+      'brightness(0.68) saturate(1.08) sepia(0.22)'
+    ];
+    const MINER_DIRECTION_FRAMES = {
+      up: ['minerUpIdle', 'minerUpWalk1', 'minerUpWalk2', 'minerUpWalk3', 'minerUpWalk4'],
+      down: ['minerDownIdle', 'minerDownWalk1', 'minerDownWalk2', 'minerDownWalk3', 'minerDownWalk4'],
+      left: ['minerLeftIdle', 'minerLeftWalk1', 'minerLeftWalk2', 'minerLeftWalk3', 'minerLeftWalk4'],
+      right: ['minerRightIdle', 'minerRightWalk1', 'minerRightWalk2', 'minerRightWalk3', 'minerRightWalk4']
+    };
+    const MINERAL_VARIANTS = [
+      { sprite: 'mineralCyan', color: '#52e4f2' },
+      { sprite: 'mineralGold', color: '#f7c84b' },
+      { sprite: 'mineralRuby', color: '#ff657b' },
+      { sprite: 'mineralEmerald', color: '#58e477' },
+      { sprite: 'mineralAmethyst', color: '#ba7cff' }
+    ];
+    const SPRITES = {};
+    let spritesReady = false;
+
+    startButton.disabled = true;
+    startButton.textContent = '장비 준비 중';
+    const spriteLoads = Object.entries(SPRITE_PATHS).map(function ([name, source]) {
+      return new Promise(function (resolve, reject) {
+        const image = new Image();
+        SPRITES[name] = image;
+        image.onload = resolve;
+        image.onerror = reject;
+        image.src = source;
+        if (image.complete && image.naturalWidth) resolve();
+      });
+    });
+
+    Promise.all(spriteLoads).then(function () {
+      spritesReady = true;
+      startButton.disabled = false;
+      startButton.textContent = '탐사 시작';
+    }).catch(function () {
+      startButton.textContent = '이미지 로드 실패';
+    });
+
     const WIDTH = 900;
     const HEIGHT = 620;
     const HUD_HEIGHT = 68;
@@ -297,6 +366,21 @@
     const PLAYER_RADIUS = 14;
     const JUMP_DURATION = 0.72;
     const TOTAL_MINERALS = 5;
+    let renderScaleX = 1;
+    let renderScaleY = 1;
+
+    function resizeCanvas() {
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      const displayWidth = Math.max(1, window.innerWidth);
+      const displayHeight = Math.max(1, window.innerHeight);
+      const nextWidth = Math.round(displayWidth * pixelRatio);
+      const nextHeight = Math.round(displayHeight * pixelRatio);
+
+      if (canvas.width !== nextWidth) canvas.width = nextWidth;
+      if (canvas.height !== nextHeight) canvas.height = nextHeight;
+      renderScaleX = canvas.width / WIDTH;
+      renderScaleY = canvas.height / HEIGHT;
+    }
 
     const STAGES = [
       {
@@ -314,6 +398,12 @@
           { x: 330, y: 218, w: 30, h: 212 },
           { x: 420, y: 304, w: 270, h: 30 },
           { x: 648, y: 92, w: 30, h: 146 }
+        ],
+        rails: [
+          { x: 160, y: 568, w: 250, angle: 0 },
+          { x: 405, y: 568, w: 250, angle: 0 },
+          { x: 650, y: 568, w: 250, angle: 0 },
+          { x: 818, y: 568, w: 120, angle: 0 }
         ],
         minerals: [
           { x: 112, y: 496, color: '#5eead4' },
@@ -345,6 +435,12 @@
           { x: 395, y: 278, w: 30, h: 218 },
           { x: 550, y: 112, w: 30, h: 246 },
           { x: 550, y: 328, w: 220, h: 30 }
+        ],
+        rails: [
+          { x: 846, y: 230, w: 260, angle: Math.PI / 2 },
+          { x: 846, y: 480, w: 250, angle: Math.PI / 2 },
+          { x: 520, y: 568, w: 330, angle: 0 },
+          { x: 785, y: 568, w: 210, angle: 0 }
         ],
         minerals: [
           { x: 112, y: 230, color: '#fde047' },
@@ -379,6 +475,12 @@
           { x: 150, y: 126, w: 30, h: 166 },
           { x: 720, y: 126, w: 30, h: 166 }
         ],
+        rails: [
+          { x: 155, y: 568, w: 240, angle: 0 },
+          { x: 390, y: 568, w: 240, angle: 0 },
+          { x: 625, y: 568, w: 240, angle: 0 },
+          { x: 815, y: 568, w: 145, angle: 0 }
+        ],
         minerals: [
           { x: 116, y: 520, color: '#67e8f9' },
           { x: 206, y: 352, color: '#fde047' },
@@ -394,7 +496,342 @@
           { type: 'spinner', x: 650, y: 208, length: 72, speed: 1.7, phase: 0.1, arms: 3 },
           { type: 'slider', x: 450, y: 150, length: 70, angle: Math.PI / 2, axis: 'y', range: 38, speed: 1.9, phase: 2.2 }
         ]
+      },
+      {
+        name: '폭주 운반로',
+        code: 'MINE 04',
+        floor: '#151a17',
+        floorAlt: '#1b211d',
+        rock: '#38413a',
+        accent: '#e59a47',
+        start: { x: 76, y: 528 },
+        chest: { x: 800, y: 506 },
+        door: { x: 822, y: 108, side: 'top' },
+        walls: [
+          { x: 42, y: 386, w: 250, h: 30 },
+          { x: 330, y: 220, w: 30, h: 220 },
+          { x: 420, y: 306, w: 255, h: 30 },
+          { x: 646, y: 92, w: 30, h: 150 }
+        ],
+        rails: [
+          { x: 214, y: 536, w: 350, angle: 0 },
+          { x: 520, y: 176, w: 390, angle: 0 },
+          { x: 724, y: 416, w: 250, angle: Math.PI / 2 }
+        ],
+        minerals: [
+          { x: 106, y: 492 }, { x: 266, y: 456 }, { x: 248, y: 164 },
+          { x: 510, y: 246 }, { x: 760, y: 256 }
+        ],
+        hazards: [
+          { type: 'spinner', x: 226, y: 326, length: 58, speed: 1.75, phase: 0.2 },
+          { type: 'slider', x: 510, y: 430, length: 66, angle: 0, axis: 'x', range: 86, speed: 1.65, phase: 1.1 },
+          { type: 'spinner', x: 748, y: 286, length: 65, speed: -1.55, phase: 2.1, arms: 2 }
+        ],
+        carts: [
+          { x: 214, y: 536, axis: 'x', range: 132, speed: 1.7, phase: 0.2 },
+          { x: 520, y: 176, axis: 'x', range: 150, speed: 1.45, phase: 2.3 },
+          { x: 724, y: 416, axis: 'y', range: 98, speed: 1.9, phase: 1.2 }
+        ]
+      },
+      {
+        name: '유압 압쇄실',
+        code: 'MINE 05',
+        floor: '#141a18',
+        floorAlt: '#1a221f',
+        rock: '#34433e',
+        accent: '#e4b13f',
+        start: { x: 82, y: 112 },
+        chest: { x: 114, y: 520 },
+        door: { x: 824, y: 524, side: 'right' },
+        walls: [
+          { x: 190, y: 88, w: 30, h: 174 },
+          { x: 190, y: 232, w: 230, h: 30 },
+          { x: 390, y: 232, w: 30, h: 212 },
+          { x: 540, y: 110, w: 30, h: 260 },
+          { x: 540, y: 340, w: 220, h: 30 }
+        ],
+        rails: [
+          { x: 682, y: 458, w: 260, angle: 0 },
+          { x: 820, y: 238, w: 280, angle: Math.PI / 2 }
+        ],
+        minerals: [
+          { x: 110, y: 230 }, { x: 306, y: 180 }, { x: 306, y: 352 },
+          { x: 486, y: 514 }, { x: 724, y: 210 }
+        ],
+        hazards: [
+          { type: 'slider', x: 300, y: 126, length: 58, angle: Math.PI / 2, axis: 'x', range: 56, speed: 1.7, phase: 0 },
+          { type: 'spinner', x: 300, y: 410, length: 68, speed: 1.85, phase: 1.3 },
+          { type: 'slider', x: 484, y: 422, length: 64, angle: 0, axis: 'y', range: 60, speed: 1.75, phase: 2.1 },
+          { type: 'spinner', x: 686, y: 250, length: 72, speed: -1.7, phase: 0.4, arms: 2 }
+        ],
+        carts: [
+          { x: 682, y: 458, axis: 'x', range: 104, speed: 2.05, phase: 1.4 }
+        ],
+        crushers: [
+          { x: 300, y: 322, radius: 35, period: 2.9, phase: 0.1 },
+          { x: 486, y: 178, radius: 37, period: 3.2, phase: 1.2 },
+          { x: 686, y: 430, radius: 38, period: 2.7, phase: 2.1 }
+        ],
+        repairs: [{ x: 474, y: 112 }]
+      },
+      {
+        name: '증기 배관층',
+        code: 'MINE 06',
+        floor: '#131918',
+        floorAlt: '#19201f',
+        rock: '#34423f',
+        accent: '#79c9ba',
+        start: { x: 72, y: 532 },
+        chest: { x: 800, y: 512 },
+        door: { x: 450, y: 104, side: 'top' },
+        walls: [
+          { x: 54, y: 432, w: 246, h: 30 },
+          { x: 600, y: 432, w: 246, h: 30 },
+          { x: 258, y: 282, w: 152, h: 30 },
+          { x: 490, y: 282, w: 152, h: 30 },
+          { x: 150, y: 126, w: 30, h: 166 },
+          { x: 720, y: 126, w: 30, h: 166 }
+        ],
+        rails: [
+          { x: 450, y: 568, w: 760, angle: 0 }
+        ],
+        minerals: [
+          { x: 112, y: 518 }, { x: 210, y: 352 }, { x: 450, y: 212 },
+          { x: 692, y: 352 }, { x: 802, y: 198 }
+        ],
+        hazards: [
+          { type: 'spinner', x: 352, y: 500, length: 66, speed: 1.95, phase: 0, arms: 2 },
+          { type: 'spinner', x: 548, y: 500, length: 66, speed: -1.95, phase: 0.5, arms: 2 },
+          { type: 'slider', x: 450, y: 366, length: 84, angle: 0, axis: 'x', range: 112, speed: 1.65, phase: 1.2 },
+          { type: 'spinner', x: 450, y: 150, length: 66, speed: 1.9, phase: 2.2 }
+        ],
+        crushers: [
+          { x: 300, y: 210, radius: 35, period: 2.8, phase: 0.3 },
+          { x: 600, y: 210, radius: 35, period: 2.8, phase: 1.7 }
+        ],
+        vents: [
+          { x: 206, y: 354, radius: 42, period: 3.2, phase: 0.2 },
+          { x: 450, y: 406, radius: 46, period: 2.9, phase: 1.1 },
+          { x: 694, y: 354, radius: 42, period: 3.1, phase: 2.2 },
+          { x: 450, y: 214, radius: 44, period: 2.7, phase: 0.8 }
+        ],
+        repairs: [{ x: 86, y: 112 }]
+      },
+      {
+        name: '붕괴 공동',
+        code: 'MINE 07',
+        floor: '#161817',
+        floorAlt: '#1e201f',
+        rock: '#49443d',
+        accent: '#d08f58',
+        start: { x: 70, y: 108 },
+        chest: { x: 800, y: 516 },
+        door: { x: 828, y: 108, side: 'right' },
+        walls: [
+          { x: 130, y: 170, w: 270, h: 30 },
+          { x: 500, y: 170, w: 250, h: 30 },
+          { x: 250, y: 300, w: 400, h: 30 },
+          { x: 130, y: 430, w: 260, h: 30 },
+          { x: 510, y: 430, w: 250, h: 30 }
+        ],
+        rails: [
+          { x: 450, y: 262, w: 700, angle: 0 },
+          { x: 450, y: 520, w: 700, angle: 0 }
+        ],
+        minerals: [
+          { x: 96, y: 250 }, { x: 444, y: 118 }, { x: 806, y: 250 },
+          { x: 446, y: 382 }, { x: 98, y: 520 }
+        ],
+        hazards: [
+          { type: 'spinner', x: 206, y: 246, length: 64, speed: 2.05, phase: 0.2 },
+          { type: 'spinner', x: 694, y: 246, length: 64, speed: -2.05, phase: 1.5 },
+          { type: 'slider', x: 450, y: 378, length: 78, angle: 0, axis: 'x', range: 120, speed: 1.9, phase: 0.8 },
+          { type: 'spinner', x: 450, y: 518, length: 72, speed: 2.15, phase: 2.1, arms: 2 }
+        ],
+        vents: [
+          { x: 450, y: 244, radius: 42, period: 2.8, phase: 0.6 },
+          { x: 800, y: 376, radius: 40, period: 2.6, phase: 1.7 }
+        ],
+        rockfalls: [
+          { x: 210, y: 250, radius: 38, period: 3.1, phase: 0.2 },
+          { x: 450, y: 118, radius: 40, period: 2.9, phase: 1.1 },
+          { x: 690, y: 250, radius: 38, period: 3.2, phase: 2.2 },
+          { x: 340, y: 382, radius: 42, period: 2.7, phase: 0.9 },
+          { x: 580, y: 520, radius: 42, period: 2.8, phase: 1.8 }
+        ],
+        repairs: [{ x: 806, y: 520 }]
+      },
+      {
+        name: '마그마 균열',
+        code: 'MINE 08',
+        floor: '#1c1512',
+        floorAlt: '#251a15',
+        rock: '#523a31',
+        accent: '#ff6b42',
+        start: { x: 450, y: 544 },
+        chest: { x: 808, y: 514 },
+        door: { x: 450, y: 102, side: 'top' },
+        walls: [
+          { x: 178, y: 390, w: 30, h: 154 },
+          { x: 692, y: 390, w: 30, h: 154 },
+          { x: 298, y: 276, w: 304, h: 30 },
+          { x: 178, y: 136, w: 30, h: 150 },
+          { x: 692, y: 136, w: 30, h: 150 }
+        ],
+        rails: [
+          { x: 450, y: 466, w: 430, angle: 0 },
+          { x: 450, y: 206, w: 430, angle: 0 }
+        ],
+        minerals: [
+          { x: 92, y: 514 }, { x: 260, y: 352 }, { x: 450, y: 206 },
+          { x: 640, y: 352 }, { x: 808, y: 198 }
+        ],
+        hazards: [
+          { type: 'spinner', x: 300, y: 500, length: 66, speed: 2.15, phase: 0.1, arms: 2 },
+          { type: 'spinner', x: 600, y: 500, length: 66, speed: -2.15, phase: 0.8, arms: 2 },
+          { type: 'slider', x: 450, y: 360, length: 82, angle: 0, axis: 'x', range: 124, speed: 1.95, phase: 1.4 },
+          { type: 'spinner', x: 276, y: 206, length: 68, speed: -2.0, phase: 1.8 },
+          { type: 'spinner', x: 624, y: 206, length: 68, speed: 2.0, phase: 0.3 }
+        ],
+        carts: [
+          { x: 450, y: 466, axis: 'x', range: 170, speed: 2.2, phase: 0.2 },
+          { x: 450, y: 206, axis: 'x', range: 164, speed: 2.05, phase: 2.2 }
+        ],
+        lavaVents: [
+          { x: 120, y: 330, radius: 48, period: 3.1, phase: 0.3 },
+          { x: 450, y: 378, radius: 52, period: 2.8, phase: 1.2 },
+          { x: 780, y: 330, radius: 48, period: 3.0, phase: 2.1 },
+          { x: 450, y: 122, radius: 46, period: 2.7, phase: 0.9 }
+        ]
+      },
+      {
+        name: '심연 수송망',
+        code: 'MINE 09',
+        floor: '#131716',
+        floorAlt: '#1a201d',
+        rock: '#3d413b',
+        accent: '#8fcf8b',
+        start: { x: 74, y: 530 },
+        chest: { x: 806, y: 516 },
+        door: { x: 824, y: 104, side: 'top' },
+        walls: [
+          { x: 120, y: 400, w: 230, h: 30 },
+          { x: 350, y: 252, w: 30, h: 178 },
+          { x: 470, y: 252, w: 260, h: 30 },
+          { x: 620, y: 112, w: 30, h: 170 },
+          { x: 200, y: 112, w: 240, h: 30 }
+        ],
+        rails: [
+          { x: 230, y: 520, w: 330, angle: 0 },
+          { x: 760, y: 390, w: 250, angle: Math.PI / 2 },
+          { x: 500, y: 190, w: 330, angle: 0 }
+        ],
+        minerals: [
+          { x: 108, y: 500 }, { x: 280, y: 474 }, { x: 278, y: 202 },
+          { x: 516, y: 342 }, { x: 760, y: 202 }
+        ],
+        hazards: [
+          { type: 'spinner', x: 230, y: 342, length: 66, speed: 2.25, phase: 0.3, arms: 2 },
+          { type: 'slider', x: 438, y: 496, length: 76, angle: 0, axis: 'x', range: 112, speed: 2.05, phase: 1.2 },
+          { type: 'spinner', x: 528, y: 190, length: 68, speed: -2.2, phase: 0.6, arms: 2 },
+          { type: 'spinner', x: 760, y: 352, length: 72, speed: 2.15, phase: 2.2, arms: 3 }
+        ],
+        carts: [
+          { x: 230, y: 520, axis: 'x', range: 128, speed: 2.35, phase: 0.1 },
+          { x: 760, y: 390, axis: 'y', range: 104, speed: 2.2, phase: 1.7 }
+        ],
+        crushers: [
+          { x: 438, y: 346, radius: 38, period: 2.5, phase: 0.4 },
+          { x: 710, y: 490, radius: 40, period: 2.4, phase: 1.4 }
+        ],
+        vents: [
+          { x: 116, y: 232, radius: 43, period: 2.6, phase: 0.8 },
+          { x: 524, y: 342, radius: 45, period: 2.5, phase: 1.8 }
+        ],
+        rockfalls: [
+          { x: 278, y: 202, radius: 40, period: 2.7, phase: 0.2 },
+          { x: 756, y: 202, radius: 42, period: 2.6, phase: 1.3 }
+        ],
+        lavaVents: [
+          { x: 590, y: 492, radius: 48, period: 2.8, phase: 0.6 }
+        ],
+        repairs: [{ x: 92, y: 104 }]
+      },
+      {
+        name: '지각 탈출로',
+        code: 'MINE 10',
+        floor: '#1b1512',
+        floorAlt: '#241914',
+        rock: '#503a31',
+        accent: '#ff7750',
+        start: { x: 450, y: 548 },
+        chest: { x: 808, y: 522 },
+        door: { x: 450, y: 102, side: 'top' },
+        walls: [
+          { x: 100, y: 430, w: 240, h: 30 },
+          { x: 560, y: 430, w: 240, h: 30 },
+          { x: 250, y: 300, w: 150, h: 30 },
+          { x: 500, y: 300, w: 150, h: 30 },
+          { x: 140, y: 150, w: 30, h: 150 },
+          { x: 730, y: 150, w: 30, h: 150 }
+        ],
+        rails: [
+          { x: 450, y: 500, w: 720, angle: 0 },
+          { x: 450, y: 232, w: 560, angle: 0 }
+        ],
+        minerals: [
+          { x: 92, y: 518 }, { x: 210, y: 362 }, { x: 450, y: 214 },
+          { x: 690, y: 362 }, { x: 808, y: 194 }
+        ],
+        hazards: [
+          { type: 'spinner', x: 300, y: 502, length: 70, speed: 2.45, phase: 0.1, arms: 2 },
+          { type: 'spinner', x: 600, y: 502, length: 70, speed: -2.45, phase: 0.7, arms: 2 },
+          { type: 'slider', x: 450, y: 378, length: 88, angle: 0, axis: 'x', range: 126, speed: 2.25, phase: 1.2 },
+          { type: 'spinner', x: 270, y: 214, length: 74, speed: -2.35, phase: 1.7, arms: 3 },
+          { type: 'spinner', x: 630, y: 214, length: 74, speed: 2.35, phase: 0.2, arms: 3 }
+        ],
+        carts: [
+          { x: 450, y: 500, axis: 'x', range: 280, speed: 2.45, phase: 0.2 },
+          { x: 450, y: 232, axis: 'x', range: 210, speed: 2.35, phase: 2.1 }
+        ],
+        crushers: [
+          { x: 450, y: 448, radius: 40, period: 2.3, phase: 0.3 },
+          { x: 450, y: 162, radius: 40, period: 2.25, phase: 1.3 }
+        ],
+        vents: [
+          { x: 200, y: 360, radius: 44, period: 2.4, phase: 0.6 },
+          { x: 700, y: 360, radius: 44, period: 2.35, phase: 1.6 }
+        ],
+        rockfalls: [
+          { x: 94, y: 208, radius: 42, period: 2.5, phase: 0.1 },
+          { x: 450, y: 374, radius: 44, period: 2.4, phase: 1.1 },
+          { x: 806, y: 208, radius: 42, period: 2.45, phase: 2.0 }
+        ],
+        lavaVents: [
+          { x: 92, y: 520, radius: 50, period: 2.5, phase: 0.8 },
+          { x: 808, y: 520, radius: 50, period: 2.45, phase: 1.8 }
+        ],
+        repairs: [{ x: 450, y: 378 }]
       }
+    ];
+
+    const ROLLING_CYLINDERS_BY_STAGE = [
+      [],
+      [],
+      [],
+      [],
+      [{ x: 500, y: 520, axis: 'x', range: 80, length: 54, speed: 0.34, phase: 0.12 }],
+      [{ x: 450, y: 520, axis: 'x', range: 250, length: 58, speed: 0.32, phase: 0.58 }],
+      [{ x: 450, y: 370, axis: 'x', range: 200, length: 58, speed: 0.36, phase: 0.22 }],
+      [
+        { x: 110, y: 410, axis: 'y', range: 100, length: 60, speed: 0.4, phase: 0.7 },
+        { x: 790, y: 410, axis: 'y', range: 100, length: 60, speed: 0.35, phase: 0.16 }
+      ],
+      [{ x: 500, y: 390, axis: 'x', range: 100, length: 62, speed: 0.42, phase: 0.44 }],
+      [
+        { x: 100, y: 350, axis: 'y', range: 65, length: 60, speed: 0.46, phase: 0.18 },
+        { x: 800, y: 350, axis: 'y', range: 65, length: 60, speed: 0.42, phase: 0.66 }
+      ]
     ];
 
     let state = 'start';
@@ -406,6 +843,7 @@
     let lastTime = performance.now();
     let keys = {};
     let minerals = [];
+    let repairs = [];
     let particles = [];
     let dust = [];
     let chestOpen = false;
@@ -413,6 +851,26 @@
     let shake = 0;
     let toastTimer = 0;
     let audioContext = null;
+    let masterGain = null;
+    let musicGain = null;
+    let sfxGain = null;
+    let musicTimer = null;
+    let musicNextTime = 0;
+    let musicStep = 0;
+    let lastFootstep = -1;
+
+    const MUSIC_STAGES = [
+      { root: 65.41, notes: [0, 3, 7, 10, 7, 3, 12, 10] },
+      { root: 73.42, notes: [0, 2, 7, 9, 5, 2, 12, 9] },
+      { root: 82.41, notes: [0, 3, 6, 10, 6, 3, 13, 10] },
+      { root: 69.3, notes: [0, 3, 7, 12, 7, 5, 10, 14] },
+      { root: 77.78, notes: [0, 2, 6, 9, 6, 2, 11, 14] },
+      { root: 87.31, notes: [0, 3, 7, 10, 14, 10, 7, 15] },
+      { root: 61.74, notes: [0, 5, 8, 12, 8, 3, 11, 15] },
+      { root: 69.3, notes: [0, 3, 6, 9, 12, 9, 15, 12] },
+      { root: 77.78, notes: [0, 2, 7, 10, 14, 10, 5, 15] },
+      { root: 82.41, notes: [0, 3, 6, 10, 13, 10, 16, 13] }
+    ];
 
     const player = {
       x: 0,
@@ -424,6 +882,7 @@
       jumpCooldown: 0,
       invulnerable: 0,
       moving: false,
+      direction: 'up',
       step: 0
     };
 
@@ -461,6 +920,33 @@
       return distance(x, y, nearestX, nearestY) < radius;
     }
 
+    function drawSprite(name, x, y, width, height, options) {
+      const image = SPRITES[name];
+      if (!image || !image.complete || !image.naturalWidth) return false;
+      const settings = options || {};
+      ctx.save();
+      ctx.translate(x, y);
+      if (settings.rotation) ctx.rotate(settings.rotation);
+      ctx.globalAlpha = settings.alpha === undefined ? 1 : settings.alpha;
+      ctx.filter = settings.filter || 'none';
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(image, -width / 2, -height / 2, width, height);
+      ctx.restore();
+      return true;
+    }
+
+    function drawMineralSprite(mineral, x, y, size, active) {
+      const enabled = active !== false;
+      const filter = enabled
+        ? 'drop-shadow(0 0 7px ' + mineral.color + ')'
+        : 'grayscale(1) brightness(0.38)';
+      return drawSprite(mineral.sprite, x, y, size * 0.82, size, {
+        alpha: enabled ? 1 : 0.5,
+        filter: filter
+      });
+    }
+
     function createDust() {
       const result = [];
       for (let i = 0; i < 92; i++) {
@@ -479,7 +965,16 @@
       stage = STAGES[index];
       stageTime = 0;
       minerals = stage.minerals.map(function (mineral, mineralIndex) {
-        return Object.assign({ collected: false, phase: mineralIndex * 1.37 }, mineral);
+        const variant = MINERAL_VARIANTS[mineralIndex];
+        return Object.assign({}, mineral, {
+          collected: false,
+          phase: mineralIndex * 1.37,
+          sprite: variant.sprite,
+          color: variant.color
+        });
+      });
+      repairs = (stage.repairs || []).map(function (repair) {
+        return Object.assign({}, repair, { collected: false });
       });
       particles = [];
       chestOpen = false;
@@ -487,15 +982,19 @@
       player.x = stage.start.x;
       player.y = stage.start.y;
       player.angle = -Math.PI / 2;
+      player.direction = 'up';
+      player.step = 0;
       player.jumpTimer = 0;
       player.jumpCooldown = 0;
       player.invulnerable = 0.7;
       player.moving = false;
+      lastFootstep = -1;
       dust = createDust();
       showMessage(stage.name + ' 진입', stage.accent, 1.8);
     }
 
     function startGame() {
+      if (!spritesReady) return;
       initAudio();
       stageIndex = 0;
       player.lives = 3;
@@ -503,20 +1002,20 @@
       state = 'playing';
       overlay.classList.remove('active');
       lastTime = performance.now();
-      tone(220, 0.08, 'square', 0.035);
-      setTimeout(function () { tone(330, 0.12, 'square', 0.025); }, 80);
+      startMusic();
+      playStageStinger(0);
     }
 
     function showEndOverlay(kind) {
       if (kind === 'win') {
         overlayKicker.textContent = 'SURFACE SIGNAL RESTORED';
         overlayTitle.textContent = '탈출 성공';
-        overlayRoute.innerHTML = '<b>3개 스테이지 완료</b> · 광부 귀환';
+        overlayRoute.innerHTML = '<b>10개 스테이지 완료</b> · 광부 귀환';
         startButton.textContent = '다시 내려가기';
       } else {
         overlayKicker.textContent = stage.code + ' // SIGNAL LOST';
         overlayTitle.textContent = '탐사 실패';
-        overlayRoute.innerHTML = '<b>가시봉에 접촉했습니다</b> · 장비 재정비';
+        overlayRoute.innerHTML = '<b>광산 함정에 접촉했습니다</b> · 장비 재정비';
         startButton.textContent = '처음부터 재도전';
       }
       overlay.classList.add('active');
@@ -528,23 +1027,146 @@
         return;
       }
       const AudioCtor = window.AudioContext || window.webkitAudioContext;
-      if (AudioCtor) audioContext = new AudioCtor();
+      if (!AudioCtor) return;
+
+      audioContext = new AudioCtor();
+      masterGain = audioContext.createGain();
+      musicGain = audioContext.createGain();
+      sfxGain = audioContext.createGain();
+      masterGain.gain.value = 0.72;
+      musicGain.gain.value = 0.16;
+      sfxGain.gain.value = 0.62;
+      musicGain.connect(masterGain);
+      sfxGain.connect(masterGain);
+      masterGain.connect(audioContext.destination);
     }
 
-    function tone(frequency, duration, type, volume, slide) {
-      if (!audioContext) return;
+    function scheduleTone(frequency, startTime, duration, type, volume, output, slide) {
+      if (!audioContext || !output) return;
       const oscillator = audioContext.createOscillator();
       const gain = audioContext.createGain();
-      const now = audioContext.currentTime;
       oscillator.type = type || 'sine';
-      oscillator.frequency.setValueAtTime(frequency, now);
-      if (slide) oscillator.frequency.exponentialRampToValueAtTime(Math.max(40, slide), now + duration);
-      gain.gain.setValueAtTime(volume || 0.03, now);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      oscillator.frequency.setValueAtTime(frequency, startTime);
+      if (slide) {
+        oscillator.frequency.exponentialRampToValueAtTime(Math.max(40, slide), startTime + duration);
+      }
+      gain.gain.setValueAtTime(0.0001, startTime);
+      gain.gain.exponentialRampToValueAtTime(volume || 0.03, startTime + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
       oscillator.connect(gain);
-      gain.connect(audioContext.destination);
-      oscillator.start(now);
-      oscillator.stop(now + duration);
+      gain.connect(output);
+      oscillator.start(startTime);
+      oscillator.stop(startTime + duration + 0.02);
+    }
+
+    function tone(frequency, duration, type, volume, slide, delay) {
+      if (!audioContext || !sfxGain) return;
+      scheduleTone(
+        frequency,
+        audioContext.currentTime + (delay || 0),
+        duration,
+        type,
+        volume,
+        sfxGain,
+        slide
+      );
+    }
+
+    function startMusic() {
+      if (!audioContext || !musicGain) return;
+      if (musicTimer) clearInterval(musicTimer);
+      const now = audioContext.currentTime;
+      musicGain.gain.cancelScheduledValues(now);
+      musicGain.gain.setValueAtTime(0.0001, now);
+      musicGain.gain.linearRampToValueAtTime(0.16, now + 1.1);
+      musicStep = 0;
+      musicNextTime = now + 0.08;
+      scheduleMusic();
+      musicTimer = setInterval(scheduleMusic, 180);
+    }
+
+    function stopMusic(fadeDuration) {
+      if (musicTimer) {
+        clearInterval(musicTimer);
+        musicTimer = null;
+      }
+      if (!audioContext || !musicGain) return;
+      const now = audioContext.currentTime;
+      musicGain.gain.cancelScheduledValues(now);
+      musicGain.gain.setValueAtTime(Math.max(0.0001, musicGain.gain.value), now);
+      musicGain.gain.exponentialRampToValueAtTime(0.0001, now + (fadeDuration || 0.45));
+    }
+
+    function scheduleMusic() {
+      if (!audioContext || !musicGain || state === 'gameover' || state === 'win') return;
+      const horizon = audioContext.currentTime + 0.8;
+      const beatDuration = Math.max(0.27, 0.38 - stageIndex * 0.012);
+
+      while (musicNextTime < horizon) {
+        const music = MUSIC_STAGES[stageIndex] || MUSIC_STAGES[0];
+        const sequenceStep = musicStep % music.notes.length;
+        const semitone = music.notes[sequenceStep];
+        const melodyFrequency = music.root * 2 * Math.pow(2, semitone / 12);
+
+        if (musicStep % 4 === 0) {
+          scheduleTone(music.root, musicNextTime, 1.35, 'triangle', 0.055, musicGain, music.root * 0.98);
+          scheduleTone(music.root / 2, musicNextTime, 1.5, 'sine', 0.045, musicGain);
+        }
+        if (sequenceStep !== 1 && sequenceStep !== 5) {
+          scheduleTone(melodyFrequency, musicNextTime, 0.42, 'sine', 0.027, musicGain, melodyFrequency * 0.995);
+        }
+        if (musicStep % 4 === 2) {
+          scheduleTone(1280 + stageIndex * 170, musicNextTime, 0.055, 'square', 0.009, musicGain, 720);
+        }
+
+        musicNextTime += beatDuration;
+        musicStep += 1;
+      }
+    }
+
+    function playStageStinger(index) {
+      const root = MUSIC_STAGES[index % MUSIC_STAGES.length].root * 2;
+      tone(root, 0.18, 'triangle', 0.045, root * 1.5, 0);
+      tone(root * 1.5, 0.24, 'sine', 0.038, root * 2, 0.13);
+      tone(root * 2, 0.38, 'sine', 0.032, null, 0.28);
+    }
+
+    function playFootstep() {
+      const frequency = player.step % 4 < 2 ? 86 : 102;
+      tone(frequency, 0.055, 'triangle', 0.012, 52);
+    }
+
+    function playMineralSfx(count) {
+      const base = 330 + count * 52;
+      tone(base, 0.12, 'sine', 0.05, base * 1.25, 0);
+      tone(base * 1.5, 0.16, 'sine', 0.038, base * 1.8, 0.07);
+      if (count === TOTAL_MINERALS) tone(base * 2, 0.36, 'triangle', 0.04, null, 0.17);
+    }
+
+    function playChestSfx() {
+      tone(118, 0.16, 'square', 0.038, 210, 0);
+      tone(245, 0.11, 'triangle', 0.035, 390, 0.09);
+      tone(620, 0.34, 'sine', 0.042, 880, 0.18);
+    }
+
+    function playDoorSfx(finalDoor) {
+      tone(142, 0.42, 'sawtooth', 0.045, 48, 0);
+      tone(196, 0.32, 'triangle', 0.032, 98, 0.12);
+      if (finalDoor) {
+        tone(392, 0.5, 'sine', 0.04, 784, 0.28);
+        tone(587.33, 0.7, 'sine', 0.035, 1174.66, 0.42);
+      }
+    }
+
+    function playHitSfx() {
+      tone(126, 0.3, 'sawtooth', 0.06, 46, 0);
+      tone(68, 0.2, 'square', 0.035, 42, 0.04);
+    }
+
+    function playRepairSfx() {
+      tone(196, 0.12, 'triangle', 0.04, 294, 0);
+      tone(392, 0.18, 'sine', 0.042, 523.25, 0.08);
+      tone(659.25, 0.3, 'sine', 0.035, 783.99, 0.18);
     }
 
     function showMessage(text, color, duration) {
@@ -609,10 +1231,55 @@
           by: y + sin * hazard.length,
           x: x,
           y: y,
-          angle: armAngle
+          angle: armAngle,
+          type: hazard.type
         });
       }
       return segments;
+    }
+
+    function getCartState(cart) {
+      const motion = stageTime * cart.speed + cart.phase;
+      const offset = Math.sin(motion) * cart.range;
+      const forward = Math.cos(motion) >= 0;
+      return {
+        x: cart.x + (cart.axis === 'x' ? offset : 0),
+        y: cart.y + (cart.axis === 'y' ? offset : 0),
+        rotation: cart.axis === 'x'
+          ? (forward ? 0 : Math.PI)
+          : (forward ? Math.PI / 2 : -Math.PI / 2)
+      };
+    }
+
+    function getRollingCylinderState(cylinder) {
+      const motion = (stageTime * cylinder.speed + cylinder.phase) * Math.PI * 2;
+      const offset = Math.sin(motion) * cylinder.range;
+      const x = cylinder.x + (cylinder.axis === 'x' ? offset : 0);
+      const y = cylinder.y + (cylinder.axis === 'y' ? offset : 0);
+      const angle = cylinder.axis === 'x' ? Math.PI / 2 : 0;
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      return {
+        x: x,
+        y: y,
+        angle: angle,
+        ax: x - cos * cylinder.length,
+        ay: y - sin * cylinder.length,
+        bx: x + cos * cylinder.length,
+        by: y + sin * cylinder.length,
+        spin: motion * 4
+      };
+    }
+
+    function getTrapProgress(trap) {
+      return ((stageTime + trap.phase) % trap.period) / trap.period;
+    }
+
+    function isTrapActive(type, progress) {
+      if (type === 'crusher') return progress >= 0.58 && progress <= 0.73;
+      if (type === 'vent') return progress >= 0.52 && progress <= 0.76;
+      if (type === 'rockfall') return progress >= 0.76 && progress <= 0.9;
+      return progress >= 0.48 && progress <= 0.78;
     }
 
     function updatePlayer(dt) {
@@ -626,12 +1293,22 @@
       const length = Math.hypot(dx, dy);
       player.moving = length > 0;
       if (length > 0) {
+        if (Math.abs(dx) > Math.abs(dy)) {
+          player.direction = dx < 0 ? 'left' : 'right';
+        } else {
+          player.direction = dy < 0 ? 'up' : 'down';
+        }
         dx /= length;
         dy /= length;
         player.angle = Math.atan2(dy, dx);
         const speedBoost = getJumpHeight() > 0.15 ? 1.08 : 1;
         movePlayer(dx * player.speed * speedBoost * dt, dy * player.speed * speedBoost * dt);
-        player.step += dt * 12;
+        player.step += dt * 8;
+        const footstep = Math.floor(player.step / 2);
+        if (footstep !== lastFootstep && getJumpHeight() < 0.08) {
+          lastFootstep = footstep;
+          playFootstep();
+        }
       }
 
       if (player.jumpTimer > 0) player.jumpTimer = Math.max(0, player.jumpTimer - dt);
@@ -644,8 +1321,48 @@
       for (const hazard of stage.hazards) {
         const segments = getHazardSegments(hazard);
         for (const segment of segments) {
-          if (pointSegmentDistance(player.x, player.y, segment.ax, segment.ay, segment.bx, segment.by) < PLAYER_RADIUS + 9) {
+          if (pointSegmentDistance(player.x, player.y, segment.ax, segment.ay, segment.bx, segment.by) < PLAYER_RADIUS + 13) {
             hitPlayer(segment.x, segment.y);
+            return;
+          }
+        }
+      }
+
+      for (const cart of stage.carts || []) {
+        const cartState = getCartState(cart);
+        if (distance(player.x, player.y, cartState.x, cartState.y) < PLAYER_RADIUS + 24) {
+          hitPlayer(cartState.x, cartState.y);
+          return;
+        }
+      }
+
+      for (const cylinder of ROLLING_CYLINDERS_BY_STAGE[stageIndex] || []) {
+        const cylinderState = getRollingCylinderState(cylinder);
+        if (pointSegmentDistance(
+          player.x,
+          player.y,
+          cylinderState.ax,
+          cylinderState.ay,
+          cylinderState.bx,
+          cylinderState.by
+        ) < PLAYER_RADIUS + 16) {
+          hitPlayer(cylinderState.x, cylinderState.y);
+          return;
+        }
+      }
+
+      const trapGroups = [
+        ['crusher', stage.crushers || []],
+        ['vent', stage.vents || []],
+        ['rockfall', stage.rockfalls || []],
+        ['lava', stage.lavaVents || []]
+      ];
+      for (const group of trapGroups) {
+        const type = group[0];
+        for (const trap of group[1]) {
+          if (isTrapActive(type, getTrapProgress(trap)) &&
+              distance(player.x, player.y, trap.x, trap.y) < PLAYER_RADIUS + trap.radius) {
+            hitPlayer(trap.x, trap.y);
             return;
           }
         }
@@ -659,10 +1376,12 @@
       const angle = Math.atan2(player.y - sourceY, player.x - sourceX);
       movePlayer(Math.cos(angle) * 25, Math.sin(angle) * 25);
       burst(player.x, player.y, '#ff6b57', 18, 125);
-      tone(120, 0.28, 'sawtooth', 0.05, 48);
+      playHitSfx();
 
       if (player.lives <= 0) {
         state = 'gameover';
+        stopMusic(0.55);
+        tone(92, 0.5, 'triangle', 0.045, 46, 0.18);
         showEndOverlay('gameover');
       } else {
         showMessage('보호 장비 손상 · ' + player.lives + '칸 남음', '#ff806f', 1.5);
@@ -670,12 +1389,23 @@
     }
 
     function updateObjectives() {
+      for (const repair of repairs) {
+        if (!repair.collected && player.lives < 3 &&
+            distance(player.x, player.y, repair.x, repair.y) < PLAYER_RADIUS + 20) {
+          repair.collected = true;
+          player.lives += 1;
+          burst(repair.x, repair.y, '#78f2c2', 22, 110);
+          playRepairSfx();
+          showMessage('보호 장비 1칸 수리', '#78f2c2', 1.5);
+        }
+      }
+
       for (const mineral of minerals) {
         if (!mineral.collected && distance(player.x, player.y, mineral.x, mineral.y) < PLAYER_RADIUS + 14) {
           mineral.collected = true;
           const count = minerals.filter(function (item) { return item.collected; }).length;
           burst(mineral.x, mineral.y, mineral.color, 16, 92);
-          tone(360 + count * 70, 0.13, 'sine', 0.045, 520 + count * 60);
+          playMineralSfx(count);
           if (count === TOTAL_MINERALS) {
             showMessage('광물 확보 완료 · 열쇠함 활성화', '#6ee7b7', 2);
           } else {
@@ -690,17 +1420,18 @@
         chestOpen = true;
         hasKey = true;
         burst(stage.chest.x, stage.chest.y, '#f7b955', 28, 130);
-        tone(260, 0.12, 'square', 0.04, 420);
-        setTimeout(function () { tone(520, 0.2, 'triangle', 0.035, 760); }, 90);
+        playChestSfx();
         showMessage('탈출 열쇠 획득', '#f7c86d', 1.8);
       }
 
       if (hasKey && distance(player.x, player.y, stage.door.x, stage.door.y) < 45) {
+        const finalDoor = stageIndex === STAGES.length - 1;
         hasKey = false;
         burst(stage.door.x, stage.door.y, stage.accent, 30, 160);
-        tone(170, 0.35, 'square', 0.04, 70);
-        if (stageIndex === STAGES.length - 1) {
+        playDoorSfx(finalDoor);
+        if (finalDoor) {
           state = 'win';
+          stopMusic(1.1);
           showEndOverlay('win');
         } else {
           state = 'transition';
@@ -755,6 +1486,7 @@
         if (transitionTimer < 0.78 && !transitionLoaded) {
           stageIndex += 1;
           setupStage(stageIndex);
+          playStageStinger(stageIndex);
           transitionLoaded = true;
         }
         if (transitionTimer <= 0) state = 'playing';
@@ -767,101 +1499,87 @@
       ctx.fillStyle = '#080b09';
       ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-      ctx.fillStyle = stage.floor;
-      ctx.fillRect(FLOOR.left, FLOOR.top, FLOOR.right - FLOOR.left, FLOOR.bottom - FLOOR.top);
-
-      const tile = 46;
-      for (let y = FLOOR.top; y < FLOOR.bottom; y += tile) {
-        for (let x = FLOOR.left; x < FLOOR.right; x += tile) {
-          const even = ((x / tile + y / tile) | 0) % 2 === 0;
-          ctx.fillStyle = even ? stage.floorAlt : stage.floor;
-          ctx.globalAlpha = 0.34;
-          ctx.fillRect(x + 1, y + 1, tile - 2, tile - 2);
-        }
-      }
-      ctx.globalAlpha = 1;
-
-      ctx.strokeStyle = 'rgba(212, 222, 214, 0.035)';
-      ctx.lineWidth = 1;
-      for (let x = 56; x < WIDTH; x += 92) {
-        ctx.beginPath();
-        ctx.moveTo(x, FLOOR.top);
-        ctx.lineTo(x - 18, FLOOR.bottom);
-        ctx.stroke();
-      }
+      drawSprite(
+        FLOOR_SPRITES[stageIndex],
+        (FLOOR.left + FLOOR.right) / 2,
+        (FLOOR.top + FLOOR.bottom) / 2,
+        FLOOR.right - FLOOR.left,
+        FLOOR.bottom - FLOOR.top,
+        { filter: ENVIRONMENT_FILTERS[stageIndex] }
+      );
 
       for (const speck of dust) {
-        ctx.fillStyle = 'rgba(220, 230, 220,' + speck.alpha + ')';
+        ctx.fillStyle = 'rgba(220, 230, 220,' + speck.alpha * 0.35 + ')';
         ctx.fillRect(speck.x, speck.y, speck.size, speck.size);
       }
 
-      drawCaveBorder();
       drawTrackLines();
+      drawCaveBorder();
     }
 
     function drawCaveBorder() {
-      ctx.save();
-      ctx.fillStyle = '#090c0a';
-      ctx.strokeStyle = stage.rock;
-      ctx.lineWidth = 10;
-      ctx.strokeRect(FLOOR.left - 5, FLOOR.top - 5, FLOOR.right - FLOOR.left + 10, FLOOR.bottom - FLOOR.top + 10);
+      const horizontalWidth = FLOOR.right - FLOOR.left + 34;
+      const verticalWidth = FLOOR.bottom - FLOOR.top + 34;
+      const horizontalCenter = (FLOOR.left + FLOOR.right) / 2;
+      const verticalCenter = (FLOOR.top + FLOOR.bottom) / 2;
+      const filter = ENVIRONMENT_FILTERS[stageIndex] + ' drop-shadow(0 5px 5px rgba(0, 0, 0, 0.7))';
 
-      for (let x = FLOOR.left + 8; x < FLOOR.right; x += 32) {
-        const wobble = ((x * 13 + stageIndex * 17) % 11) - 5;
-        ctx.fillStyle = x % 64 ? stage.rock : '#263029';
-        ctx.beginPath();
-        ctx.arc(x, FLOOR.top + wobble, 9 + (x % 7), 0, Math.PI * 2);
-        ctx.arc(x - 4, FLOOR.bottom - wobble, 8 + (x % 6), 0, Math.PI * 2);
-        ctx.fill();
-      }
-      for (let y = FLOOR.top + 18; y < FLOOR.bottom; y += 34) {
-        const wobble = ((y * 7 + stageIndex * 19) % 9) - 4;
-        ctx.fillStyle = y % 68 ? stage.rock : '#263029';
-        ctx.beginPath();
-        ctx.arc(FLOOR.left + wobble, y, 9 + (y % 6), 0, Math.PI * 2);
-        ctx.arc(FLOOR.right - wobble, y, 8 + (y % 7), 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
+      drawSprite('caveEdge', horizontalCenter, FLOOR.top - 3, horizontalWidth, 48, { filter: filter });
+      drawSprite('caveEdge', horizontalCenter, FLOOR.bottom + 3, horizontalWidth, 48, {
+        rotation: Math.PI,
+        filter: filter
+      });
+      drawSprite('caveEdge', FLOOR.left - 3, verticalCenter, verticalWidth, 48, {
+        rotation: -Math.PI / 2,
+        filter: filter
+      });
+      drawSprite('caveEdge', FLOOR.right + 3, verticalCenter, verticalWidth, 48, {
+        rotation: Math.PI / 2,
+        filter: filter
+      });
     }
 
     function drawTrackLines() {
+      for (const rail of stage.rails || []) {
+        drawSprite('mineRail', rail.x, rail.y, rail.w, 58, {
+          rotation: rail.angle,
+          alpha: 0.72,
+          filter: 'brightness(0.72) saturate(0.78) drop-shadow(0 5px 4px rgba(0, 0, 0, 0.42))'
+        });
+      }
+    }
+
+    function drawGroundLamp() {
       ctx.save();
-      ctx.strokeStyle = 'rgba(129, 108, 76, 0.22)';
-      ctx.lineWidth = 3;
-      ctx.setLineDash([10, 8]);
+      ctx.globalCompositeOperation = 'screen';
+      const radius = 126 + getJumpHeight() * 12;
+      const glow = ctx.createRadialGradient(player.x, player.y, 5, player.x, player.y, radius);
+      glow.addColorStop(0, 'rgba(255, 210, 115, 0.28)');
+      glow.addColorStop(0.38, 'rgba(237, 164, 67, 0.16)');
+      glow.addColorStop(1, 'rgba(237, 164, 67, 0)');
+      ctx.fillStyle = glow;
       ctx.beginPath();
-      ctx.moveTo(FLOOR.left + 18, FLOOR.bottom - 54);
-      ctx.bezierCurveTo(250, 460, 610, 520, FLOOR.right - 18, FLOOR.top + 70);
-      ctx.stroke();
-      ctx.setLineDash([]);
+      ctx.arc(player.x, player.y, radius, 0, Math.PI * 2);
+      ctx.fill();
       ctx.restore();
     }
 
     function drawWalls() {
       for (const wall of stage.walls) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.42)';
-        roundedRectPath(ctx, wall.x + 5, wall.y + 7, wall.w, wall.h, 5);
-        ctx.fill();
-
-        const gradient = ctx.createLinearGradient(wall.x, wall.y, wall.x, wall.y + wall.h);
-        gradient.addColorStop(0, '#566259');
-        gradient.addColorStop(0.28, stage.rock);
-        gradient.addColorStop(1, '#222a24');
-        ctx.fillStyle = gradient;
-        roundedRectPath(ctx, wall.x, wall.y, wall.w, wall.h, 5);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(196, 210, 201, 0.24)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
-        ctx.fillStyle = '#171c18';
         const horizontal = wall.w > wall.h;
-        const count = Math.floor((horizontal ? wall.w : wall.h) / 26);
-        for (let i = 1; i < count; i++) {
-          if (horizontal) ctx.fillRect(wall.x + i * 26, wall.y + 4, 3, wall.h - 8);
-          else ctx.fillRect(wall.x + 4, wall.y + i * 26, wall.w - 8, 3);
-        }
+        const length = horizontal ? wall.w : wall.h;
+        const filter = ENVIRONMENT_FILTERS[stageIndex] + ' drop-shadow(0 7px 5px rgba(0, 0, 0, 0.68))';
+        drawSprite(
+          'mineWall',
+          wall.x + wall.w / 2,
+          wall.y + wall.h / 2,
+          length + 8,
+          44,
+          {
+            rotation: horizontal ? 0 : Math.PI / 2,
+            filter: filter
+          }
+        );
       }
     }
 
@@ -869,32 +1587,7 @@
       for (const mineral of minerals) {
         if (mineral.collected) continue;
         const pulse = 1 + Math.sin(stageTime * 3.2 + mineral.phase) * 0.08;
-        ctx.save();
-        ctx.translate(mineral.x, mineral.y);
-        ctx.scale(pulse, pulse);
-        ctx.shadowBlur = 18;
-        ctx.shadowColor = mineral.color;
-        ctx.fillStyle = mineral.color;
-        ctx.beginPath();
-        ctx.moveTo(0, -13);
-        ctx.lineTo(10, -4);
-        ctx.lineTo(7, 10);
-        ctx.lineTo(-6, 12);
-        ctx.lineTo(-11, -2);
-        ctx.closePath();
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.62)';
-        ctx.beginPath();
-        ctx.moveTo(-1, -9);
-        ctx.lineTo(6, -3);
-        ctx.lineTo(2, 1);
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(3, 7, 5, 0.48)';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.restore();
+        drawMineralSprite(mineral, mineral.x, mineral.y, 39 * pulse, true);
       }
     }
 
@@ -907,107 +1600,99 @@
       ctx.translate(x, y);
 
       if (ready && !chestOpen) {
-        ctx.shadowBlur = 22 + Math.sin(stageTime * 4) * 6;
-        ctx.shadowColor = '#f7b955';
-      }
-
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-      ctx.fillRect(-24, 15, 48, 9);
-      ctx.fillStyle = chestOpen ? '#4b3c23' : '#7a5726';
-      roundedRectPath(ctx, -23, -8, 46, 29, 4);
-      ctx.fill();
-      ctx.strokeStyle = '#d29a43';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-      ctx.fillStyle = '#29231a';
-      ctx.fillRect(-23, 1, 46, 5);
-      ctx.fillStyle = ready ? '#ffd778' : '#6f776f';
-      ctx.fillRect(-4, 4, 8, 10);
-
-      if (chestOpen) {
-        ctx.save();
-        ctx.translate(0, -10);
-        ctx.rotate(-0.38);
-        ctx.fillStyle = '#694b23';
-        roundedRectPath(ctx, -23, -15, 46, 14, 4);
+        ctx.globalAlpha = 0.25 + Math.sin(stageTime * 4) * 0.08;
+        ctx.fillStyle = '#f7b955';
+        ctx.beginPath();
+        ctx.ellipse(0, 12, 38, 20, 0, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = '#d29a43';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-        ctx.restore();
-      } else {
-        ctx.fillStyle = '#694b23';
-        roundedRectPath(ctx, -23, -18, 46, 14, 4);
-        ctx.fill();
-        ctx.strokeStyle = '#d29a43';
-        ctx.lineWidth = 3;
-        ctx.stroke();
       }
       ctx.restore();
+
+      if (chestOpen) {
+        drawSprite('chestOpen', x, y - 4, 58, 70, {
+          filter: 'drop-shadow(0 8px 7px rgba(0, 0, 0, 0.58))'
+        });
+        const keyY = y - 38 + Math.sin(stageTime * 4.2) * 2.5;
+        drawSprite('key', x, keyY, 34, 16, {
+          filter: 'drop-shadow(0 0 7px #f7b955)'
+        });
+      } else {
+        drawSprite('chestClosed', x, y, 63, 50, {
+          filter: ready
+            ? 'drop-shadow(0 0 10px #f7b955) drop-shadow(0 7px 6px rgba(0, 0, 0, 0.58))'
+            : 'drop-shadow(0 7px 6px rgba(0, 0, 0, 0.58))'
+        });
+      }
     }
 
     function drawDoor() {
       const x = stage.door.x;
       const y = stage.door.y;
       const unlocked = hasKey;
+      const rotation = stage.door.side === 'right' ? Math.PI / 2 : 0;
+      drawSprite(unlocked ? 'doorOpen' : 'doorLocked', x, y, unlocked ? 76 : 70, unlocked ? 79 : 80, {
+        rotation: rotation,
+        filter: unlocked
+          ? 'drop-shadow(0 0 ' + (10 + Math.sin(stageTime * 5) * 3) + 'px ' + stage.accent + ')'
+          : 'drop-shadow(0 8px 8px rgba(0, 0, 0, 0.65))'
+      });
+    }
+
+    function drawHazardTrack(hazard) {
       ctx.save();
-      ctx.translate(x, y);
+      ctx.strokeStyle = 'rgba(226, 232, 228, 0.18)';
+      ctx.fillStyle = 'rgba(226, 232, 228, 0.22)';
+      ctx.lineWidth = 4;
 
-      if (unlocked) {
-        ctx.shadowBlur = 26 + Math.sin(stageTime * 5) * 5;
-        ctx.shadowColor = stage.accent;
-      }
-
-      ctx.fillStyle = '#0b0f0c';
-      roundedRectPath(ctx, -28, -31, 56, 62, 5);
-      ctx.fill();
-      ctx.strokeStyle = unlocked ? stage.accent : '#5e6861';
-      ctx.lineWidth = 5;
-      ctx.stroke();
-
-      const doorGradient = ctx.createLinearGradient(-20, 0, 20, 0);
-      doorGradient.addColorStop(0, '#1b231e');
-      doorGradient.addColorStop(0.5, '#3b4740');
-      doorGradient.addColorStop(1, '#18201b');
-      ctx.fillStyle = doorGradient;
-      ctx.fillRect(-20, -24, 40, 50);
-      ctx.strokeStyle = '#65716a';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(-20, -24, 40, 50);
-
-      ctx.fillStyle = unlocked ? '#7ef0bf' : '#db5c4d';
-      ctx.beginPath();
-      ctx.arc(10, 2, 4, 0, Math.PI * 2);
-      ctx.fill();
-
-      if (!unlocked) {
-        ctx.strokeStyle = '#8d9690';
-        ctx.lineWidth = 4;
+      if (hazard.type === 'slider') {
+        ctx.setLineDash([9, 8]);
         ctx.beginPath();
-        ctx.arc(0, -2, 8, Math.PI, 0);
+        if (hazard.axis === 'x') {
+          ctx.moveTo(hazard.x - hazard.range, hazard.y);
+          ctx.lineTo(hazard.x + hazard.range, hazard.y);
+        } else {
+          ctx.moveTo(hazard.x, hazard.y - hazard.range);
+          ctx.lineTo(hazard.x, hazard.y + hazard.range);
+        }
         ctx.stroke();
-        ctx.fillStyle = '#6a746e';
-        roundedRectPath(ctx, -10, -2, 20, 17, 3);
-        ctx.fill();
+        ctx.setLineDash([]);
+        if (hazard.axis === 'x') {
+          drawMotionArrow(hazard.x - hazard.range, hazard.y, Math.PI);
+          drawMotionArrow(hazard.x + hazard.range, hazard.y, 0);
+        } else {
+          drawMotionArrow(hazard.x, hazard.y - hazard.range, -Math.PI / 2);
+          drawMotionArrow(hazard.x, hazard.y + hazard.range, Math.PI / 2);
+        }
+      } else {
+        const direction = hazard.speed >= 0 ? 1 : -1;
+        const radius = Math.min(48, hazard.length * 0.72);
+        const start = direction > 0 ? -Math.PI * 0.2 : Math.PI * 1.2;
+        const end = start + direction * Math.PI * 1.35;
+        ctx.setLineDash([9, 8]);
+        ctx.beginPath();
+        ctx.arc(hazard.x, hazard.y, radius, start, end, direction < 0);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        drawMotionArrow(
+          hazard.x + Math.cos(end) * radius,
+          hazard.y + Math.sin(end) * radius,
+          end + direction * Math.PI / 2
+        );
       }
       ctx.restore();
     }
 
-    function drawHazardTrack(hazard) {
-      if (hazard.type !== 'slider') return;
+    function drawMotionArrow(x, y, angle) {
       ctx.save();
-      ctx.strokeStyle = 'rgba(207, 216, 210, 0.12)';
-      ctx.lineWidth = 3;
-      ctx.setLineDash([5, 7]);
+      ctx.translate(x, y);
+      ctx.rotate(angle);
       ctx.beginPath();
-      if (hazard.axis === 'x') {
-        ctx.moveTo(hazard.x - hazard.range, hazard.y);
-        ctx.lineTo(hazard.x + hazard.range, hazard.y);
-      } else {
-        ctx.moveTo(hazard.x, hazard.y - hazard.range);
-        ctx.lineTo(hazard.x, hazard.y + hazard.range);
-      }
-      ctx.stroke();
+      ctx.moveTo(8, 0);
+      ctx.lineTo(-5, -6);
+      ctx.lineTo(-2, 0);
+      ctx.lineTo(-5, 6);
+      ctx.closePath();
+      ctx.fill();
       ctx.restore();
     }
 
@@ -1017,6 +1702,7 @@
       for (const hazard of stage.hazards) {
         const segments = getHazardSegments(hazard);
         for (const segment of segments) drawSpikedBar(segment);
+        if (hazard.type !== 'spinner') continue;
         const hub = segments[0];
         ctx.save();
         ctx.translate(hub.x, hub.y);
@@ -1035,55 +1721,179 @@
       }
     }
 
+    function drawDangerRing(x, y, radius, progress, color) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.globalAlpha = 0.36 + Math.sin(stageTime * 12) * 0.12;
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 3;
+      ctx.setLineDash([7, 6]);
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha *= 0.16;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius - 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawSteamBurst(vent, progress) {
+      const strength = Math.sin(clamp((progress - 0.52) / 0.24, 0, 1) * Math.PI);
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      for (let i = 0; i < 7; i++) {
+        const phase = (stageTime * (0.65 + i * 0.04) + i * 0.17) % 1;
+        const angle = i / 7 * Math.PI * 2 + stageTime * 0.35;
+        const distanceFromVent = 9 + phase * vent.radius * 0.82;
+        const alpha = (1 - phase) * 0.25 * strength;
+        ctx.fillStyle = 'rgba(207, 245, 238,' + alpha + ')';
+        ctx.beginPath();
+        ctx.arc(
+          vent.x + Math.cos(angle) * distanceFromVent,
+          vent.y + Math.sin(angle) * distanceFromVent,
+          5 + phase * 11,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawLavaBurst(vent, progress) {
+      const active = isTrapActive('lava', progress);
+      const pulse = active ? 1 + Math.sin(stageTime * 14) * 0.08 : 1;
+      if (active) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        const glow = ctx.createRadialGradient(vent.x, vent.y, 8, vent.x, vent.y, vent.radius * 1.35);
+        glow.addColorStop(0, 'rgba(255, 216, 72, 0.66)');
+        glow.addColorStop(0.42, 'rgba(255, 84, 28, 0.34)');
+        glow.addColorStop(1, 'rgba(255, 62, 20, 0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(vent.x, vent.y, vent.radius * 1.35, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      drawSprite('lavaVent', vent.x, vent.y, 72 * pulse, 72 * pulse, {
+        filter: active
+          ? 'brightness(1.35) saturate(1.25) drop-shadow(0 0 13px #ff572e)'
+          : 'brightness(0.72) saturate(0.74) drop-shadow(0 6px 5px rgba(0, 0, 0, 0.58))'
+      });
+    }
+
+    function drawStageMechanics() {
+      for (const cylinder of ROLLING_CYLINDERS_BY_STAGE[stageIndex] || []) {
+        const cylinderState = getRollingCylinderState(cylinder);
+        const rollerWidth = cylinder.length * 2 + 24;
+        drawSprite('spikeRoller', cylinderState.x, cylinderState.y, rollerWidth, 38, {
+          rotation: cylinderState.angle,
+          filter: 'drop-shadow(0 8px 7px rgba(0, 0, 0, 0.72))'
+        });
+
+        ctx.save();
+        ctx.translate(cylinderState.x, cylinderState.y);
+        ctx.rotate(cylinderState.angle);
+        ctx.globalAlpha = 0.2;
+        ctx.strokeStyle = '#f5d79a';
+        ctx.lineWidth = 2;
+        const glintY = Math.sin(cylinderState.spin) * 7;
+        ctx.beginPath();
+        ctx.moveTo(-cylinder.length * 0.7, glintY);
+        ctx.lineTo(cylinder.length * 0.7, glintY);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      for (const cart of stage.carts || []) {
+        const cartState = getCartState(cart);
+        drawSprite('minecart', cartState.x, cartState.y, 76, 76, {
+          rotation: cartState.rotation,
+          filter: 'drop-shadow(0 8px 6px rgba(0, 0, 0, 0.7))'
+        });
+      }
+
+      for (const crusher of stage.crushers || []) {
+        const progress = getTrapProgress(crusher);
+        const warning = progress >= 0.36 && progress < 0.58;
+        const active = isTrapActive('crusher', progress);
+        if (warning) drawDangerRing(crusher.x, crusher.y, crusher.radius + 5, (progress - 0.36) / 0.22, '#ffd24f');
+        const slam = active ? 1.12 + Math.sin(progress * 38) * 0.03 : 0.84;
+        drawSprite('crusher', crusher.x, crusher.y, 78 * slam, 78 * slam, {
+          filter: active
+            ? 'brightness(1.18) drop-shadow(0 0 12px #ff5144)'
+            : 'brightness(0.78) drop-shadow(0 7px 6px rgba(0, 0, 0, 0.62))'
+        });
+      }
+
+      for (const vent of stage.vents || []) {
+        const progress = getTrapProgress(vent);
+        const warning = progress >= 0.34 && progress < 0.52;
+        if (warning) drawDangerRing(vent.x, vent.y, vent.radius, (progress - 0.34) / 0.18, '#9bf5e7');
+        drawSprite('steamVent', vent.x, vent.y, 62, 62, {
+          filter: isTrapActive('vent', progress)
+            ? 'brightness(1.25) drop-shadow(0 0 10px #bff8ed)'
+            : 'brightness(0.72) drop-shadow(0 6px 5px rgba(0, 0, 0, 0.6))'
+        });
+        if (isTrapActive('vent', progress)) drawSteamBurst(vent, progress);
+      }
+
+      for (const rockfall of stage.rockfalls || []) {
+        const progress = getTrapProgress(rockfall);
+        if (progress >= 0.3 && progress < 0.76) {
+          drawDangerRing(rockfall.x, rockfall.y, rockfall.radius, (progress - 0.3) / 0.46, '#e2a96a');
+        }
+        if (progress >= 0.6 && progress <= 0.92) {
+          const fall = clamp((progress - 0.6) / 0.2, 0, 1);
+          const shadowScale = 0.35 + fall * 0.65;
+          ctx.save();
+          ctx.globalAlpha = 0.18 + fall * 0.34;
+          ctx.fillStyle = '#000';
+          ctx.beginPath();
+          ctx.ellipse(rockfall.x, rockfall.y + 5, rockfall.radius * shadowScale, rockfall.radius * 0.45 * shadowScale, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          drawSprite('boulder', rockfall.x, rockfall.y - (1 - fall) * 62, 62 * (0.5 + fall * 0.5), 62 * (0.5 + fall * 0.5), {
+            rotation: stageTime * 1.8,
+            filter: 'drop-shadow(0 10px 7px rgba(0, 0, 0, 0.72))'
+          });
+        }
+      }
+
+      for (const lavaVent of stage.lavaVents || []) {
+        const progress = getTrapProgress(lavaVent);
+        if (progress >= 0.28 && progress < 0.48) {
+          drawDangerRing(lavaVent.x, lavaVent.y, lavaVent.radius, (progress - 0.28) / 0.2, '#ff7447');
+        }
+        drawLavaBurst(lavaVent, progress);
+      }
+
+      for (const repair of repairs) {
+        if (repair.collected) continue;
+        const bob = Math.sin(stageTime * 3.4 + repair.x) * 3;
+        drawSprite('repairKit', repair.x, repair.y + bob, 52, 52, {
+          filter: player.lives < 3
+            ? 'brightness(1.08) drop-shadow(0 0 10px #78f2c2)'
+            : 'brightness(0.66) saturate(0.72) drop-shadow(0 6px 5px rgba(0, 0, 0, 0.55))'
+        });
+      }
+    }
+
     function drawSpikedBar(segment) {
       const dx = segment.bx - segment.ax;
       const dy = segment.by - segment.ay;
       const length = Math.hypot(dx, dy);
       const angle = Math.atan2(dy, dx);
-      ctx.save();
-      ctx.translate(segment.x, segment.y);
-      ctx.rotate(angle);
-
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)';
-      ctx.lineWidth = 19;
-      ctx.beginPath();
-      ctx.moveTo(-length / 2 + 5, 6);
-      ctx.lineTo(length / 2 - 5, 6);
-      ctx.stroke();
-
-      const metal = ctx.createLinearGradient(0, -8, 0, 8);
-      metal.addColorStop(0, '#d8dfda');
-      metal.addColorStop(0.35, '#738078');
-      metal.addColorStop(0.7, '#3f4943');
-      metal.addColorStop(1, '#9aa59e');
-      ctx.strokeStyle = metal;
-      ctx.lineWidth = 12;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(-length / 2 + 7, 0);
-      ctx.lineTo(length / 2 - 7, 0);
-      ctx.stroke();
-
-      ctx.fillStyle = '#cbd3ce';
-      ctx.strokeStyle = '#3a423d';
-      ctx.lineWidth = 1.5;
-      for (let x = -length / 2 + 15; x < length / 2 - 8; x += 18) {
-        ctx.beginPath();
-        ctx.moveTo(x - 6, -5);
-        ctx.lineTo(x, -17);
-        ctx.lineTo(x + 6, -5);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(x - 6, 5);
-        ctx.lineTo(x, 17);
-        ctx.lineTo(x + 6, 5);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-      }
-      ctx.restore();
+      const width = length + 22;
+      const spriteName = segment.type === 'slider' ? 'spikeSlider' : 'spikeRoller';
+      drawSprite(spriteName, segment.x, segment.y, width, Math.min(38, Math.max(30, length * 0.23)), {
+        rotation: angle,
+        filter: 'drop-shadow(0 7px 6px rgba(0, 0, 0, 0.68))'
+      });
     }
 
     function drawParticles() {
@@ -1103,8 +1913,11 @@
     function drawMiner() {
       const jumpHeight = getJumpHeight();
       const scale = 1 + jumpHeight * 0.48;
-      const bob = player.moving && jumpHeight === 0 ? Math.sin(player.step) * 1.2 : 0;
+      const bob = player.moving && jumpHeight === 0 ? Math.sin(player.step * Math.PI / 2) * 0.6 : 0;
       const blink = player.invulnerable > 0 && Math.floor(player.invulnerable * 12) % 2 === 0;
+      const directionFrames = MINER_DIRECTION_FRAMES[player.direction];
+      const walkFrame = 1 + Math.floor(player.step) % (directionFrames.length - 1);
+      const spriteName = player.moving ? directionFrames[walkFrame] : directionFrames[0];
 
       ctx.save();
       ctx.translate(player.x, player.y + 8);
@@ -1118,78 +1931,16 @@
 
       if (blink) return;
 
-      ctx.save();
-      ctx.translate(player.x, player.y - jumpHeight * 12 + bob);
-      ctx.rotate(player.angle + Math.PI / 2);
-      ctx.scale(scale, scale);
-
-      ctx.fillStyle = '#252b27';
-      roundedRectPath(ctx, -16, -3, 32, 28, 7);
-      ctx.fill();
-      ctx.strokeStyle = '#0b0e0c';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      ctx.fillStyle = '#d29c3e';
-      roundedRectPath(ctx, -14, -8, 28, 28, 7);
-      ctx.fill();
-      ctx.strokeStyle = '#5e4823';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      ctx.fillStyle = '#303833';
-      roundedRectPath(ctx, -20, -2, 7, 19, 3);
-      ctx.fill();
-      roundedRectPath(ctx, 13, -2, 7, 19, 3);
-      ctx.fill();
-
-      ctx.fillStyle = '#1a211d';
-      roundedRectPath(ctx, -13, 14, 10, 13, 3);
-      ctx.fill();
-      roundedRectPath(ctx, 3, 14, 10, 13, 3);
-      ctx.fill();
-
-      ctx.fillStyle = '#59635d';
-      ctx.beginPath();
-      ctx.arc(0, -10, 19, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#d5a847';
-      ctx.lineWidth = 5;
-      ctx.stroke();
-
-      const visor = ctx.createLinearGradient(-12, -21, 10, 2);
-      visor.addColorStop(0, '#d6fff2');
-      visor.addColorStop(0.16, '#79aa9a');
-      visor.addColorStop(0.5, '#29473e');
-      visor.addColorStop(1, '#101b17');
-      ctx.fillStyle = visor;
-      ctx.beginPath();
-      ctx.ellipse(0, -10, 13, 11, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#171d1a';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.62)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(-3, -13, 7, 3.5, 4.8);
-      ctx.stroke();
-
-      ctx.fillStyle = '#f7c85b';
-      roundedRectPath(ctx, -8, -31, 16, 7, 2);
-      ctx.fill();
-      ctx.shadowBlur = 13;
-      ctx.shadowColor = '#ffe5a3';
-      ctx.fillStyle = '#fff1bd';
-      ctx.fillRect(-5, -30, 10, 4);
-      ctx.shadowBlur = 0;
-
-      ctx.fillStyle = '#b53f31';
-      ctx.fillRect(-11, 7, 22, 4);
-      ctx.fillStyle = '#e0b152';
-      ctx.fillRect(-3, 8, 6, 6);
-      ctx.restore();
+      drawSprite(
+        spriteName,
+        player.x,
+        player.y - jumpHeight * 12 + bob,
+        47 * scale,
+        60 * scale,
+        {
+          filter: 'drop-shadow(0 5px 4px rgba(0, 0, 0, 0.55))'
+        }
+      );
     }
 
     function drawDarkness() {
@@ -1220,6 +1971,7 @@
     function drawHud() {
       const collected = minerals.filter(function (item) { return item.collected; }).length;
       const hpColors = ['#ff6758', '#ff9b55', '#73db9f'];
+      const hudLeft = Math.max(28, 62 * WIDTH / Math.max(1, window.innerWidth));
       ctx.save();
       ctx.fillStyle = 'rgba(7, 10, 8, 0.97)';
       ctx.fillRect(0, 0, WIDTH, HUD_HEIGHT);
@@ -1232,31 +1984,17 @@
 
       ctx.fillStyle = stage.accent;
       ctx.font = '800 11px Arial';
-      ctx.fillText(stage.code + ' / 03', 28, 24);
+      ctx.fillText(stage.code + ' / ' + String(STAGES.length).padStart(2, '0'), hudLeft, 24);
       ctx.fillStyle = '#f3efe6';
       ctx.font = '800 19px Arial';
-      ctx.fillText(stage.name, 28, 48);
+      ctx.fillText(stage.name, hudLeft, 48);
 
       ctx.fillStyle = '#758079';
       ctx.font = '700 10px Arial';
       ctx.fillText('광물', 258, 23);
       for (let i = 0; i < TOTAL_MINERALS; i++) {
         const x = 270 + i * 27;
-        ctx.save();
-        ctx.translate(x, 43);
-        ctx.fillStyle = i < collected ? minerals[i].color : '#29312c';
-        ctx.strokeStyle = i < collected ? '#d8fff2' : '#566059';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(0, -9);
-        ctx.lineTo(8, -2);
-        ctx.lineTo(5, 8);
-        ctx.lineTo(-6, 8);
-        ctx.lineTo(-8, -2);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-        ctx.restore();
+        drawMineralSprite(minerals[i], x, 43, 23, minerals[i].collected);
       }
 
       ctx.fillStyle = '#758079';
@@ -1292,29 +2030,12 @@
     }
 
     function drawKeyIcon(x, y, active) {
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.strokeStyle = active ? '#f7c85b' : '#424b46';
-      ctx.fillStyle = active ? '#f7c85b' : '#424b46';
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.arc(-8, 0, 7, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(-1, 0);
-      ctx.lineTo(15, 0);
-      ctx.lineTo(15, 7);
-      ctx.moveTo(8, 0);
-      ctx.lineTo(8, 6);
-      ctx.stroke();
-      if (active) {
-        ctx.shadowBlur = 12;
-        ctx.shadowColor = '#f7c85b';
-        ctx.beginPath();
-        ctx.arc(-8, 0, 2, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
+      drawSprite('key', x, y, 38, 18, {
+        alpha: active ? 1 : 0.35,
+        filter: active
+          ? 'drop-shadow(0 0 6px #f7b955)'
+          : 'grayscale(1) brightness(0.5)'
+      });
     }
 
     function drawTransition() {
@@ -1336,16 +2057,19 @@
     }
 
     function draw() {
+      ctx.setTransform(renderScaleX, 0, 0, renderScaleY, 0, 0);
       ctx.save();
       if (shake > 0.3) {
         ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
       }
       drawFloor();
+      drawGroundLamp();
       drawWalls();
       drawChest();
       drawDoor();
       drawMinerals();
       drawHazards();
+      drawStageMechanics();
       drawParticles();
       drawMiner();
       drawDarkness();
@@ -1382,6 +2106,8 @@
       keys = {};
     });
 
+    window.addEventListener('resize', resizeCanvas);
+
     startButton.addEventListener('click', startGame);
 
     if (window.MobileArcade) {
@@ -1396,6 +2122,7 @@
       ], { side: 'right', bottom: '42px' });
     }
 
+    resizeCanvas();
     setupStage(0);
     toast.classList.remove('show');
     requestAnimationFrame(loop);
