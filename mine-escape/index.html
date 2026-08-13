@@ -366,6 +366,7 @@
     const PLAYER_RADIUS = 14;
     const JUMP_DURATION = 0.72;
     const TOTAL_MINERALS = 5;
+    const MAX_LIVES = 5;
     let renderScaleX = 1;
     let renderScaleY = 1;
 
@@ -877,7 +878,7 @@
       y: 0,
       angle: 0,
       speed: 178,
-      lives: 3,
+      lives: MAX_LIVES,
       jumpTimer: 0,
       jumpCooldown: 0,
       invulnerable: 0,
@@ -997,7 +998,7 @@
       if (!spritesReady) return;
       initAudio();
       stageIndex = 0;
-      player.lives = 3;
+      player.lives = MAX_LIVES;
       setupStage(stageIndex);
       state = 'playing';
       overlay.classList.remove('active');
@@ -1390,7 +1391,7 @@
 
     function updateObjectives() {
       for (const repair of repairs) {
-        if (!repair.collected && player.lives < 3 &&
+        if (!repair.collected && player.lives < MAX_LIVES &&
             distance(player.x, player.y, repair.x, repair.y) < PLAYER_RADIUS + 20) {
           repair.collected = true;
           player.lives += 1;
@@ -1876,7 +1877,7 @@
         if (repair.collected) continue;
         const bob = Math.sin(stageTime * 3.4 + repair.x) * 3;
         drawSprite('repairKit', repair.x, repair.y + bob, 52, 52, {
-          filter: player.lives < 3
+          filter: player.lives < MAX_LIVES
             ? 'brightness(1.08) drop-shadow(0 0 10px #78f2c2)'
             : 'brightness(0.66) saturate(0.72) drop-shadow(0 6px 5px rgba(0, 0, 0, 0.55))'
         });
@@ -1970,7 +1971,7 @@
 
     function drawHud() {
       const collected = minerals.filter(function (item) { return item.collected; }).length;
-      const hpColors = ['#ff6758', '#ff9b55', '#73db9f'];
+      const hpColors = ['#ff6758', '#ff805b', '#ffae5d', '#9edb78', '#73db9f'];
       const hudLeft = Math.max(28, 62 * WIDTH / Math.max(1, window.innerWidth));
       ctx.save();
       ctx.fillStyle = 'rgba(7, 10, 8, 0.97)';
@@ -2005,7 +2006,7 @@
       ctx.fillStyle = '#758079';
       ctx.font = '700 10px Arial';
       ctx.fillText('장비', 640, 23);
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < MAX_LIVES; i++) {
         const x = 670 + i * 34;
         ctx.fillStyle = i < player.lives ? hpColors[player.lives - 1] : '#262d29';
         ctx.strokeStyle = i < player.lives ? '#ffd6cf' : '#4b554f';
