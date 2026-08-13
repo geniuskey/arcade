@@ -377,6 +377,7 @@
     const HUD_HEIGHT = 68;
     const FLOOR = { left: 24, top: 78, right: 876, bottom: 596 };
     const PLAYER_RADIUS = 14;
+    const PLAYER_GROUND_HITBOX = { offsetY: 23, radiusX: 10, radiusY: 7 };
     const JUMP_DURATION = 0.72;
     const TOTAL_MINERALS = 5;
     const MAX_LIVES = 5;
@@ -925,6 +926,36 @@
       return distance(px, py, ax + dx * t, ay + dy * t);
     }
 
+    function getPlayerGroundHitbox() {
+      return {
+        x: player.x,
+        y: player.y + PLAYER_GROUND_HITBOX.offsetY,
+        radiusX: PLAYER_GROUND_HITBOX.radiusX,
+        radiusY: PLAYER_GROUND_HITBOX.radiusY
+      };
+    }
+
+    function playerGroundHitsSegment(ax, ay, bx, by, padding) {
+      const hitbox = getPlayerGroundHitbox();
+      const scaleX = hitbox.radiusX + padding;
+      const scaleY = hitbox.radiusY + padding;
+      return pointSegmentDistance(
+        0,
+        0,
+        (ax - hitbox.x) / scaleX,
+        (ay - hitbox.y) / scaleY,
+        (bx - hitbox.x) / scaleX,
+        (by - hitbox.y) / scaleY
+      ) < 1;
+    }
+
+    function playerGroundHitsCircle(x, y, radius) {
+      const hitbox = getPlayerGroundHitbox();
+      const normalizedX = (hitbox.x - x) / (hitbox.radiusX + radius);
+      const normalizedY = (hitbox.y - y) / (hitbox.radiusY + radius);
+      return normalizedX * normalizedX + normalizedY * normalizedY < 1;
+    }
+
     function circleHitsRect(x, y, radius, rect) {
       const nearestX = clamp(x, rect.x, rect.x + rect.w);
       const nearestY = clamp(y, rect.y, rect.y + rect.h);
@@ -1379,7 +1410,7 @@
       for (const hazard of stage.hazards) {
         const segments = getHazardSegments(hazard);
         for (const segment of segments) {
-          if (pointSegmentDistance(player.x, player.y, segment.ax, segment.ay, segment.bx, segment.by) < PLAYER_RADIUS + 13) {
+          if (playerGroundHitsSegment(segment.ax, segment.ay, segment.bx, segment.by, 13)) {
             hitPlayer(segment.x, segment.y);
             return;
           }
@@ -1388,7 +1419,7 @@
 
       for (const cart of stage.carts || []) {
         const cartState = getCartState(cart);
-        if (cartState.surface > 0.72 && distance(player.x, player.y, cartState.x, cartState.y) < PLAYER_RADIUS + 24) {
+        if (cartState.surface > 0.72 && playerGroundHitsCircle(cartState.x, cartState.y, 24)) {
           hitPlayer(cartState.x, cartState.y);
           return;
         }
@@ -1396,14 +1427,13 @@
 
       for (const cylinder of ROLLING_CYLINDERS_BY_STAGE[stageIndex] || []) {
         const cylinderState = getRollingCylinderState(cylinder);
-        if (pointSegmentDistance(
-          player.x,
-          player.y,
+        if (playerGroundHitsSegment(
           cylinderState.ax,
           cylinderState.ay,
           cylinderState.bx,
-          cylinderState.by
-        ) < PLAYER_RADIUS + 16) {
+          cylinderState.by,
+          16
+        )) {
           hitPlayer(cylinderState.x, cylinderState.y);
           return;
         }
@@ -1419,7 +1449,7 @@
         const type = group[0];
         for (const trap of group[1]) {
           if (isTrapActive(type, getTrapProgress(trap)) &&
-              distance(player.x, player.y, trap.x, trap.y) < PLAYER_RADIUS + trap.radius) {
+              playerGroundHitsCircle(trap.x, trap.y, trap.radius)) {
             hitPlayer(trap.x, trap.y);
             return;
           }
@@ -1888,8 +1918,9 @@
 
     function isPlayerInsideCartTunnel(cart, offset) {
       const point = getCartTunnelPoint(cart, offset);
-      const alongTrack = cart.axis === 'x' ? player.x - point.x : player.y - point.y;
-      const acrossTrack = cart.axis === 'x' ? player.y - point.y : player.x - point.x;
+      const hitbox = getPlayerGroundHitbox();
+      const alongTrack = cart.axis === 'x' ? hitbox.x - point.x : hitbox.y - point.y;
+      const acrossTrack = cart.axis === 'x' ? hitbox.y - point.y : hitbox.x - point.x;
       return Math.pow(alongTrack / 24, 2) + Math.pow(acrossTrack / 31, 2) < 1;
     }
 
