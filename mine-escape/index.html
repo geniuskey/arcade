@@ -959,13 +959,18 @@
 
     function createDust() {
       const result = [];
-      for (let i = 0; i < 92; i++) {
+      for (let i = 0; i < 108; i++) {
         const seed = i * 917 + stageIndex * 311;
         result.push({
           x: FLOOR.left + 12 + ((seed * 37) % 824),
           y: FLOOR.top + 12 + ((seed * 71) % 488),
-          size: 0.7 + (seed % 17) / 16,
-          alpha: 0.08 + (seed % 11) / 90
+          size: 0.8 + (seed % 19) / 11,
+          alpha: 0.16 + (seed % 13) / 55,
+          phase: (seed % 360) * Math.PI / 180,
+          sway: 7 + seed % 18,
+          swaySpeed: 0.28 + (seed % 9) * 0.065,
+          rise: 4 + seed % 10,
+          front: seed % 5 < 2
         });
       }
       return result;
@@ -1543,13 +1548,40 @@
         { filter: ENVIRONMENT_FILTERS[stageIndex] }
       );
 
-      for (const speck of dust) {
-        ctx.fillStyle = 'rgba(220, 230, 220,' + speck.alpha * 0.35 + ')';
-        ctx.fillRect(speck.x, speck.y, speck.size, speck.size);
-      }
-
       drawTrackLines();
       drawCaveBorder();
+    }
+
+    function drawAmbientDust(frontLayer) {
+      const top = FLOOR.top + 10;
+      const bottom = FLOOR.bottom - 10;
+      const travelHeight = bottom - top;
+      ctx.save();
+      for (const speck of dust) {
+        if (speck.front !== frontLayer) continue;
+        const risingY = speck.y - stageTime * speck.rise;
+        const y = top + ((risingY - top) % travelHeight + travelHeight) % travelHeight;
+        const x = speck.x + Math.sin(stageTime * speck.swaySpeed + speck.phase) * speck.sway;
+        const pulse = 0.72 + Math.sin(stageTime * 1.4 + speck.phase) * 0.28;
+        const lampDistance = distance(x, y, player.x, player.y);
+        const lampBoost = clamp(1 - lampDistance / 170, 0, 1) * 0.72;
+        const alpha = speck.alpha * pulse * (frontLayer ? 0.82 : 0.5) * (0.55 + lampBoost);
+
+        if (frontLayer) {
+          ctx.globalAlpha = alpha * 0.18;
+          ctx.fillStyle = '#f2dca5';
+          ctx.beginPath();
+          ctx.arc(x, y, speck.size * 2.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = frontLayer ? '#f1dfb3' : '#c8b992';
+        ctx.beginPath();
+        ctx.ellipse(x, y, speck.size, speck.size * 0.72, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
     }
 
     function drawCaveBorder() {
@@ -2223,12 +2255,14 @@
       }
       drawFloor();
       drawGroundLamp();
+      drawAmbientDust(false);
       drawWalls();
       drawChest();
       drawDoor();
       drawMinerals();
       drawHazards();
       drawStageMechanics();
+      drawAmbientDust(true);
       drawParticles();
       drawMiner();
       drawDarkness();
