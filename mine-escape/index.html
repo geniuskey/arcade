@@ -278,6 +278,7 @@
       doorOpen: 'assets/door-open.webp',
       spikeRoller: 'assets/spike-roller.webp',
       spikeSlider: 'assets/spike-slider.webp',
+      spikeHub: 'assets/spike-hub.webp',
       mineRail: 'assets/mine-rail.webp',
       minecart: 'assets/minecart.webp',
       crusher: 'assets/crusher.webp',
@@ -1799,20 +1800,11 @@
         for (const segment of segments) drawSpikedBar(segment);
         if (hazard.type !== 'spinner') continue;
         const hub = segments[0];
-        ctx.save();
-        ctx.translate(hub.x, hub.y);
-        ctx.fillStyle = '#171b18';
-        ctx.beginPath();
-        ctx.arc(0, 0, 14, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#98a29c';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-        ctx.fillStyle = stage.accent;
-        ctx.beginPath();
-        ctx.arc(0, 0, 5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+        const hubSize = clamp(hazard.length * 0.64, 42, 46);
+        drawSprite('spikeHub', hub.x, hub.y, hubSize, hubSize, {
+          rotation: hub.angle,
+          filter: 'drop-shadow(0 6px 5px rgba(0, 0, 0, 0.72))'
+        });
       }
     }
 
