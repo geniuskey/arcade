@@ -1026,7 +1026,7 @@
       playStageStinger(0);
     }
 
-    function showEndOverlay(kind) {
+    function showEndOverlay(kind, failureMessage) {
       if (kind === 'win') {
         overlayKicker.textContent = 'SURFACE SIGNAL RESTORED';
         overlayTitle.textContent = '탈출 성공';
@@ -1035,7 +1035,7 @@
       } else {
         overlayKicker.textContent = stage.code + ' // SIGNAL LOST';
         overlayTitle.textContent = '탐사 실패';
-        overlayRoute.innerHTML = '<b>광산 함정에 접촉했습니다</b> · 장비 재정비';
+        overlayRoute.innerHTML = failureMessage || '<b>광산 함정에 접촉했습니다</b> · 장비 재정비';
         startButton.textContent = '처음부터 재도전';
       }
       overlay.classList.add('active');
@@ -1182,6 +1182,11 @@
     function playHitSfx() {
       tone(126, 0.3, 'sawtooth', 0.06, 46, 0);
       tone(68, 0.2, 'square', 0.035, 42, 0.04);
+    }
+
+    function playFallSfx() {
+      tone(196, 0.38, 'sawtooth', 0.055, 58, 0);
+      tone(74, 0.62, 'triangle', 0.048, 32, 0.12);
     }
 
     function playRepairSfx() {
@@ -1357,7 +1362,19 @@
     }
 
     function updateHazards() {
-      if (player.invulnerable > 0 || getJumpHeight() > 0.23) return;
+      const jumpHeight = getJumpHeight();
+      if (jumpHeight <= 0.23) {
+        for (const cart of stage.carts || []) {
+          for (const offset of getCartTunnelOffsets(cart)) {
+            if (isPlayerInsideCartTunnel(cart, offset)) {
+              fallIntoCartTunnel(getCartTunnelPoint(cart, offset));
+              return;
+            }
+          }
+        }
+      }
+
+      if (player.invulnerable > 0 || jumpHeight > 0.23) return;
       for (const hazard of stage.hazards) {
         const segments = getHazardSegments(hazard);
         for (const segment of segments) {
@@ -1426,6 +1443,17 @@
       } else {
         showMessage('보호 장비 손상 · ' + player.lives + '칸 남음', '#ff806f', 1.5);
       }
+    }
+
+    function fallIntoCartTunnel(point) {
+      player.lives = 0;
+      player.invulnerable = 99;
+      state = 'gameover';
+      shake = 18;
+      burst(point.x, point.y, '#8b7351', 26, 145);
+      playFallSfx();
+      stopMusic(0.3);
+      showEndOverlay('gameover', '<b>지하 갱도로 추락했습니다</b> · 즉시 구조 실패');
     }
 
     function updateObjectives() {
@@ -1860,6 +1888,19 @@
       };
     }
 
+    function getCartTunnelOffsets(cart) {
+      const direction = cart.direction < 0 ? -1 : 1;
+      const startOffset = direction > 0 ? -cart.range : cart.range;
+      return [startOffset, -startOffset];
+    }
+
+    function isPlayerInsideCartTunnel(cart, offset) {
+      const point = getCartTunnelPoint(cart, offset);
+      const alongTrack = cart.axis === 'x' ? player.x - point.x : player.y - point.y;
+      const acrossTrack = cart.axis === 'x' ? player.y - point.y : player.x - point.x;
+      return Math.pow(alongTrack / 24, 2) + Math.pow(acrossTrack / 31, 2) < 1;
+    }
+
     function drawCartTunnelMouth(cart, offset, activity, foreground) {
       const point = getCartTunnelPoint(cart, offset);
       ctx.save();
@@ -1947,13 +1988,11 @@
       for (let i = 0; i < carts.length; i++) {
         const cart = carts[i];
         const cartState = cartStates[i];
-        const direction = cart.direction < 0 ? -1 : 1;
-        const startOffset = direction > 0 ? -cart.range : cart.range;
-        const endOffset = -startOffset;
+        const tunnelOffsets = getCartTunnelOffsets(cart);
         const startActivity = cartState.progress < CART_TUNNEL_FRACTION ? 1 - cartState.surface : 0;
         const endActivity = cartState.progress > 1 - CART_TUNNEL_FRACTION ? 1 - cartState.surface : 0;
-        drawCartTunnelMouth(cart, startOffset, startActivity, false);
-        drawCartTunnelMouth(cart, endOffset, endActivity, false);
+        drawCartTunnelMouth(cart, tunnelOffsets[0], startActivity, false);
+        drawCartTunnelMouth(cart, tunnelOffsets[1], endActivity, false);
       }
 
       for (const cylinder of ROLLING_CYLINDERS_BY_STAGE[stageIndex] || []) {
@@ -2002,10 +2041,9 @@
 
       for (let i = 0; i < carts.length; i++) {
         const cart = carts[i];
-        const direction = cart.direction < 0 ? -1 : 1;
-        const startOffset = direction > 0 ? -cart.range : cart.range;
-        drawCartTunnelMouth(cart, startOffset, 0, true);
-        drawCartTunnelMouth(cart, -startOffset, 0, true);
+        for (const offset of getCartTunnelOffsets(cart)) {
+          drawCartTunnelMouth(cart, offset, 0, true);
+        }
       }
 
       for (const crusher of stage.crushers || []) {
@@ -2159,6 +2197,39 @@
       ctx.restore();
     }
 
+    function drawDustHaze() {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, HUD_HEIGHT, WIDTH, HEIGHT - HUD_HEIGHT);
+      ctx.clip();
+      ctx.globalCompositeOperation = 'screen';
+
+      const density = 0.11 + stageIndex * 0.003;
+      const wash = ctx.createLinearGradient(0, HUD_HEIGHT, WIDTH, HEIGHT);
+      wash.addColorStop(0, 'rgba(177, 163, 133,' + density * 0.72 + ')');
+      wash.addColorStop(0.48, 'rgba(151, 144, 123,' + density + ')');
+      wash.addColorStop(1, 'rgba(190, 165, 126,' + density * 0.78 + ')');
+      ctx.fillStyle = wash;
+      ctx.fillRect(0, HUD_HEIGHT, WIDTH, HEIGHT - HUD_HEIGHT);
+
+      for (let i = 0; i < 5; i++) {
+        const driftX = Math.sin(stageTime * (0.055 + i * 0.009) + i * 1.7) * 120;
+        const driftY = Math.cos(stageTime * (0.043 + i * 0.007) + i * 2.1) * 52;
+        const x = 90 + i * 185 + driftX;
+        const y = HUD_HEIGHT + 80 + (i % 3) * 168 + driftY;
+        const radius = 170 + (i % 2) * 55;
+        const cloud = ctx.createRadialGradient(x, y, 0, x, y, radius);
+        cloud.addColorStop(0, 'rgba(229, 207, 165, 0.065)');
+        cloud.addColorStop(0.55, 'rgba(189, 178, 151, 0.035)');
+        cloud.addColorStop(1, 'rgba(164, 153, 129, 0)');
+        ctx.fillStyle = cloud;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
     function drawHud() {
       const collected = minerals.filter(function (item) { return item.collected; }).length;
       const hpColors = ['#ff6758', '#ff805b', '#ffae5d', '#9edb78', '#73db9f'];
@@ -2266,6 +2337,7 @@
       drawParticles();
       drawMiner();
       drawDarkness();
+      drawDustHaze();
       ctx.restore();
       drawHud();
       drawTransition();
