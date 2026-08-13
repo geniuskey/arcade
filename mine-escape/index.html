@@ -938,9 +938,9 @@
       const enabled = active !== false;
       const filter = enabled
         ? 'drop-shadow(0 0 7px ' + mineral.color + ')'
-        : 'grayscale(1) brightness(0.38)';
+        : 'grayscale(1) brightness(0.18) contrast(0.82)';
       return drawSprite(mineral.sprite, x, y, size * 0.82, size, {
-        alpha: enabled ? 1 : 0.5,
+        alpha: enabled ? 1 : 0.26,
         filter: filter
       });
     }
@@ -2051,10 +2051,10 @@
 
     function drawKeyIcon(x, y, active) {
       drawSprite('key', x, y, 38, 18, {
-        alpha: active ? 1 : 0.35,
+        alpha: active ? 1 : 0.22,
         filter: active
           ? 'drop-shadow(0 0 6px #f7b955)'
-          : 'grayscale(1) brightness(0.5)'
+          : 'grayscale(1) brightness(0.16) contrast(0.8)'
       });
     }
 
