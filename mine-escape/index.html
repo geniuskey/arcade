@@ -280,7 +280,8 @@
       spikeSlider: 'assets/spike-slider.webp',
       spikeHub: 'assets/spike-hub.webp',
       mineRail: 'assets/mine-rail.webp',
-      minecart: 'assets/minecart.webp',
+      minecartHorizontal: 'assets/minecart-horizontal.webp',
+      minecartVertical: 'assets/minecart-vertical.webp',
       crusher: 'assets/crusher.webp',
       steamVent: 'assets/steam-vent.webp',
       boulder: 'assets/boulder.webp',
@@ -1309,9 +1310,7 @@
       return {
         x: cart.x + (cart.axis === 'x' ? offset : 0),
         y: cart.y + (cart.axis === 'y' ? offset : 0) + (1 - surface) * 12,
-        rotation: cart.axis === 'x'
-          ? (direction > 0 ? 0 : Math.PI)
-          : (direction > 0 ? Math.PI / 2 : -Math.PI / 2),
+        rotation: direction > 0 ? 0 : Math.PI,
         alpha: surface,
         scale: 0.56 + surface * 0.44,
         progress: progress,
@@ -2054,8 +2053,10 @@
       }
 
       for (let i = 0; i < carts.length; i++) {
+        const cart = carts[i];
         const cartState = cartStates[i];
-        drawSprite('minecart', cartState.x, cartState.y, 76 * cartState.scale, 76 * cartState.scale, {
+        const spriteName = cart.axis === 'x' ? 'minecartHorizontal' : 'minecartVertical';
+        drawSprite(spriteName, cartState.x, cartState.y, 76 * cartState.scale, 76 * cartState.scale, {
           rotation: cartState.rotation,
           alpha: cartState.alpha,
           filter: 'drop-shadow(0 8px 6px rgba(0, 0, 0, 0.7))'
