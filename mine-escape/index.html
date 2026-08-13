@@ -1253,15 +1253,20 @@
     }
 
     function getCartState(cart) {
+      const cycle = Math.PI * 2;
       const motion = stageTime * cart.speed + cart.phase;
-      const offset = Math.sin(motion) * cart.range;
-      const forward = Math.cos(motion) >= 0;
+      const progress = ((motion % cycle) + cycle) % cycle / cycle;
+      const direction = cart.direction < 0 ? -1 : 1;
+      const directedProgress = direction < 0 ? 1 - progress : progress;
+      const offset = -cart.range + directedProgress * cart.range * 2;
+      const edgeDistance = Math.min(progress, 1 - progress);
       return {
         x: cart.x + (cart.axis === 'x' ? offset : 0),
         y: cart.y + (cart.axis === 'y' ? offset : 0),
         rotation: cart.axis === 'x'
-          ? (forward ? 0 : Math.PI)
-          : (forward ? Math.PI / 2 : -Math.PI / 2)
+          ? (direction > 0 ? 0 : Math.PI)
+          : (direction > 0 ? Math.PI / 2 : -Math.PI / 2),
+        alpha: clamp(edgeDistance / 0.07, 0, 1)
       };
     }
 
@@ -1353,7 +1358,7 @@
 
       for (const cart of stage.carts || []) {
         const cartState = getCartState(cart);
-        if (distance(player.x, player.y, cartState.x, cartState.y) < PLAYER_RADIUS + 24) {
+        if (cartState.alpha > 0.35 && distance(player.x, player.y, cartState.x, cartState.y) < PLAYER_RADIUS + 24) {
           hitPlayer(cartState.x, cartState.y);
           return;
         }
@@ -1849,6 +1854,7 @@
         const cartState = getCartState(cart);
         drawSprite('minecart', cartState.x, cartState.y, 76, 76, {
           rotation: cartState.rotation,
+          alpha: cartState.alpha,
           filter: 'drop-shadow(0 8px 6px rgba(0, 0, 0, 0.7))'
         });
       }
