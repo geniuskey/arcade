@@ -821,18 +821,15 @@
       [],
       [],
       [],
-      [{ x: 500, y: 520, axis: 'x', range: 80, length: 54, speed: 0.34, phase: 0.12 }],
-      [{ x: 450, y: 520, axis: 'x', range: 250, length: 58, speed: 0.32, phase: 0.58 }],
-      [{ x: 450, y: 370, axis: 'x', range: 200, length: 58, speed: 0.36, phase: 0.22 }],
+      [{ axis: 'x', fixed: 520, from: -80, to: 980, length: 54, speed: 112, phase: 0.12, direction: 1 }],
+      [{ axis: 'x', fixed: 520, from: -80, to: 980, length: 58, speed: 124, phase: 0.58, direction: -1 }],
+      [{ axis: 'x', fixed: 370, from: -80, to: 980, length: 58, speed: 136, phase: 0.22, direction: 1 }],
       [
-        { x: 110, y: 410, axis: 'y', range: 100, length: 60, speed: 0.4, phase: 0.7 },
-        { x: 790, y: 410, axis: 'y', range: 100, length: 60, speed: 0.35, phase: 0.16 }
+        { axis: 'y', fixed: 110, from: -70, to: 690, length: 60, speed: 132, phase: 0.7, direction: -1 },
+        { axis: 'y', fixed: 790, from: -70, to: 690, length: 60, speed: 118, phase: 0.16, direction: 1 }
       ],
-      [{ x: 500, y: 390, axis: 'x', range: 100, length: 62, speed: 0.42, phase: 0.44 }],
-      [
-        { x: 100, y: 350, axis: 'y', range: 65, length: 60, speed: 0.46, phase: 0.18 },
-        { x: 800, y: 350, axis: 'y', range: 65, length: 60, speed: 0.42, phase: 0.66 }
-      ]
+      [{ axis: 'x', fixed: 540, from: -80, to: 980, length: 62, speed: 148, phase: 0.44, direction: -1 }],
+      [{ axis: 'y', fixed: 450, from: -70, to: 690, length: 38, speed: 156, phase: 0.18, direction: 1 }]
     ];
 
     let state = 'start';
@@ -1253,11 +1250,17 @@
     }
 
     function getRollingCylinderState(cylinder) {
-      const motion = (stageTime * cylinder.speed + cylinder.phase) * Math.PI * 2;
-      const offset = Math.sin(motion) * cylinder.range;
-      const x = cylinder.x + (cylinder.axis === 'x' ? offset : 0);
-      const y = cylinder.y + (cylinder.axis === 'y' ? offset : 0);
+      const travelDistance = cylinder.to - cylinder.from;
+      const distanceTravelled = stageTime * cylinder.speed + cylinder.phase * travelDistance;
+      const progress = ((distanceTravelled % travelDistance) + travelDistance) % travelDistance / travelDistance;
+      const directedProgress = cylinder.direction < 0 ? 1 - progress : progress;
+      const position = cylinder.from + directedProgress * travelDistance;
+      const x = cylinder.axis === 'x' ? position : cylinder.fixed;
+      const y = cylinder.axis === 'y' ? position : cylinder.fixed;
       const angle = cylinder.axis === 'x' ? Math.PI / 2 : 0;
+      const direction = cylinder.direction < 0 ? -1 : 1;
+      const directionX = cylinder.axis === 'x' ? direction : 0;
+      const directionY = cylinder.axis === 'y' ? direction : 0;
       const cos = Math.cos(angle);
       const sin = Math.sin(angle);
       return {
@@ -1268,7 +1271,10 @@
         ay: y - sin * cylinder.length,
         bx: x + cos * cylinder.length,
         by: y + sin * cylinder.length,
-        spin: motion * 4
+        spin: distanceTravelled / 9 * direction,
+        directionX: directionX,
+        directionY: directionY,
+        heading: Math.atan2(directionY, directionX)
       };
     }
 
@@ -1791,6 +1797,19 @@
       for (const cylinder of ROLLING_CYLINDERS_BY_STAGE[stageIndex] || []) {
         const cylinderState = getRollingCylinderState(cylinder);
         const rollerWidth = cylinder.length * 2 + 24;
+
+        ctx.save();
+        ctx.fillStyle = stage.accent;
+        for (let arrow = 1; arrow <= 3; arrow++) {
+          ctx.globalAlpha = 0.24 - arrow * 0.045;
+          drawMotionArrow(
+            cylinderState.x - cylinderState.directionX * (rollerWidth / 2 + arrow * 18),
+            cylinderState.y - cylinderState.directionY * (rollerWidth / 2 + arrow * 18),
+            cylinderState.heading
+          );
+        }
+        ctx.restore();
+
         drawSprite('spikeRoller', cylinderState.x, cylinderState.y, rollerWidth, 38, {
           rotation: cylinderState.angle,
           filter: 'drop-shadow(0 8px 7px rgba(0, 0, 0, 0.72))'
