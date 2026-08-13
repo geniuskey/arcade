@@ -145,7 +145,9 @@
       border-radius: 6px;
       color: #191306;
       background: var(--amber);
-      font: 800 16px inherit;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 800;
       cursor: pointer;
       box-shadow: 0 8px 30px rgba(247, 185, 85, 0.18);
     }
@@ -159,6 +161,14 @@
       cursor: wait;
       filter: grayscale(0.45) brightness(0.72);
       transform: none;
+    }
+
+    body.mobile-controls-hidden .ma-dpad,
+    body.mobile-controls-hidden .ma-acts,
+    body.mobile-controls-hidden .ma-tag {
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
     }
 
     .controls {
@@ -268,6 +278,7 @@
       doorOpen: 'assets/door-open.webp',
       spikeRoller: 'assets/spike-roller.webp',
       spikeSlider: 'assets/spike-slider.webp',
+      spikeHub: 'assets/spike-hub.webp',
       mineRail: 'assets/mine-rail.webp',
       minecart: 'assets/minecart.webp',
       crusher: 'assets/crusher.webp',
@@ -335,6 +346,8 @@
       { sprite: 'mineralEmerald', color: '#58e477' },
       { sprite: 'mineralAmethyst', color: '#ba7cff' }
     ];
+    const CART_SPEED_MULTIPLIER = 1.4;
+    const CART_TUNNEL_FRACTION = 0.13;
     const SPRITES = {};
     let spritesReady = false;
 
@@ -364,8 +377,10 @@
     const HUD_HEIGHT = 68;
     const FLOOR = { left: 24, top: 78, right: 876, bottom: 596 };
     const PLAYER_RADIUS = 14;
+    const PLAYER_GROUND_HITBOX = { offsetY: 23, radiusX: 10, radiusY: 7 };
     const JUMP_DURATION = 0.72;
     const TOTAL_MINERALS = 5;
+    const MAX_LIVES = 5;
     let renderScaleX = 1;
     let renderScaleY = 1;
 
@@ -504,7 +519,7 @@
         floorAlt: '#1b211d',
         rock: '#38413a',
         accent: '#e59a47',
-        start: { x: 76, y: 528 },
+        start: { x: 66, y: 486 },
         chest: { x: 800, y: 506 },
         door: { x: 822, y: 108, side: 'top' },
         walls: [
@@ -820,18 +835,15 @@
       [],
       [],
       [],
-      [{ x: 500, y: 520, axis: 'x', range: 80, length: 54, speed: 0.34, phase: 0.12 }],
-      [{ x: 450, y: 520, axis: 'x', range: 250, length: 58, speed: 0.32, phase: 0.58 }],
-      [{ x: 450, y: 370, axis: 'x', range: 200, length: 58, speed: 0.36, phase: 0.22 }],
+      [{ axis: 'x', fixed: 520, from: -80, to: 980, length: 54, speed: 112, phase: 0.12, direction: 1 }],
+      [{ axis: 'x', fixed: 520, from: -80, to: 980, length: 58, speed: 124, phase: 0.58, direction: -1 }],
+      [{ axis: 'x', fixed: 370, from: -80, to: 980, length: 58, speed: 136, phase: 0.22, direction: 1 }],
       [
-        { x: 110, y: 410, axis: 'y', range: 100, length: 60, speed: 0.4, phase: 0.7 },
-        { x: 790, y: 410, axis: 'y', range: 100, length: 60, speed: 0.35, phase: 0.16 }
+        { axis: 'y', fixed: 110, from: -70, to: 690, length: 60, speed: 132, phase: 0.7, direction: -1 },
+        { axis: 'y', fixed: 790, from: -70, to: 690, length: 60, speed: 118, phase: 0.16, direction: 1 }
       ],
-      [{ x: 500, y: 390, axis: 'x', range: 100, length: 62, speed: 0.42, phase: 0.44 }],
-      [
-        { x: 100, y: 350, axis: 'y', range: 65, length: 60, speed: 0.46, phase: 0.18 },
-        { x: 800, y: 350, axis: 'y', range: 65, length: 60, speed: 0.42, phase: 0.66 }
-      ]
+      [{ axis: 'x', fixed: 540, from: -80, to: 980, length: 62, speed: 148, phase: 0.44, direction: -1 }],
+      [{ axis: 'y', fixed: 450, from: -70, to: 690, length: 38, speed: 156, phase: 0.18, direction: 1 }]
     ];
 
     let state = 'start';
@@ -877,7 +889,7 @@
       y: 0,
       angle: 0,
       speed: 178,
-      lives: 3,
+      lives: MAX_LIVES,
       jumpTimer: 0,
       jumpCooldown: 0,
       invulnerable: 0,
@@ -914,6 +926,36 @@
       return distance(px, py, ax + dx * t, ay + dy * t);
     }
 
+    function getPlayerGroundHitbox() {
+      return {
+        x: player.x,
+        y: player.y + PLAYER_GROUND_HITBOX.offsetY,
+        radiusX: PLAYER_GROUND_HITBOX.radiusX,
+        radiusY: PLAYER_GROUND_HITBOX.radiusY
+      };
+    }
+
+    function playerGroundHitsSegment(ax, ay, bx, by, padding) {
+      const hitbox = getPlayerGroundHitbox();
+      const scaleX = hitbox.radiusX + padding;
+      const scaleY = hitbox.radiusY + padding;
+      return pointSegmentDistance(
+        0,
+        0,
+        (ax - hitbox.x) / scaleX,
+        (ay - hitbox.y) / scaleY,
+        (bx - hitbox.x) / scaleX,
+        (by - hitbox.y) / scaleY
+      ) < 1;
+    }
+
+    function playerGroundHitsCircle(x, y, radius) {
+      const hitbox = getPlayerGroundHitbox();
+      const normalizedX = (hitbox.x - x) / (hitbox.radiusX + radius);
+      const normalizedY = (hitbox.y - y) / (hitbox.radiusY + radius);
+      return normalizedX * normalizedX + normalizedY * normalizedY < 1;
+    }
+
     function circleHitsRect(x, y, radius, rect) {
       const nearestX = clamp(x, rect.x, rect.x + rect.w);
       const nearestY = clamp(y, rect.y, rect.y + rect.h);
@@ -940,22 +982,27 @@
       const enabled = active !== false;
       const filter = enabled
         ? 'drop-shadow(0 0 7px ' + mineral.color + ')'
-        : 'grayscale(1) brightness(0.38)';
+        : 'grayscale(1) brightness(0.18) contrast(0.82)';
       return drawSprite(mineral.sprite, x, y, size * 0.82, size, {
-        alpha: enabled ? 1 : 0.5,
+        alpha: enabled ? 1 : 0.26,
         filter: filter
       });
     }
 
     function createDust() {
       const result = [];
-      for (let i = 0; i < 92; i++) {
+      for (let i = 0; i < 108; i++) {
         const seed = i * 917 + stageIndex * 311;
         result.push({
           x: FLOOR.left + 12 + ((seed * 37) % 824),
           y: FLOOR.top + 12 + ((seed * 71) % 488),
-          size: 0.7 + (seed % 17) / 16,
-          alpha: 0.08 + (seed % 11) / 90
+          size: 0.8 + (seed % 19) / 11,
+          alpha: 0.16 + (seed % 13) / 55,
+          phase: (seed % 360) * Math.PI / 180,
+          sway: 7 + seed % 18,
+          swaySpeed: 0.28 + (seed % 9) * 0.065,
+          rise: 4 + seed % 10,
+          front: seed % 5 < 2
         });
       }
       return result;
@@ -993,32 +1040,38 @@
       showMessage(stage.name + ' 진입', stage.accent, 1.8);
     }
 
+    function setMobileControlsVisible(visible) {
+      document.body.classList.toggle('mobile-controls-hidden', !visible);
+    }
+
     function startGame() {
       if (!spritesReady) return;
       initAudio();
       stageIndex = 0;
-      player.lives = 3;
+      player.lives = MAX_LIVES;
       setupStage(stageIndex);
       state = 'playing';
       overlay.classList.remove('active');
+      setMobileControlsVisible(true);
       lastTime = performance.now();
       startMusic();
       playStageStinger(0);
     }
 
-    function showEndOverlay(kind) {
+    function showEndOverlay(kind, failureMessage) {
       if (kind === 'win') {
         overlayKicker.textContent = 'SURFACE SIGNAL RESTORED';
         overlayTitle.textContent = '탈출 성공';
-        overlayRoute.innerHTML = '<b>10개 스테이지 완료</b> · 광부 귀환';
+        overlayRoute.innerHTML = '<b>' + STAGES.length + '개 스테이지 완료</b> · 광부 귀환';
         startButton.textContent = '다시 내려가기';
       } else {
         overlayKicker.textContent = stage.code + ' // SIGNAL LOST';
         overlayTitle.textContent = '탐사 실패';
-        overlayRoute.innerHTML = '<b>광산 함정에 접촉했습니다</b> · 장비 재정비';
+        overlayRoute.innerHTML = failureMessage || '<b>광산 함정에 접촉했습니다</b> · 장비 재정비';
         startButton.textContent = '처음부터 재도전';
       }
       overlay.classList.add('active');
+      setMobileControlsVisible(false);
     }
 
     function initAudio() {
@@ -1163,6 +1216,11 @@
       tone(68, 0.2, 'square', 0.035, 42, 0.04);
     }
 
+    function playFallSfx() {
+      tone(196, 0.38, 'sawtooth', 0.055, 58, 0);
+      tone(74, 0.62, 'triangle', 0.048, 32, 0.12);
+    }
+
     function playRepairSfx() {
       tone(196, 0.12, 'triangle', 0.04, 294, 0);
       tone(392, 0.18, 'sine', 0.042, 523.25, 0.08);
@@ -1239,24 +1297,40 @@
     }
 
     function getCartState(cart) {
-      const motion = stageTime * cart.speed + cart.phase;
-      const offset = Math.sin(motion) * cart.range;
-      const forward = Math.cos(motion) >= 0;
+      const cycle = Math.PI * 2;
+      const motion = stageTime * cart.speed * CART_SPEED_MULTIPLIER + cart.phase;
+      const progress = ((motion % cycle) + cycle) % cycle / cycle;
+      const direction = cart.direction < 0 ? -1 : 1;
+      const directedProgress = direction < 0 ? 1 - progress : progress;
+      const offset = -cart.range + directedProgress * cart.range * 2;
+      const edgeDistance = Math.min(progress, 1 - progress);
+      const tunnelProgress = clamp(edgeDistance / CART_TUNNEL_FRACTION, 0, 1);
+      const surface = tunnelProgress * tunnelProgress * (3 - 2 * tunnelProgress);
       return {
         x: cart.x + (cart.axis === 'x' ? offset : 0),
-        y: cart.y + (cart.axis === 'y' ? offset : 0),
+        y: cart.y + (cart.axis === 'y' ? offset : 0) + (1 - surface) * 12,
         rotation: cart.axis === 'x'
-          ? (forward ? 0 : Math.PI)
-          : (forward ? Math.PI / 2 : -Math.PI / 2)
+          ? (direction > 0 ? 0 : Math.PI)
+          : (direction > 0 ? Math.PI / 2 : -Math.PI / 2),
+        alpha: surface,
+        scale: 0.56 + surface * 0.44,
+        progress: progress,
+        surface: surface
       };
     }
 
     function getRollingCylinderState(cylinder) {
-      const motion = (stageTime * cylinder.speed + cylinder.phase) * Math.PI * 2;
-      const offset = Math.sin(motion) * cylinder.range;
-      const x = cylinder.x + (cylinder.axis === 'x' ? offset : 0);
-      const y = cylinder.y + (cylinder.axis === 'y' ? offset : 0);
+      const travelDistance = cylinder.to - cylinder.from;
+      const distanceTravelled = stageTime * cylinder.speed + cylinder.phase * travelDistance;
+      const progress = ((distanceTravelled % travelDistance) + travelDistance) % travelDistance / travelDistance;
+      const directedProgress = cylinder.direction < 0 ? 1 - progress : progress;
+      const position = cylinder.from + directedProgress * travelDistance;
+      const x = cylinder.axis === 'x' ? position : cylinder.fixed;
+      const y = cylinder.axis === 'y' ? position : cylinder.fixed;
       const angle = cylinder.axis === 'x' ? Math.PI / 2 : 0;
+      const direction = cylinder.direction < 0 ? -1 : 1;
+      const directionX = cylinder.axis === 'x' ? direction : 0;
+      const directionY = cylinder.axis === 'y' ? direction : 0;
       const cos = Math.cos(angle);
       const sin = Math.sin(angle);
       return {
@@ -1267,7 +1341,10 @@
         ay: y - sin * cylinder.length,
         bx: x + cos * cylinder.length,
         by: y + sin * cylinder.length,
-        spin: motion * 4
+        spin: distanceTravelled / 9 * direction,
+        directionX: directionX,
+        directionY: directionY,
+        heading: Math.atan2(directionY, directionX)
       };
     }
 
@@ -1317,11 +1394,23 @@
     }
 
     function updateHazards() {
-      if (player.invulnerable > 0 || getJumpHeight() > 0.23) return;
+      const jumpHeight = getJumpHeight();
+      if (jumpHeight <= 0.23) {
+        for (const cart of stage.carts || []) {
+          for (const offset of getCartTunnelOffsets(cart)) {
+            if (isPlayerInsideCartTunnel(cart, offset)) {
+              fallIntoCartTunnel(getCartTunnelPoint(cart, offset));
+              return;
+            }
+          }
+        }
+      }
+
+      if (player.invulnerable > 0 || jumpHeight > 0.23) return;
       for (const hazard of stage.hazards) {
         const segments = getHazardSegments(hazard);
         for (const segment of segments) {
-          if (pointSegmentDistance(player.x, player.y, segment.ax, segment.ay, segment.bx, segment.by) < PLAYER_RADIUS + 13) {
+          if (playerGroundHitsSegment(segment.ax, segment.ay, segment.bx, segment.by, 13)) {
             hitPlayer(segment.x, segment.y);
             return;
           }
@@ -1330,7 +1419,7 @@
 
       for (const cart of stage.carts || []) {
         const cartState = getCartState(cart);
-        if (distance(player.x, player.y, cartState.x, cartState.y) < PLAYER_RADIUS + 24) {
+        if (cartState.surface > 0.72 && playerGroundHitsCircle(cartState.x, cartState.y, 24)) {
           hitPlayer(cartState.x, cartState.y);
           return;
         }
@@ -1338,14 +1427,13 @@
 
       for (const cylinder of ROLLING_CYLINDERS_BY_STAGE[stageIndex] || []) {
         const cylinderState = getRollingCylinderState(cylinder);
-        if (pointSegmentDistance(
-          player.x,
-          player.y,
+        if (playerGroundHitsSegment(
           cylinderState.ax,
           cylinderState.ay,
           cylinderState.bx,
-          cylinderState.by
-        ) < PLAYER_RADIUS + 16) {
+          cylinderState.by,
+          16
+        )) {
           hitPlayer(cylinderState.x, cylinderState.y);
           return;
         }
@@ -1361,7 +1449,7 @@
         const type = group[0];
         for (const trap of group[1]) {
           if (isTrapActive(type, getTrapProgress(trap)) &&
-              distance(player.x, player.y, trap.x, trap.y) < PLAYER_RADIUS + trap.radius) {
+              playerGroundHitsCircle(trap.x, trap.y, trap.radius)) {
             hitPlayer(trap.x, trap.y);
             return;
           }
@@ -1388,9 +1476,20 @@
       }
     }
 
+    function fallIntoCartTunnel(point) {
+      player.lives = 0;
+      player.invulnerable = 99;
+      state = 'gameover';
+      shake = 18;
+      burst(point.x, point.y, '#8b7351', 26, 145);
+      playFallSfx();
+      stopMusic(0.3);
+      showEndOverlay('gameover', '<b>지하 갱도로 추락했습니다</b> · 즉시 구조 실패');
+    }
+
     function updateObjectives() {
       for (const repair of repairs) {
-        if (!repair.collected && player.lives < 3 &&
+        if (!repair.collected && player.lives < MAX_LIVES &&
             distance(player.x, player.y, repair.x, repair.y) < PLAYER_RADIUS + 20) {
           repair.collected = true;
           player.lives += 1;
@@ -1508,13 +1607,40 @@
         { filter: ENVIRONMENT_FILTERS[stageIndex] }
       );
 
-      for (const speck of dust) {
-        ctx.fillStyle = 'rgba(220, 230, 220,' + speck.alpha * 0.35 + ')';
-        ctx.fillRect(speck.x, speck.y, speck.size, speck.size);
-      }
-
       drawTrackLines();
       drawCaveBorder();
+    }
+
+    function drawAmbientDust(frontLayer) {
+      const top = FLOOR.top + 10;
+      const bottom = FLOOR.bottom - 10;
+      const travelHeight = bottom - top;
+      ctx.save();
+      for (const speck of dust) {
+        if (speck.front !== frontLayer) continue;
+        const risingY = speck.y - stageTime * speck.rise;
+        const y = top + ((risingY - top) % travelHeight + travelHeight) % travelHeight;
+        const x = speck.x + Math.sin(stageTime * speck.swaySpeed + speck.phase) * speck.sway;
+        const pulse = 0.72 + Math.sin(stageTime * 1.4 + speck.phase) * 0.28;
+        const lampDistance = distance(x, y, player.x, player.y);
+        const lampBoost = clamp(1 - lampDistance / 170, 0, 1) * 0.72;
+        const alpha = speck.alpha * pulse * (frontLayer ? 0.82 : 0.5) * (0.55 + lampBoost);
+
+        if (frontLayer) {
+          ctx.globalAlpha = alpha * 0.18;
+          ctx.fillStyle = '#f2dca5';
+          ctx.beginPath();
+          ctx.arc(x, y, speck.size * 2.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = frontLayer ? '#f1dfb3' : '#c8b992';
+        ctx.beginPath();
+        ctx.ellipse(x, y, speck.size, speck.size * 0.72, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
     }
 
     function drawCaveBorder() {
@@ -1704,20 +1830,11 @@
         for (const segment of segments) drawSpikedBar(segment);
         if (hazard.type !== 'spinner') continue;
         const hub = segments[0];
-        ctx.save();
-        ctx.translate(hub.x, hub.y);
-        ctx.fillStyle = '#171b18';
-        ctx.beginPath();
-        ctx.arc(0, 0, 14, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#98a29c';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-        ctx.fillStyle = stage.accent;
-        ctx.beginPath();
-        ctx.arc(0, 0, 5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+        const hubSize = clamp(hazard.length * 0.64, 42, 46);
+        drawSprite('spikeHub', hub.x, hub.y, hubSize, hubSize, {
+          rotation: hub.angle,
+          filter: 'drop-shadow(0 6px 5px rgba(0, 0, 0, 0.72))'
+        });
       }
     }
 
@@ -1786,10 +1903,137 @@
       });
     }
 
+    function getCartTunnelPoint(cart, offset) {
+      return {
+        x: cart.x + (cart.axis === 'x' ? offset : 0),
+        y: cart.y + (cart.axis === 'y' ? offset : 0)
+      };
+    }
+
+    function getCartTunnelOffsets(cart) {
+      const direction = cart.direction < 0 ? -1 : 1;
+      const startOffset = direction > 0 ? -cart.range : cart.range;
+      return [startOffset, -startOffset];
+    }
+
+    function isPlayerInsideCartTunnel(cart, offset) {
+      const point = getCartTunnelPoint(cart, offset);
+      const hitbox = getPlayerGroundHitbox();
+      const alongTrack = cart.axis === 'x' ? hitbox.x - point.x : hitbox.y - point.y;
+      const acrossTrack = cart.axis === 'x' ? hitbox.y - point.y : hitbox.x - point.x;
+      return Math.pow(alongTrack / 24, 2) + Math.pow(acrossTrack / 31, 2) < 1;
+    }
+
+    function drawCartTunnelMouth(cart, offset, activity, foreground) {
+      const point = getCartTunnelPoint(cart, offset);
+      ctx.save();
+      ctx.translate(point.x, point.y);
+      ctx.rotate(cart.axis === 'y' ? Math.PI / 2 : 0);
+
+      if (!foreground) {
+        ctx.fillStyle = 'rgba(4, 5, 4, 0.82)';
+        ctx.beginPath();
+        ctx.ellipse(0, 7, 35, 43, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        const tunnelShade = ctx.createRadialGradient(-8, -4, 3, 0, 2, 34);
+        tunnelShade.addColorStop(0, '#020302');
+        tunnelShade.addColorStop(0.58, '#080a08');
+        tunnelShade.addColorStop(1, '#30281e');
+        ctx.fillStyle = tunnelShade;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 29, 37, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(111, 92, 64, 0.78)';
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 30, 38, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(163, 144, 103, 0.34)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(-2, -3, 27, 34, 0, Math.PI * 1.08, Math.PI * 1.9);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(116, 123, 112, 0.42)';
+        ctx.lineWidth = 3;
+        for (const railY of [-10, 10]) {
+          ctx.beginPath();
+          ctx.moveTo(-31, railY);
+          ctx.lineTo(31, railY);
+          ctx.stroke();
+        }
+
+        if (activity > 0) {
+          ctx.globalAlpha = activity * (0.22 + Math.sin(stageTime * 9) * 0.05);
+          ctx.strokeStyle = stage.accent;
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 33, 41, 0, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      } else {
+        ctx.globalAlpha = 0.9;
+        ctx.strokeStyle = '#6b5840';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 30, 38, 0, 0.02 * Math.PI, 0.98 * Math.PI);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      if (!foreground && activity > 0.02) {
+        ctx.save();
+        for (let i = 0; i < 5; i++) {
+          const puff = (stageTime * 1.8 + i * 0.19) % 1;
+          const angle = i * 2.17 + stageTime * 0.45;
+          ctx.globalAlpha = activity * (1 - puff) * 0.34;
+          ctx.fillStyle = i % 2 ? '#b29a70' : '#76664d';
+          ctx.beginPath();
+          ctx.arc(
+            point.x + Math.cos(angle) * (13 + puff * 23),
+            point.y + Math.sin(angle) * (8 + puff * 14) - puff * 9,
+            2.5 + puff * 5,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
     function drawStageMechanics() {
+      const carts = stage.carts || [];
+      const cartStates = carts.map(getCartState);
+      for (let i = 0; i < carts.length; i++) {
+        const cart = carts[i];
+        const cartState = cartStates[i];
+        const tunnelOffsets = getCartTunnelOffsets(cart);
+        const startActivity = cartState.progress < CART_TUNNEL_FRACTION ? 1 - cartState.surface : 0;
+        const endActivity = cartState.progress > 1 - CART_TUNNEL_FRACTION ? 1 - cartState.surface : 0;
+        drawCartTunnelMouth(cart, tunnelOffsets[0], startActivity, false);
+        drawCartTunnelMouth(cart, tunnelOffsets[1], endActivity, false);
+      }
+
       for (const cylinder of ROLLING_CYLINDERS_BY_STAGE[stageIndex] || []) {
         const cylinderState = getRollingCylinderState(cylinder);
         const rollerWidth = cylinder.length * 2 + 24;
+
+        ctx.save();
+        ctx.fillStyle = stage.accent;
+        for (let arrow = 1; arrow <= 3; arrow++) {
+          ctx.globalAlpha = 0.24 - arrow * 0.045;
+          drawMotionArrow(
+            cylinderState.x - cylinderState.directionX * (rollerWidth / 2 + arrow * 18),
+            cylinderState.y - cylinderState.directionY * (rollerWidth / 2 + arrow * 18),
+            cylinderState.heading
+          );
+        }
+        ctx.restore();
+
         drawSprite('spikeRoller', cylinderState.x, cylinderState.y, rollerWidth, 38, {
           rotation: cylinderState.angle,
           filter: 'drop-shadow(0 8px 7px rgba(0, 0, 0, 0.72))'
@@ -1809,12 +2053,20 @@
         ctx.restore();
       }
 
-      for (const cart of stage.carts || []) {
-        const cartState = getCartState(cart);
-        drawSprite('minecart', cartState.x, cartState.y, 76, 76, {
+      for (let i = 0; i < carts.length; i++) {
+        const cartState = cartStates[i];
+        drawSprite('minecart', cartState.x, cartState.y, 76 * cartState.scale, 76 * cartState.scale, {
           rotation: cartState.rotation,
+          alpha: cartState.alpha,
           filter: 'drop-shadow(0 8px 6px rgba(0, 0, 0, 0.7))'
         });
+      }
+
+      for (let i = 0; i < carts.length; i++) {
+        const cart = carts[i];
+        for (const offset of getCartTunnelOffsets(cart)) {
+          drawCartTunnelMouth(cart, offset, 0, true);
+        }
       }
 
       for (const crusher of stage.crushers || []) {
@@ -1876,7 +2128,7 @@
         if (repair.collected) continue;
         const bob = Math.sin(stageTime * 3.4 + repair.x) * 3;
         drawSprite('repairKit', repair.x, repair.y + bob, 52, 52, {
-          filter: player.lives < 3
+          filter: player.lives < MAX_LIVES
             ? 'brightness(1.08) drop-shadow(0 0 10px #78f2c2)'
             : 'brightness(0.66) saturate(0.72) drop-shadow(0 6px 5px rgba(0, 0, 0, 0.55))'
         });
@@ -1968,9 +2220,42 @@
       ctx.restore();
     }
 
+    function drawDustHaze() {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, HUD_HEIGHT, WIDTH, HEIGHT - HUD_HEIGHT);
+      ctx.clip();
+      ctx.globalCompositeOperation = 'screen';
+
+      const density = 0.11 + stageIndex * 0.003;
+      const wash = ctx.createLinearGradient(0, HUD_HEIGHT, WIDTH, HEIGHT);
+      wash.addColorStop(0, 'rgba(177, 163, 133,' + density * 0.72 + ')');
+      wash.addColorStop(0.48, 'rgba(151, 144, 123,' + density + ')');
+      wash.addColorStop(1, 'rgba(190, 165, 126,' + density * 0.78 + ')');
+      ctx.fillStyle = wash;
+      ctx.fillRect(0, HUD_HEIGHT, WIDTH, HEIGHT - HUD_HEIGHT);
+
+      for (let i = 0; i < 5; i++) {
+        const driftX = Math.sin(stageTime * (0.055 + i * 0.009) + i * 1.7) * 120;
+        const driftY = Math.cos(stageTime * (0.043 + i * 0.007) + i * 2.1) * 52;
+        const x = 90 + i * 185 + driftX;
+        const y = HUD_HEIGHT + 80 + (i % 3) * 168 + driftY;
+        const radius = 170 + (i % 2) * 55;
+        const cloud = ctx.createRadialGradient(x, y, 0, x, y, radius);
+        cloud.addColorStop(0, 'rgba(229, 207, 165, 0.065)');
+        cloud.addColorStop(0.55, 'rgba(189, 178, 151, 0.035)');
+        cloud.addColorStop(1, 'rgba(164, 153, 129, 0)');
+        ctx.fillStyle = cloud;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
     function drawHud() {
       const collected = minerals.filter(function (item) { return item.collected; }).length;
-      const hpColors = ['#ff6758', '#ff9b55', '#73db9f'];
+      const hpColors = ['#ff6758', '#ff805b', '#ffae5d', '#9edb78', '#73db9f'];
       const hudLeft = Math.max(28, 62 * WIDTH / Math.max(1, window.innerWidth));
       ctx.save();
       ctx.fillStyle = 'rgba(7, 10, 8, 0.97)';
@@ -2005,7 +2290,7 @@
       ctx.fillStyle = '#758079';
       ctx.font = '700 10px Arial';
       ctx.fillText('장비', 640, 23);
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < MAX_LIVES; i++) {
         const x = 670 + i * 34;
         ctx.fillStyle = i < player.lives ? hpColors[player.lives - 1] : '#262d29';
         ctx.strokeStyle = i < player.lives ? '#ffd6cf' : '#4b554f';
@@ -2024,17 +2309,17 @@
       ctx.fillText(objective, 870, 25);
       ctx.fillStyle = collected < TOTAL_MINERALS ? '#e8ece9' : stage.accent;
       ctx.font = '800 14px Arial';
-      ctx.fillText(collected < TOTAL_MINERALS ? collected + ' / 5' : (chestOpen ? 'UNLOCKED' : 'READY'), 870, 47);
+      ctx.fillText(collected < TOTAL_MINERALS ? collected + ' / ' + TOTAL_MINERALS : (chestOpen ? 'UNLOCKED' : 'READY'), 870, 47);
       ctx.textAlign = 'left';
       ctx.restore();
     }
 
     function drawKeyIcon(x, y, active) {
       drawSprite('key', x, y, 38, 18, {
-        alpha: active ? 1 : 0.35,
+        alpha: active ? 1 : 0.22,
         filter: active
           ? 'drop-shadow(0 0 6px #f7b955)'
-          : 'grayscale(1) brightness(0.5)'
+          : 'grayscale(1) brightness(0.16) contrast(0.8)'
       });
     }
 
@@ -2064,15 +2349,18 @@
       }
       drawFloor();
       drawGroundLamp();
+      drawAmbientDust(false);
       drawWalls();
       drawChest();
       drawDoor();
       drawMinerals();
       drawHazards();
       drawStageMechanics();
+      drawAmbientDust(true);
       drawParticles();
       drawMiner();
       drawDarkness();
+      drawDustHaze();
       ctx.restore();
       drawHud();
       drawTransition();
@@ -2124,6 +2412,7 @@
 
     resizeCanvas();
     setupStage(0);
+    setMobileControlsVisible(false);
     toast.classList.remove('show');
     requestAnimationFrame(loop);
   </script>
