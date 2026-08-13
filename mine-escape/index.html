@@ -345,6 +345,8 @@
       { sprite: 'mineralEmerald', color: '#58e477' },
       { sprite: 'mineralAmethyst', color: '#ba7cff' }
     ];
+    const CART_SPEED_MULTIPLIER = 1.4;
+    const CART_TUNNEL_FRACTION = 0.13;
     const SPRITES = {};
     let spritesReady = false;
 
@@ -1254,19 +1256,24 @@
 
     function getCartState(cart) {
       const cycle = Math.PI * 2;
-      const motion = stageTime * cart.speed + cart.phase;
+      const motion = stageTime * cart.speed * CART_SPEED_MULTIPLIER + cart.phase;
       const progress = ((motion % cycle) + cycle) % cycle / cycle;
       const direction = cart.direction < 0 ? -1 : 1;
       const directedProgress = direction < 0 ? 1 - progress : progress;
       const offset = -cart.range + directedProgress * cart.range * 2;
       const edgeDistance = Math.min(progress, 1 - progress);
+      const tunnelProgress = clamp(edgeDistance / CART_TUNNEL_FRACTION, 0, 1);
+      const surface = tunnelProgress * tunnelProgress * (3 - 2 * tunnelProgress);
       return {
         x: cart.x + (cart.axis === 'x' ? offset : 0),
-        y: cart.y + (cart.axis === 'y' ? offset : 0),
+        y: cart.y + (cart.axis === 'y' ? offset : 0) + (1 - surface) * 12,
         rotation: cart.axis === 'x'
           ? (direction > 0 ? 0 : Math.PI)
           : (direction > 0 ? Math.PI / 2 : -Math.PI / 2),
-        alpha: clamp(edgeDistance / 0.07, 0, 1)
+        alpha: surface,
+        scale: 0.56 + surface * 0.44,
+        progress: progress,
+        surface: surface
       };
     }
 
@@ -1358,7 +1365,7 @@
 
       for (const cart of stage.carts || []) {
         const cartState = getCartState(cart);
-        if (cartState.alpha > 0.35 && distance(player.x, player.y, cartState.x, cartState.y) < PLAYER_RADIUS + 24) {
+        if (cartState.surface > 0.72 && distance(player.x, player.y, cartState.x, cartState.y) < PLAYER_RADIUS + 24) {
           hitPlayer(cartState.x, cartState.y);
           return;
         }
@@ -1814,7 +1821,109 @@
       });
     }
 
+    function getCartTunnelPoint(cart, offset) {
+      return {
+        x: cart.x + (cart.axis === 'x' ? offset : 0),
+        y: cart.y + (cart.axis === 'y' ? offset : 0)
+      };
+    }
+
+    function drawCartTunnelMouth(cart, offset, activity, foreground) {
+      const point = getCartTunnelPoint(cart, offset);
+      ctx.save();
+      ctx.translate(point.x, point.y);
+      ctx.rotate(cart.axis === 'y' ? Math.PI / 2 : 0);
+
+      if (!foreground) {
+        ctx.fillStyle = 'rgba(4, 5, 4, 0.82)';
+        ctx.beginPath();
+        ctx.ellipse(0, 7, 35, 43, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        const tunnelShade = ctx.createRadialGradient(-8, -4, 3, 0, 2, 34);
+        tunnelShade.addColorStop(0, '#020302');
+        tunnelShade.addColorStop(0.58, '#080a08');
+        tunnelShade.addColorStop(1, '#30281e');
+        ctx.fillStyle = tunnelShade;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 29, 37, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(111, 92, 64, 0.78)';
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 30, 38, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(163, 144, 103, 0.34)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(-2, -3, 27, 34, 0, Math.PI * 1.08, Math.PI * 1.9);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(116, 123, 112, 0.42)';
+        ctx.lineWidth = 3;
+        for (const railY of [-10, 10]) {
+          ctx.beginPath();
+          ctx.moveTo(-31, railY);
+          ctx.lineTo(31, railY);
+          ctx.stroke();
+        }
+
+        if (activity > 0) {
+          ctx.globalAlpha = activity * (0.22 + Math.sin(stageTime * 9) * 0.05);
+          ctx.strokeStyle = stage.accent;
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 33, 41, 0, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      } else {
+        ctx.globalAlpha = 0.9;
+        ctx.strokeStyle = '#6b5840';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 30, 38, 0, 0.02 * Math.PI, 0.98 * Math.PI);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      if (!foreground && activity > 0.02) {
+        ctx.save();
+        for (let i = 0; i < 5; i++) {
+          const puff = (stageTime * 1.8 + i * 0.19) % 1;
+          const angle = i * 2.17 + stageTime * 0.45;
+          ctx.globalAlpha = activity * (1 - puff) * 0.34;
+          ctx.fillStyle = i % 2 ? '#b29a70' : '#76664d';
+          ctx.beginPath();
+          ctx.arc(
+            point.x + Math.cos(angle) * (13 + puff * 23),
+            point.y + Math.sin(angle) * (8 + puff * 14) - puff * 9,
+            2.5 + puff * 5,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
     function drawStageMechanics() {
+      const carts = stage.carts || [];
+      const cartStates = carts.map(getCartState);
+      for (let i = 0; i < carts.length; i++) {
+        const cart = carts[i];
+        const cartState = cartStates[i];
+        const direction = cart.direction < 0 ? -1 : 1;
+        const startOffset = direction > 0 ? -cart.range : cart.range;
+        const endOffset = -startOffset;
+        const startActivity = cartState.progress < CART_TUNNEL_FRACTION ? 1 - cartState.surface : 0;
+        const endActivity = cartState.progress > 1 - CART_TUNNEL_FRACTION ? 1 - cartState.surface : 0;
+        drawCartTunnelMouth(cart, startOffset, startActivity, false);
+        drawCartTunnelMouth(cart, endOffset, endActivity, false);
+      }
+
       for (const cylinder of ROLLING_CYLINDERS_BY_STAGE[stageIndex] || []) {
         const cylinderState = getRollingCylinderState(cylinder);
         const rollerWidth = cylinder.length * 2 + 24;
@@ -1850,13 +1959,21 @@
         ctx.restore();
       }
 
-      for (const cart of stage.carts || []) {
-        const cartState = getCartState(cart);
-        drawSprite('minecart', cartState.x, cartState.y, 76, 76, {
+      for (let i = 0; i < carts.length; i++) {
+        const cartState = cartStates[i];
+        drawSprite('minecart', cartState.x, cartState.y, 76 * cartState.scale, 76 * cartState.scale, {
           rotation: cartState.rotation,
           alpha: cartState.alpha,
           filter: 'drop-shadow(0 8px 6px rgba(0, 0, 0, 0.7))'
         });
+      }
+
+      for (let i = 0; i < carts.length; i++) {
+        const cart = carts[i];
+        const direction = cart.direction < 0 ? -1 : 1;
+        const startOffset = direction > 0 ? -cart.range : cart.range;
+        drawCartTunnelMouth(cart, startOffset, 0, true);
+        drawCartTunnelMouth(cart, -startOffset, 0, true);
       }
 
       for (const crusher of stage.crushers || []) {
