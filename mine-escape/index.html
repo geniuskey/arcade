@@ -375,18 +375,7 @@
       minerDownPush: 'assets/miner-down-push.png',
       minerLeftPush: 'assets/miner-left-push.png',
       minerRightPush: 'assets/miner-right-push.png',
-      healerUpIdle: 'assets/healer-up-idle.png',
       healerDownIdle: 'assets/healer-down-idle.png',
-      healerLeftIdle: 'assets/healer-left-idle.png',
-      healerRightIdle: 'assets/healer-right-idle.png',
-      healerUpWalk1: 'assets/healer-up-walk-1.png',
-      healerUpWalk2: 'assets/healer-up-walk-2.png',
-      healerDownWalk1: 'assets/healer-down-walk-1.png',
-      healerDownWalk2: 'assets/healer-down-walk-2.png',
-      healerLeftWalk1: 'assets/healer-left-walk-1.png',
-      healerLeftWalk2: 'assets/healer-left-walk-2.png',
-      healerRightWalk1: 'assets/healer-right-walk-1.png',
-      healerRightWalk2: 'assets/healer-right-walk-2.png',
       healerUpHeal: 'assets/healer-up-heal.png',
       healerDownHeal: 'assets/healer-down-heal.png',
       healerLeftHeal: 'assets/healer-left-heal.png',
@@ -426,23 +415,11 @@
       left: 'minerLeftPush',
       right: 'minerRightPush'
     };
-    const HEALER_IDLE_FRAMES = {
-      up: 'healerUpIdle',
-      down: 'healerDownIdle',
-      left: 'healerLeftIdle',
-      right: 'healerRightIdle'
-    };
     const HEALER_HEAL_FRAMES = {
       up: 'healerUpHeal',
       down: 'healerDownHeal',
       left: 'healerLeftHeal',
       right: 'healerRightHeal'
-    };
-    const HEALER_WALK_FRAMES = {
-      up: ['healerUpWalk1', 'healerUpWalk2'],
-      down: ['healerDownWalk1', 'healerDownWalk2'],
-      left: ['healerLeftWalk1', 'healerLeftWalk2'],
-      right: ['healerRightWalk1', 'healerRightWalk2']
     };
     const MINERAL_VARIANTS = [
       { sprite: 'mineralCyan', color: '#52e4f2' },
@@ -3116,6 +3093,30 @@
       return companion.team + '팀 ' + (companion.teamSlot + 1) + '번 동료';
     }
 
+    function drawHealerSuitPatch(actor, x, y, scale, rotation) {
+      const offsets = {
+        up: { x: 0, y: -1 },
+        down: { x: 0, y: -4 },
+        left: { x: -4, y: -3 },
+        right: { x: 4, y: -3 }
+      };
+      const offset = offsets[actor.direction];
+      ctx.save();
+      ctx.translate(x + offset.x * scale, y + offset.y * scale);
+      if (rotation) ctx.rotate(rotation);
+      ctx.scale(scale, scale);
+      ctx.fillStyle = '#183c2b';
+      ctx.strokeStyle = '#70e6a2';
+      ctx.lineWidth = 1;
+      roundedRectPath(ctx, -4.5, -4.5, 9, 9, 2.5);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#c9ffe0';
+      ctx.fillRect(-1, -3, 2, 6);
+      ctx.fillRect(-3, -1, 6, 2);
+      ctx.restore();
+    }
+
     function drawActorTeamBadge(actor, jumpHeight, bob) {
       const color = getTeamColor(actor);
       const y = actor.y - jumpHeight * 18 + bob - 44;
@@ -3180,13 +3181,9 @@
         ? MINER_PUSH_FRAMES[actor.direction]
         : (healing
           ? HEALER_HEAL_FRAMES[actor.direction]
-          : (healer
-            ? (actor.moving
-              ? HEALER_WALK_FRAMES[actor.direction][Math.floor(actor.step) % 2]
-              : HEALER_IDLE_FRAMES[actor.direction])
-            : (actor.moving ? directionFrames[walkFrame] : directionFrames[0])));
-      const spriteWidth = (pushing && !healer ? 76 : (healing ? 76 : (healer ? 68 : 47))) * scale;
-      const spriteHeight = (pushing && !healer ? 76 : (healing ? 76 : (healer ? 68 : 60))) * scale;
+          : (actor.moving ? directionFrames[walkFrame] : directionFrames[0]));
+      const spriteWidth = (pushing && !healer ? 76 : (healing ? 70 : 47)) * scale;
+      const spriteHeight = (pushing && !healer ? 76 : 60) * scale;
 
       ctx.save();
       ctx.translate(actor.x, actor.y + 8);
@@ -3215,6 +3212,10 @@
           filter: 'drop-shadow(0 5px 4px rgba(0, 0, 0, 0.55))'
         }
       );
+
+      if (healer && !healing) {
+        drawHealerSuitPatch(actor, visualX, visualY - jumpHeight * 12 + bob, scale, visualRotation);
+      }
 
       drawActorTeamBadge(actor, jumpHeight, bob);
 
