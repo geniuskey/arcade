@@ -302,7 +302,7 @@
       <div class="role-picker">
         <label>내 역할
           <select id="player-role-select" aria-label="내 역할">
-            <option value="explorer">탐사자 · 빠른 이동</option>
+            <option value="explorer">탐사자 · 광물 탐색</option>
             <option value="healer">치료사 · 가까운 동료 자동 치료</option>
           </select>
         </label>
@@ -508,7 +508,6 @@
     const PUSH_COOLDOWN = 0.78;
     const PUSH_ANIMATION_DURATION = 0.28;
     const PUSH_STAGGER_DURATION = 0.38;
-    const PLAYER_EXPLORER_SPEED_MULTIPLIER = 1.08;
     const HEAL_RANGE = 46;
     const HEAL_COOLDOWN = 4.2;
     const HEAL_ANIMATION_DURATION = 0.72;
@@ -1210,8 +1209,8 @@
       const healerSelected = playerRoleSelect.value === 'healer';
       overlayImage.src = healerSelected ? SPRITE_PATHS.healerDownIdle : SPRITE_PATHS.minerDownIdle;
       overlayRoute.innerHTML = healerSelected
-        ? '<b>치료사</b> · 가까운 부상 동료를 자동 치료'
-        : '<b>탐사자</b> · 빠른 이동으로 광물 탐색';
+        ? '<b>치료사</b> · 같은 움직임 + 가까운 동료 자동 치료'
+        : '<b>탐사자</b> · 광물 탐색';
     }
 
     function startGame() {
@@ -1995,8 +1994,7 @@
         dy /= length;
         player.angle = Math.atan2(dy, dx);
         const speedBoost = getJumpHeight() > 0.15 ? 1.08 : 1;
-        const roleSpeed = player.role === 'explorer' ? PLAYER_EXPLORER_SPEED_MULTIPLIER : 1;
-        movePlayer(dx * player.speed * speedBoost * roleSpeed * dt, dy * player.speed * speedBoost * roleSpeed * dt);
+        movePlayer(dx * player.speed * speedBoost * dt, dy * player.speed * speedBoost * dt);
         player.step += dt * 8;
         const footstep = Math.floor(player.step / 2);
         if (footstep !== lastFootstep && getJumpHeight() < 0.08) {
