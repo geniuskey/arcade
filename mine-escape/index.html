@@ -145,6 +145,39 @@
       color: var(--mint);
     }
 
+    .role-picker {
+      display: flex;
+      gap: 12px;
+      margin: -8px 0 18px;
+    }
+
+    .role-picker label {
+      display: grid;
+      gap: 6px;
+      color: #93a099;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-align: left;
+    }
+
+    .role-picker select {
+      min-width: 122px;
+      height: 36px;
+      padding: 0 30px 0 10px;
+      border: 1px solid #46524b;
+      border-radius: 6px;
+      color: #f4efe4;
+      background: #151b17;
+      font: 800 12px Arial, sans-serif;
+      cursor: pointer;
+    }
+
+    .role-picker select:focus {
+      border-color: #70d7c5;
+      outline: 2px solid rgba(112, 215, 197, 0.2);
+    }
+
     .start-button {
       min-width: 170px;
       height: 48px;
@@ -238,6 +271,14 @@
         display: none;
       }
 
+      .role-picker {
+        gap: 8px;
+      }
+
+      .role-picker select {
+        min-width: 112px;
+      }
+
       #toast {
         top: max(82px, calc(env(safe-area-inset-top) + 72px));
         bottom: auto;
@@ -258,6 +299,14 @@
       <div id="overlay-kicker" class="eyebrow">MINE 01 // DESCENT READY</div>
       <h1 id="overlay-title">광산 탈출</h1>
       <div id="overlay-route" class="mission-route"><b>700팀 5명 + 659팀 5명</b> · 공동 탐사</div>
+      <div class="role-picker">
+        <label>내 역할
+          <select id="player-role-select" aria-label="내 역할">
+            <option value="explorer">탐사자 · 빠른 이동</option>
+            <option value="healer">치료사 · 가까운 동료 자동 치료</option>
+          </select>
+        </label>
+      </div>
       <button id="start-button" class="start-button" type="button">탐사 시작</button>
       <div class="controls">
         <span><span class="key">WASD</span><span class="key">↕</span> 이동</span>
@@ -276,6 +325,7 @@
     const overlayKicker = document.getElementById('overlay-kicker');
     const overlayRoute = document.getElementById('overlay-route');
     const overlayImage = document.getElementById('overlay-image');
+    const playerRoleSelect = document.getElementById('player-role-select');
     const startButton = document.getElementById('start-button');
     const toast = document.getElementById('toast');
 
@@ -325,6 +375,22 @@
       minerDownPush: 'assets/miner-down-push.png',
       minerLeftPush: 'assets/miner-left-push.png',
       minerRightPush: 'assets/miner-right-push.png',
+      healerUpIdle: 'assets/healer-up-idle.png',
+      healerDownIdle: 'assets/healer-down-idle.png',
+      healerLeftIdle: 'assets/healer-left-idle.png',
+      healerRightIdle: 'assets/healer-right-idle.png',
+      healerUpWalk1: 'assets/healer-up-walk-1.png',
+      healerUpWalk2: 'assets/healer-up-walk-2.png',
+      healerDownWalk1: 'assets/healer-down-walk-1.png',
+      healerDownWalk2: 'assets/healer-down-walk-2.png',
+      healerLeftWalk1: 'assets/healer-left-walk-1.png',
+      healerLeftWalk2: 'assets/healer-left-walk-2.png',
+      healerRightWalk1: 'assets/healer-right-walk-1.png',
+      healerRightWalk2: 'assets/healer-right-walk-2.png',
+      healerUpHeal: 'assets/healer-up-heal.png',
+      healerDownHeal: 'assets/healer-down-heal.png',
+      healerLeftHeal: 'assets/healer-left-heal.png',
+      healerRightHeal: 'assets/healer-right-heal.png',
       minerDead: 'assets/miner-dead.png',
       mineralCyan: 'assets/mineral-cyan.webp',
       mineralGold: 'assets/mineral-gold.webp',
@@ -359,6 +425,24 @@
       down: 'minerDownPush',
       left: 'minerLeftPush',
       right: 'minerRightPush'
+    };
+    const HEALER_IDLE_FRAMES = {
+      up: 'healerUpIdle',
+      down: 'healerDownIdle',
+      left: 'healerLeftIdle',
+      right: 'healerRightIdle'
+    };
+    const HEALER_HEAL_FRAMES = {
+      up: 'healerUpHeal',
+      down: 'healerDownHeal',
+      left: 'healerLeftHeal',
+      right: 'healerRightHeal'
+    };
+    const HEALER_WALK_FRAMES = {
+      up: ['healerUpWalk1', 'healerUpWalk2'],
+      down: ['healerDownWalk1', 'healerDownWalk2'],
+      left: ['healerLeftWalk1', 'healerLeftWalk2'],
+      right: ['healerRightWalk1', 'healerRightWalk2']
     };
     const MINERAL_VARIANTS = [
       { sprite: 'mineralCyan', color: '#52e4f2' },
@@ -424,6 +508,10 @@
     const PUSH_COOLDOWN = 0.78;
     const PUSH_ANIMATION_DURATION = 0.28;
     const PUSH_STAGGER_DURATION = 0.38;
+    const PLAYER_EXPLORER_SPEED_MULTIPLIER = 1.08;
+    const HEAL_RANGE = 46;
+    const HEAL_COOLDOWN = 4.2;
+    const HEAL_ANIMATION_DURATION = 0.72;
     const JUMP_DURATION = 0.72;
     const TOTAL_MINERALS = 5;
     const MAX_LIVES = 5;
@@ -924,6 +1012,7 @@
     let musicNextTime = 0;
     let musicStep = 0;
     let lastFootstep = -1;
+    let selectedPlayerRole = 'explorer';
 
     const MUSIC_STAGES = [
       { root: 65.41, notes: [0, 3, 7, 10, 7, 3, 12, 10] },
@@ -950,6 +1039,9 @@
       jumpCooldown: 0,
       pushTimer: 0,
       pushCooldown: 0,
+      role: 'explorer',
+      healTimer: 0,
+      healCooldown: 0,
       invulnerable: 0,
       moving: false,
       direction: 'up',
@@ -1094,6 +1186,8 @@
       player.jumpCooldown = 0;
       player.pushTimer = 0;
       player.pushCooldown = 0;
+      player.healTimer = 0;
+      player.healCooldown = 0;
       player.invulnerable = 0.7;
       player.moving = false;
       setupCompanions();
@@ -1106,9 +1200,24 @@
       document.body.classList.toggle('mobile-controls-hidden', !visible);
     }
 
+    function applyRoleSelection() {
+      selectedPlayerRole = playerRoleSelect.value === 'healer' ? 'healer' : 'explorer';
+      player.role = selectedPlayerRole;
+    }
+
+    function updateRolePreview() {
+      if (state !== 'start') return;
+      const healerSelected = playerRoleSelect.value === 'healer';
+      overlayImage.src = healerSelected ? SPRITE_PATHS.healerDownIdle : SPRITE_PATHS.minerDownIdle;
+      overlayRoute.innerHTML = healerSelected
+        ? '<b>치료사</b> · 가까운 부상 동료를 자동 치료'
+        : '<b>탐사자</b> · 빠른 이동으로 광물 탐색';
+    }
+
     function startGame() {
       if (!spritesReady) return;
       initAudio();
+      applyRoleSelection();
       stageIndex = 0;
       player.lives = MAX_LIVES;
       setupStage(stageIndex);
@@ -1315,7 +1424,7 @@
     }
 
     function tryPushOpponent() {
-      if (state !== 'playing' || player.pushCooldown > 0 || player.jumpTimer > 0) return false;
+      if (state !== 'playing' || player.pushCooldown > 0 || player.jumpTimer > 0 || player.healTimer > 0) return false;
       player.pushTimer = PUSH_ANIMATION_DURATION;
       player.pushCooldown = PUSH_COOLDOWN;
 
@@ -1825,13 +1934,54 @@
       return progress >= 0.48 && progress <= 0.78;
     }
 
+    function findNearbyHealingTarget() {
+      let target = null;
+      let bestScore = Infinity;
+      for (const companion of companions) {
+        if (!companion.active || companion.escaped || companion.lives >= COMPANION_MAX_LIVES) continue;
+        const targetDistance = distance(player.x, player.y, companion.x, companion.y);
+        if (targetDistance > HEAL_RANGE) continue;
+        const score = companion.lives * 1000 + targetDistance;
+        if (score < bestScore) {
+          target = companion;
+          bestScore = score;
+        }
+      }
+      return target;
+    }
+
+    function tryTreatNearbyCompanion() {
+      if (player.role !== 'healer' || player.healCooldown > 0 || player.jumpTimer > 0) return false;
+      const target = findNearbyHealingTarget();
+      if (!target) return false;
+
+      const dx = target.x - player.x;
+      const dy = target.y - player.y;
+      if (Math.abs(dx) > Math.abs(dy)) player.direction = dx < 0 ? 'left' : 'right';
+      else player.direction = dy < 0 ? 'up' : 'down';
+      player.angle = Math.atan2(dy, dx);
+      player.moving = false;
+      player.healTimer = HEAL_ANIMATION_DURATION;
+      player.healCooldown = HEAL_COOLDOWN;
+      target.lives = Math.min(COMPANION_MAX_LIVES, target.lives + 1);
+      target.invulnerable = Math.max(target.invulnerable, 0.55);
+      burst(target.x, target.y, '#70e6a2', 16, 78);
+      tone(294, 0.12, 'sine', 0.026, 440);
+      tone(523.25, 0.16, 'sine', 0.022, 659.25, 0.08);
+      showMessage(getCompanionLabel(target) + ' 치료 완료 · ' + target.lives + '칸', '#70e6a2', 1.2);
+      return true;
+    }
+
     function updatePlayer(dt) {
       let dx = 0;
       let dy = 0;
-      if (keys.ArrowLeft || keys.KeyA) dx -= 1;
-      if (keys.ArrowRight || keys.KeyD) dx += 1;
-      if (keys.ArrowUp || keys.KeyW) dy -= 1;
-      if (keys.ArrowDown || keys.KeyS) dy += 1;
+      const treatmentLocked = player.role === 'healer' && player.healTimer > 0;
+      if (!treatmentLocked) {
+        if (keys.ArrowLeft || keys.KeyA) dx -= 1;
+        if (keys.ArrowRight || keys.KeyD) dx += 1;
+        if (keys.ArrowUp || keys.KeyW) dy -= 1;
+        if (keys.ArrowDown || keys.KeyS) dy += 1;
+      }
 
       const length = Math.hypot(dx, dy);
       player.moving = length > 0;
@@ -1845,7 +1995,8 @@
         dy /= length;
         player.angle = Math.atan2(dy, dx);
         const speedBoost = getJumpHeight() > 0.15 ? 1.08 : 1;
-        movePlayer(dx * player.speed * speedBoost * dt, dy * player.speed * speedBoost * dt);
+        const roleSpeed = player.role === 'explorer' ? PLAYER_EXPLORER_SPEED_MULTIPLIER : 1;
+        movePlayer(dx * player.speed * speedBoost * roleSpeed * dt, dy * player.speed * speedBoost * roleSpeed * dt);
         player.step += dt * 8;
         const footstep = Math.floor(player.step / 2);
         if (footstep !== lastFootstep && getJumpHeight() < 0.08) {
@@ -1858,7 +2009,10 @@
       if (player.jumpCooldown > 0) player.jumpCooldown = Math.max(0, player.jumpCooldown - dt);
       if (player.pushTimer > 0) player.pushTimer = Math.max(0, player.pushTimer - dt);
       if (player.pushCooldown > 0) player.pushCooldown = Math.max(0, player.pushCooldown - dt);
+      if (player.healTimer > 0) player.healTimer = Math.max(0, player.healTimer - dt);
+      if (player.healCooldown > 0) player.healCooldown = Math.max(0, player.healCooldown - dt);
       if (player.invulnerable > 0) player.invulnerable = Math.max(0, player.invulnerable - dt);
+      if (player.role === 'healer' && player.healTimer <= 0) tryTreatNearbyCompanion();
     }
 
     function getActorCartTunnelCollision(actor) {
@@ -2969,6 +3123,20 @@
       const y = actor.y - jumpHeight * 18 + bob - 44;
       const badgeLabel = actor.team + '-' + (actor.teamSlot + 1);
       ctx.save();
+      if (actor.role === 'explorer' || actor.role === 'healer') {
+        const roleColor = actor.role === 'healer' ? '#70e6a2' : '#65d8ff';
+        const roleLabel = actor.role === 'healer' ? '치료' : '탐사';
+        ctx.fillStyle = 'rgba(6, 10, 9, 0.92)';
+        ctx.strokeStyle = roleColor;
+        ctx.lineWidth = 1;
+        roundedRectPath(ctx, actor.x - 13, y - 20, 26, 10, 4);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = roleColor;
+        ctx.font = '800 6px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(roleLabel, actor.x, y - 13);
+      }
       ctx.fillStyle = 'rgba(6, 10, 9, 0.9)';
       ctx.strokeStyle = color;
       ctx.lineWidth = 1;
@@ -2996,6 +3164,8 @@
       const directionFrames = MINER_DIRECTION_FRAMES[actor.direction];
       const walkFrame = 1 + Math.floor(actor.step) % (directionFrames.length - 1);
       const pushing = isPlayer && actor.pushTimer > 0;
+      const healer = actor.role === 'healer';
+      const healing = healer && actor.healTimer > 0;
       const pushProgress = pushing ? 1 - actor.pushTimer / PUSH_ANIMATION_DURATION : 0;
       const pushPose = pushing ? Math.sin(pushProgress * Math.PI) : 0;
       const staggering = !isPlayer && actor.staggerTimer > 0;
@@ -3008,9 +3178,17 @@
       const visualRotation = staggering
         ? (Math.cos(actor.staggerAngle) >= 0 ? 1 : -1) * staggerPose * 0.2
         : 0;
-      const spriteName = pushing ? MINER_PUSH_FRAMES[actor.direction] : (actor.moving ? directionFrames[walkFrame] : directionFrames[0]);
-      const spriteWidth = pushing ? 76 * scale : 47 * scale;
-      const spriteHeight = pushing ? 76 * scale : 60 * scale;
+      const spriteName = pushing && !healer
+        ? MINER_PUSH_FRAMES[actor.direction]
+        : (healing
+          ? HEALER_HEAL_FRAMES[actor.direction]
+          : (healer
+            ? (actor.moving
+              ? HEALER_WALK_FRAMES[actor.direction][Math.floor(actor.step) % 2]
+              : HEALER_IDLE_FRAMES[actor.direction])
+            : (actor.moving ? directionFrames[walkFrame] : directionFrames[0])));
+      const spriteWidth = (pushing && !healer ? 76 : (healing ? 76 : (healer ? 68 : 47))) * scale;
+      const spriteHeight = (pushing && !healer ? 76 : (healing ? 76 : (healer ? 68 : 60))) * scale;
 
       ctx.save();
       ctx.translate(actor.x, actor.y + 8);
@@ -3325,6 +3503,9 @@
 
     window.addEventListener('resize', resizeCanvas);
 
+    playerRoleSelect.addEventListener('change', function () {
+      updateRolePreview();
+    });
     startButton.addEventListener('click', startGame);
 
     if (window.MobileArcade) {
@@ -3341,6 +3522,7 @@
     }
 
     resizeCanvas();
+    updateRolePreview();
     setupStage(0);
     setMobileControlsVisible(false);
     toast.classList.remove('show');
