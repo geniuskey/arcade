@@ -938,17 +938,17 @@
       return distance(px, py, ax + dx * t, ay + dy * t);
     }
 
-    function getPlayerGroundHitbox() {
+    function getActorGroundHitbox(actor) {
       return {
-        x: player.x,
-        y: player.y + PLAYER_GROUND_HITBOX.offsetY,
+        x: actor.x,
+        y: actor.y + PLAYER_GROUND_HITBOX.offsetY,
         radiusX: PLAYER_GROUND_HITBOX.radiusX,
         radiusY: PLAYER_GROUND_HITBOX.radiusY
       };
     }
 
-    function playerGroundHitsSegment(ax, ay, bx, by, padding) {
-      const hitbox = getPlayerGroundHitbox();
+    function actorGroundHitsSegment(actor, ax, ay, bx, by, padding) {
+      const hitbox = getActorGroundHitbox(actor);
       const scaleX = hitbox.radiusX + padding;
       const scaleY = hitbox.radiusY + padding;
       return pointSegmentDistance(
@@ -961,8 +961,8 @@
       ) < 1;
     }
 
-    function playerGroundHitsCircle(x, y, radius) {
-      const hitbox = getPlayerGroundHitbox();
+    function actorGroundHitsCircle(actor, x, y, radius) {
+      const hitbox = getActorGroundHitbox(actor);
       const normalizedX = (hitbox.x - x) / (hitbox.radiusX + radius);
       const normalizedY = (hitbox.y - y) / (hitbox.radiusY + radius);
       return normalizedX * normalizedX + normalizedY * normalizedY < 1;
@@ -1388,8 +1388,45 @@
 
     function assignCompanionMineral(companion, mineralIndex) {
       companion.targetMineralIndex = mineralIndex;
+      companion.patrolTarget = null;
       const mineral = minerals[mineralIndex];
       companion.path = mineral ? findCompanionPath(companion.x, companion.y, mineral.x, mineral.y) : [];
+      companion.pathIndex = 0;
+      companion.repathTimer = 0.8;
+    }
+
+    function assignCompanionPatrolTarget(companion) {
+      const grid = companionNavGrid;
+      const totalCells = grid.open.length;
+      companion.patrolStep += 1;
+      const firstIndex = ((stageIndex + 1) * 97 + (companion.id + 1) * 131 + companion.patrolStep * 53) % totalCells;
+      let selectedTarget = null;
+      let selectedPath = null;
+
+      for (let offset = 0; offset < totalCells; offset++) {
+        const index = (firstIndex + offset) % totalCells;
+        if (!grid.open[index]) continue;
+        const target = {
+          x: grid.originX + (index % grid.columns) * COMPANION_NAV_STEP,
+          y: grid.originY + Math.floor(index / grid.columns) * COMPANION_NAV_STEP
+        };
+        if (distance(companion.x, companion.y, target.x, target.y) < 140) continue;
+        const path = findCompanionPath(companion.x, companion.y, target.x, target.y);
+        if (path.length < 2) continue;
+        selectedTarget = target;
+        selectedPath = path;
+        break;
+      }
+
+      if (!selectedTarget) {
+        companion.moving = false;
+        companion.patrolTarget = null;
+        companion.path = [];
+        return;
+      }
+
+      companion.patrolTarget = selectedTarget;
+      companion.path = selectedPath;
       companion.pathIndex = 0;
       companion.repathTimer = 0.8;
     }
@@ -1399,12 +1436,18 @@
       companions = COMPANION_FORMATION.map(function (_, index) {
         const position = getInitialCompanionPosition(index);
         const companion = {
+          id: index,
           x: position.x,
           y: position.y,
           direction: player.direction,
           moving: false,
           step: index * 0.83,
+          lives: MAX_LIVES,
+          invulnerable: 0.7,
+          active: true,
           targetMineralIndex: -1,
+          patrolTarget: null,
+          patrolStep: 0,
           path: [],
           pathIndex: 0,
           repathTimer: 0
@@ -1417,28 +1460,35 @@
     function updateCompanions(dt) {
       for (let i = 0; i < companions.length; i++) {
         const companion = companions[i];
-        const mineral = minerals[companion.targetMineralIndex];
+        if (companion.invulnerable > 0) companion.invulnerable = Math.max(0, companion.invulnerable - dt);
+        if (!companion.active) continue;
+        let mineral = minerals[companion.targetMineralIndex];
         if (!mineral || mineral.collected) {
-          companion.moving = false;
           companion.targetMineralIndex = -1;
-          continue;
+          mineral = null;
+          if (!companion.patrolTarget || distance(companion.x, companion.y, companion.patrolTarget.x, companion.patrolTarget.y) < 18) {
+            assignCompanionPatrolTarget(companion);
+          }
         }
 
-        if (distance(companion.x, companion.y, mineral.x, mineral.y) < 24) {
+        if (mineral && distance(companion.x, companion.y, mineral.x, mineral.y) < 24) {
           collectMineral(mineral, true);
-          companion.moving = false;
           companion.targetMineralIndex = -1;
-          continue;
+          mineral = null;
+          assignCompanionPatrolTarget(companion);
         }
+
+        const destination = mineral || companion.patrolTarget;
+        if (!destination) continue;
 
         companion.repathTimer -= dt;
         if (companion.pathIndex >= companion.path.length || companion.repathTimer <= 0) {
-          companion.path = findCompanionPath(companion.x, companion.y, mineral.x, mineral.y);
+          companion.path = findCompanionPath(companion.x, companion.y, destination.x, destination.y);
           companion.pathIndex = 0;
           companion.repathTimer = 0.8;
         }
 
-        let target = companion.path[companion.pathIndex] || mineral;
+        let target = companion.path[companion.pathIndex] || destination;
         if (distance(companion.x, companion.y, target.x, target.y) < 7 && companion.pathIndex < companion.path.length - 1) {
           companion.pathIndex += 1;
           target = companion.path[companion.pathIndex];
@@ -1469,10 +1519,13 @@
           companion.step += dt * 8;
         }
 
-        if (distance(companion.x, companion.y, mineral.x, mineral.y) < 24) {
+        if (mineral && distance(companion.x, companion.y, mineral.x, mineral.y) < 24) {
           collectMineral(mineral, true);
-          companion.moving = false;
           companion.targetMineralIndex = -1;
+          assignCompanionPatrolTarget(companion);
+        } else if (!mineral && companion.patrolTarget &&
+                   distance(companion.x, companion.y, companion.patrolTarget.x, companion.patrolTarget.y) < 18) {
+          assignCompanionPatrolTarget(companion);
         }
       }
     }
@@ -1605,49 +1658,43 @@
       if (player.invulnerable > 0) player.invulnerable = Math.max(0, player.invulnerable - dt);
     }
 
-    function updateHazards() {
-      const jumpHeight = getJumpHeight();
-      if (jumpHeight <= 0.23) {
-        for (const cart of stage.carts || []) {
-          for (const offset of getCartTunnelOffsets(cart)) {
-            if (isPlayerInsideCartTunnel(cart, offset)) {
-              fallIntoCartTunnel(getCartTunnelPoint(cart, offset));
-              return;
-            }
-          }
+    function getActorCartTunnelCollision(actor) {
+      for (const cart of stage.carts || []) {
+        for (const offset of getCartTunnelOffsets(cart)) {
+          if (isActorInsideCartTunnel(actor, cart, offset)) return getCartTunnelPoint(cart, offset);
         }
       }
+      return null;
+    }
 
-      if (player.invulnerable > 0 || jumpHeight > 0.23) return;
+    function getActorHazardCollision(actor) {
       for (const hazard of stage.hazards) {
         const segments = getHazardSegments(hazard);
         for (const segment of segments) {
-          if (playerGroundHitsSegment(segment.ax, segment.ay, segment.bx, segment.by, 13)) {
-            hitPlayer(segment.x, segment.y);
-            return;
+          if (actorGroundHitsSegment(actor, segment.ax, segment.ay, segment.bx, segment.by, 13)) {
+            return { x: segment.x, y: segment.y };
           }
         }
       }
 
       for (const cart of stage.carts || []) {
         const cartState = getCartState(cart);
-        if (cartState.surface > 0.72 && playerGroundHitsCircle(cartState.x, cartState.y, 24)) {
-          hitPlayer(cartState.x, cartState.y);
-          return;
+        if (cartState.surface > 0.72 && actorGroundHitsCircle(actor, cartState.x, cartState.y, 24)) {
+          return { x: cartState.x, y: cartState.y };
         }
       }
 
       for (const cylinder of ROLLING_CYLINDERS_BY_STAGE[stageIndex] || []) {
         const cylinderState = getRollingCylinderState(cylinder);
-        if (playerGroundHitsSegment(
+        if (actorGroundHitsSegment(
+          actor,
           cylinderState.ax,
           cylinderState.ay,
           cylinderState.bx,
           cylinderState.by,
           16
         )) {
-          hitPlayer(cylinderState.x, cylinderState.y);
-          return;
+          return { x: cylinderState.x, y: cylinderState.y };
         }
       }
 
@@ -1661,10 +1708,46 @@
         const type = group[0];
         for (const trap of group[1]) {
           if (isTrapActive(type, getTrapProgress(trap)) &&
-              playerGroundHitsCircle(trap.x, trap.y, trap.radius)) {
-            hitPlayer(trap.x, trap.y);
-            return;
+              actorGroundHitsCircle(actor, trap.x, trap.y, trap.radius)) {
+            return { x: trap.x, y: trap.y };
           }
+        }
+      }
+      return null;
+    }
+
+    function updateHazards() {
+      const jumpHeight = getJumpHeight();
+      let hitSoundPlayed = false;
+      if (jumpHeight <= 0.23) {
+        const tunnelPoint = getActorCartTunnelCollision(player);
+        if (tunnelPoint) {
+          fallIntoCartTunnel(tunnelPoint);
+          return;
+        }
+      }
+
+      if (player.invulnerable <= 0 && jumpHeight <= 0.23) {
+        const collision = getActorHazardCollision(player);
+        if (collision) {
+          hitPlayer(collision.x, collision.y);
+          hitSoundPlayed = true;
+        }
+      }
+
+      for (const companion of companions) {
+        if (!companion.active) continue;
+        const tunnelPoint = getActorCartTunnelCollision(companion);
+        if (tunnelPoint) {
+          knockOutCompanion(companion, tunnelPoint, !hitSoundPlayed);
+          hitSoundPlayed = true;
+          continue;
+        }
+        if (companion.invulnerable > 0) continue;
+        const collision = getActorHazardCollision(companion);
+        if (collision) {
+          hitCompanion(companion, collision.x, collision.y, !hitSoundPlayed);
+          hitSoundPlayed = true;
         }
       }
     }
@@ -1686,6 +1769,43 @@
       } else {
         showMessage('보호 장비 손상 · ' + player.lives + '칸 남음', '#ff806f', 1.5);
       }
+    }
+
+    function hitCompanion(companion, sourceX, sourceY, playSound) {
+      companion.lives -= 1;
+      companion.invulnerable = 1.6;
+      shake = Math.max(shake, 8);
+      const angle = Math.atan2(companion.y - sourceY, companion.x - sourceX);
+      const knockbackX = Math.cos(angle) * 25;
+      const knockbackY = Math.sin(angle) * 25;
+      if (!collidesWithWall(companion.x + knockbackX, companion.y, 10)) companion.x += knockbackX;
+      if (!collidesWithWall(companion.x, companion.y + knockbackY, 10)) companion.y += knockbackY;
+      burst(companion.x, companion.y, '#ff9b68', 13, 105);
+      if (playSound) playHitSfx();
+
+      if (companion.lives <= 0) {
+        companion.active = false;
+        companion.moving = false;
+        companion.path = [];
+        companion.patrolTarget = null;
+        burst(companion.x, companion.y, '#c8b79b', 22, 120);
+        showMessage('동료 ' + (companion.id + 1) + ' 구조 대기', '#ffb38a', 1.5);
+      } else {
+        showMessage('동료 ' + (companion.id + 1) + ' 장비 손상 · ' + companion.lives + '칸', '#ffb38a', 1.1);
+      }
+    }
+
+    function knockOutCompanion(companion, point, playSound) {
+      companion.lives = 0;
+      companion.invulnerable = 99;
+      companion.active = false;
+      companion.moving = false;
+      companion.path = [];
+      companion.patrolTarget = null;
+      shake = Math.max(shake, 10);
+      burst(point.x, point.y, '#8b7351', 20, 125);
+      if (playSound) playFallSfx();
+      showMessage('동료 ' + (companion.id + 1) + ' 갱도 추락 · 구조 대기', '#d3ad76', 1.5);
     }
 
     function fallIntoCartTunnel(point) {
@@ -2136,9 +2256,9 @@
       return [startOffset, -startOffset];
     }
 
-    function isPlayerInsideCartTunnel(cart, offset) {
+    function isActorInsideCartTunnel(actor, cart, offset) {
       const point = getCartTunnelPoint(cart, offset);
-      const hitbox = getPlayerGroundHitbox();
+      const hitbox = getActorGroundHitbox(actor);
       const alongTrack = cart.axis === 'x' ? hitbox.x - point.x : hitbox.y - point.y;
       const acrossTrack = cart.axis === 'x' ? hitbox.y - point.y : hitbox.x - point.x;
       return Math.pow(alongTrack / 24, 2) + Math.pow(acrossTrack / 31, 2) < 1;
@@ -2388,7 +2508,7 @@
       const jumpHeight = isPlayer ? getJumpHeight() : 0;
       const scale = 1 + jumpHeight * 0.48;
       const bob = actor.moving && jumpHeight === 0 ? Math.sin(actor.step * Math.PI / 2) * 0.6 : 0;
-      const blink = isPlayer && player.invulnerable > 0 && Math.floor(player.invulnerable * 12) % 2 === 0;
+      const blink = actor.invulnerable > 0 && Math.floor(actor.invulnerable * 12) % 2 === 0;
       const directionFrames = MINER_DIRECTION_FRAMES[actor.direction];
       const walkFrame = 1 + Math.floor(actor.step) % (directionFrames.length - 1);
       const spriteName = actor.moving ? directionFrames[walkFrame] : directionFrames[0];
@@ -2415,10 +2535,23 @@
           filter: 'drop-shadow(0 5px 4px rgba(0, 0, 0, 0.55))'
         }
       );
+
+      if (!isPlayer && actor.lives < MAX_LIVES) {
+        ctx.save();
+        for (let i = 0; i < MAX_LIVES; i++) {
+          ctx.fillStyle = i < actor.lives ? '#ff9b68' : 'rgba(23, 29, 25, 0.82)';
+          ctx.strokeStyle = i < actor.lives ? '#ffe0c8' : '#515b54';
+          ctx.lineWidth = 1;
+          roundedRectPath(ctx, actor.x - 14 + i * 6, actor.y - 37, 4, 5, 1.5);
+          ctx.fill();
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
     }
 
     function drawMinerTeam() {
-      const team = companions.concat([player]).slice().sort(function (a, b) {
+      const team = companions.filter(function (companion) { return companion.active; }).concat([player]).sort(function (a, b) {
         return a.y - b.y;
       });
       for (const actor of team) drawMinerActor(actor, actor === player);
