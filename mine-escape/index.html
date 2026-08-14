@@ -262,6 +262,7 @@
       <div class="controls">
         <span><span class="key">WASD</span><span class="key">↕</span> 이동</span>
         <span><span class="key">SPACE</span> 점프</span>
+        <span><span class="key">E</span> 밀치기</span>
       </div>
     </section>
   </main>
@@ -320,6 +321,10 @@
       minerRightWalk2: 'assets/miner-right-walk-2.webp',
       minerRightWalk3: 'assets/miner-right-walk-3.webp',
       minerRightWalk4: 'assets/miner-right-walk-4.webp',
+      minerUpPush: 'assets/miner-up-push.png',
+      minerDownPush: 'assets/miner-down-push.png',
+      minerLeftPush: 'assets/miner-left-push.png',
+      minerRightPush: 'assets/miner-right-push.png',
       minerDead: 'assets/miner-dead.png',
       mineralCyan: 'assets/mineral-cyan.webp',
       mineralGold: 'assets/mineral-gold.webp',
@@ -348,6 +353,12 @@
       down: ['minerDownIdle', 'minerDownWalk1', 'minerDownWalk2', 'minerDownWalk3', 'minerDownWalk4'],
       left: ['minerLeftIdle', 'minerLeftWalk1', 'minerLeftWalk2', 'minerLeftWalk3', 'minerLeftWalk4'],
       right: ['minerRightIdle', 'minerRightWalk1', 'minerRightWalk2', 'minerRightWalk3', 'minerRightWalk4']
+    };
+    const MINER_PUSH_FRAMES = {
+      up: 'minerUpPush',
+      down: 'minerDownPush',
+      left: 'minerLeftPush',
+      right: 'minerRightPush'
     };
     const MINERAL_VARIANTS = [
       { sprite: 'mineralCyan', color: '#52e4f2' },
@@ -408,6 +419,11 @@
     const COMPANION_SPEED = 138;
     const COMPANION_MAX_LIVES = 3;
     const COMPANION_HIT_INVULNERABILITY = 1.1;
+    const PUSH_RANGE = 78;
+    const PUSH_FORCE = 52;
+    const PUSH_COOLDOWN = 0.78;
+    const PUSH_ANIMATION_DURATION = 0.28;
+    const PUSH_STAGGER_DURATION = 0.38;
     const JUMP_DURATION = 0.72;
     const TOTAL_MINERALS = 5;
     const MAX_LIVES = 5;
@@ -932,6 +948,8 @@
       teamSlot: 0,
       jumpTimer: 0,
       jumpCooldown: 0,
+      pushTimer: 0,
+      pushCooldown: 0,
       invulnerable: 0,
       moving: false,
       direction: 'up',
@@ -1074,6 +1092,8 @@
       player.step = 0;
       player.jumpTimer = 0;
       player.jumpCooldown = 0;
+      player.pushTimer = 0;
+      player.pushCooldown = 0;
       player.invulnerable = 0.7;
       player.moving = false;
       setupCompanions();
@@ -1292,6 +1312,59 @@
       player.jumpTimer = JUMP_DURATION;
       player.jumpCooldown = 0.86;
       tone(150, 0.13, 'triangle', 0.025, 310);
+    }
+
+    function tryPushOpponent() {
+      if (state !== 'playing' || player.pushCooldown > 0 || player.jumpTimer > 0) return false;
+      player.pushTimer = PUSH_ANIMATION_DURATION;
+      player.pushCooldown = PUSH_COOLDOWN;
+
+      let target = null;
+      let targetDistance = Infinity;
+      for (const companion of companions) {
+        if (!companion.active || companion.escaped || companion.team === player.team) continue;
+        const dx = companion.x - player.x;
+        const dy = companion.y - player.y;
+        const candidateDistance = Math.hypot(dx, dy);
+        if (candidateDistance > PUSH_RANGE || candidateDistance <= 0) continue;
+        const facing = (dx * Math.cos(player.angle) + dy * Math.sin(player.angle)) / candidateDistance;
+        if (facing < 0.1 || candidateDistance >= targetDistance) continue;
+        target = companion;
+        targetDistance = candidateDistance;
+      }
+
+      if (!target) {
+        player.pushCooldown = 0.34;
+        tone(138, 0.08, 'square', 0.012, 105);
+        showMessage('가까운 659팀 동료를 바라보세요', '#ffb08f', 0.9);
+        return false;
+      }
+
+      const pushAngle = Math.atan2(target.y - player.y, target.x - player.x);
+      const stepDistance = 4;
+      const steps = Math.ceil(PUSH_FORCE / stepDistance);
+      let pushedDistance = 0;
+      for (let step = 0; step < steps; step++) {
+        const remainingDistance = Math.min(stepDistance, PUSH_FORCE - pushedDistance);
+        const nextX = target.x + Math.cos(pushAngle) * remainingDistance;
+        const nextY = target.y + Math.sin(pushAngle) * remainingDistance;
+        if (collidesWithWall(nextX, nextY, 10)) break;
+        target.x = nextX;
+        target.y = nextY;
+        pushedDistance += remainingDistance;
+      }
+
+      target.staggerTimer = PUSH_STAGGER_DURATION;
+      target.staggerAngle = pushAngle;
+      target.repathTimer = 0;
+      target.path = [];
+      target.pathIndex = 0;
+      burst(target.x, target.y + 10, '#ffb08f', 12, 82);
+      shake = Math.max(shake, 4.5);
+      tone(118, 0.1, 'triangle', 0.035, 72);
+      tone(260, 0.08, 'square', 0.016, 150, 0.03);
+      showMessage(getCompanionLabel(target) + ' 밀치기', getTeamColor(target), 0.9);
+      return true;
     }
 
     function collidesWithWall(x, y, radius) {
@@ -1527,6 +1600,8 @@
         downedTimer: 0,
         downedImpactPlayed: false,
         escaped: false,
+        staggerTimer: 0,
+        staggerAngle: 0,
         objectiveType: 'mineral',
         targetMineralIndex: -1,
         patrolTarget: null,
@@ -1569,6 +1644,11 @@
               burst(companion.x, companion.y + 17, '#8a785d', 9, 48);
             }
           }
+          continue;
+        }
+        if (companion.staggerTimer > 0) {
+          companion.staggerTimer = Math.max(0, companion.staggerTimer - dt);
+          companion.moving = false;
           continue;
         }
         const allMineralsCollected = minerals.every(function (mineral) { return mineral.collected; });
@@ -1776,6 +1856,8 @@
 
       if (player.jumpTimer > 0) player.jumpTimer = Math.max(0, player.jumpTimer - dt);
       if (player.jumpCooldown > 0) player.jumpCooldown = Math.max(0, player.jumpCooldown - dt);
+      if (player.pushTimer > 0) player.pushTimer = Math.max(0, player.pushTimer - dt);
+      if (player.pushCooldown > 0) player.pushCooldown = Math.max(0, player.pushCooldown - dt);
       if (player.invulnerable > 0) player.invulnerable = Math.max(0, player.invulnerable - dt);
     }
 
@@ -2913,7 +2995,22 @@
       const blink = actor.invulnerable > 0 && Math.floor(actor.invulnerable * 12) % 2 === 0;
       const directionFrames = MINER_DIRECTION_FRAMES[actor.direction];
       const walkFrame = 1 + Math.floor(actor.step) % (directionFrames.length - 1);
-      const spriteName = actor.moving ? directionFrames[walkFrame] : directionFrames[0];
+      const pushing = isPlayer && actor.pushTimer > 0;
+      const pushProgress = pushing ? 1 - actor.pushTimer / PUSH_ANIMATION_DURATION : 0;
+      const pushPose = pushing ? Math.sin(pushProgress * Math.PI) : 0;
+      const staggering = !isPlayer && actor.staggerTimer > 0;
+      const staggerProgress = staggering ? 1 - actor.staggerTimer / PUSH_STAGGER_DURATION : 0;
+      const staggerPose = staggering ? Math.sin(staggerProgress * Math.PI) : 0;
+      const visualAngle = pushing ? actor.angle : (staggering ? actor.staggerAngle : 0);
+      const visualOffset = pushing ? pushPose * 9 : (staggering ? staggerPose * 4 : 0);
+      const visualX = actor.x + Math.cos(visualAngle) * visualOffset;
+      const visualY = actor.y + Math.sin(visualAngle) * visualOffset;
+      const visualRotation = staggering
+        ? (Math.cos(actor.staggerAngle) >= 0 ? 1 : -1) * staggerPose * 0.2
+        : 0;
+      const spriteName = pushing ? MINER_PUSH_FRAMES[actor.direction] : (actor.moving ? directionFrames[walkFrame] : directionFrames[0]);
+      const spriteWidth = pushing ? 76 * scale : 47 * scale;
+      const spriteHeight = pushing ? 76 * scale : 60 * scale;
 
       ctx.save();
       ctx.translate(actor.x, actor.y + 8);
@@ -2933,11 +3030,12 @@
 
       drawSprite(
         spriteName,
-        actor.x,
-        actor.y - jumpHeight * 12 + bob,
-        47 * scale,
-        60 * scale,
+        visualX,
+        visualY - jumpHeight * 12 + bob,
+        spriteWidth,
+        spriteHeight,
         {
+          rotation: visualRotation,
           filter: 'drop-shadow(0 5px 4px rgba(0, 0, 0, 0.55))'
         }
       );
@@ -3205,7 +3303,7 @@
     }
 
     window.addEventListener('keydown', function (event) {
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(event.code)) {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyE'].includes(event.code)) {
         event.preventDefault();
       }
       keys[event.code] = true;
@@ -3213,6 +3311,7 @@
         if (state === 'start' || state === 'gameover' || state === 'win') startGame();
         else tryJump();
       }
+      if (event.code === 'KeyE' && !event.repeat) tryPushOpponent();
       if (event.code === 'Enter' && state !== 'playing' && state !== 'transition') startGame();
     });
 
@@ -3236,7 +3335,8 @@
         right: 'right'
       }, { side: 'left', tag: 'MOVE' });
       window.MobileArcade.actions([
-        { label: 'JUMP', key: 'space' }
+        { label: 'JUMP', key: 'space' },
+        { label: '밀치기<br>E', key: 'e' }
       ], { side: 'right', bottom: '42px' });
     }
 
