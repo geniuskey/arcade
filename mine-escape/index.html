@@ -388,6 +388,8 @@
     ];
     const COMPANION_NAV_STEP = 18;
     const COMPANION_SPEED = 138;
+    const COMPANION_MAX_LIVES = 3;
+    const COMPANION_HIT_INVULNERABILITY = 1.1;
     const JUMP_DURATION = 0.72;
     const TOTAL_MINERALS = 5;
     const MAX_LIVES = 5;
@@ -1442,9 +1444,11 @@
           direction: player.direction,
           moving: false,
           step: index * 0.83,
-          lives: MAX_LIVES,
-          invulnerable: 0.7,
+          lives: COMPANION_MAX_LIVES,
+          invulnerable: 0.45,
           active: true,
+          knockoutReason: null,
+          downedTimer: 0,
           targetMineralIndex: -1,
           patrolTarget: null,
           patrolStep: 0,
@@ -1461,7 +1465,10 @@
       for (let i = 0; i < companions.length; i++) {
         const companion = companions[i];
         if (companion.invulnerable > 0) companion.invulnerable = Math.max(0, companion.invulnerable - dt);
-        if (!companion.active) continue;
+        if (!companion.active) {
+          if (companion.knockoutReason === 'damage') companion.downedTimer = Math.min(0.4, companion.downedTimer + dt);
+          continue;
+        }
         let mineral = minerals[companion.targetMineralIndex];
         if (!mineral || mineral.collected) {
           companion.targetMineralIndex = -1;
@@ -1773,7 +1780,7 @@
 
     function hitCompanion(companion, sourceX, sourceY, playSound) {
       companion.lives -= 1;
-      companion.invulnerable = 1.6;
+      companion.invulnerable = COMPANION_HIT_INVULNERABILITY;
       shake = Math.max(shake, 8);
       const angle = Math.atan2(companion.y - sourceY, companion.x - sourceX);
       const knockbackX = Math.cos(angle) * 25;
@@ -1785,6 +1792,8 @@
 
       if (companion.lives <= 0) {
         companion.active = false;
+        companion.knockoutReason = 'damage';
+        companion.downedTimer = 0;
         companion.moving = false;
         companion.path = [];
         companion.patrolTarget = null;
@@ -1799,6 +1808,7 @@
       companion.lives = 0;
       companion.invulnerable = 99;
       companion.active = false;
+      companion.knockoutReason = 'tunnel';
       companion.moving = false;
       companion.path = [];
       companion.patrolTarget = null;
@@ -2504,7 +2514,47 @@
       }
     }
 
+    function drawDownedCompanion(companion) {
+      const progress = clamp(companion.downedTimer / 0.35, 0, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const directionFrames = MINER_DIRECTION_FRAMES[companion.direction];
+      const fallDirection = companion.id % 2 === 0 ? 1 : -1;
+
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.ellipse(companion.x, companion.y + 13, 18 + eased * 11, 8 - eased * 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      drawSprite(directionFrames[0], companion.x, companion.y + eased * 10, 47, 60, {
+        rotation: fallDirection * eased * Math.PI / 2,
+        filter: 'grayscale(' + (eased * 0.72) + ') brightness(' + (1 - eased * 0.3) + ') drop-shadow(0 5px 4px rgba(0, 0, 0, 0.62))'
+      });
+
+      if (progress >= 1) {
+        ctx.save();
+        ctx.translate(companion.x + 20, companion.y - 14);
+        ctx.fillStyle = '#f6c85f';
+        ctx.strokeStyle = '#fff1b8';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#593f20';
+        ctx.fillRect(-1.5, -5, 3, 10);
+        ctx.fillRect(-5, -1.5, 10, 3);
+        ctx.restore();
+      }
+    }
+
     function drawMinerActor(actor, isPlayer) {
+      if (!isPlayer && !actor.active) {
+        drawDownedCompanion(actor);
+        return;
+      }
       const jumpHeight = isPlayer ? getJumpHeight() : 0;
       const scale = 1 + jumpHeight * 0.48;
       const bob = actor.moving && jumpHeight === 0 ? Math.sin(actor.step * Math.PI / 2) * 0.6 : 0;
@@ -2536,13 +2586,13 @@
         }
       );
 
-      if (!isPlayer && actor.lives < MAX_LIVES) {
+      if (!isPlayer && actor.lives < COMPANION_MAX_LIVES) {
         ctx.save();
-        for (let i = 0; i < MAX_LIVES; i++) {
+        for (let i = 0; i < COMPANION_MAX_LIVES; i++) {
           ctx.fillStyle = i < actor.lives ? '#ff9b68' : 'rgba(23, 29, 25, 0.82)';
           ctx.strokeStyle = i < actor.lives ? '#ffe0c8' : '#515b54';
           ctx.lineWidth = 1;
-          roundedRectPath(ctx, actor.x - 14 + i * 6, actor.y - 37, 4, 5, 1.5);
+          roundedRectPath(ctx, actor.x - 8 + i * 6, actor.y - 37, 4, 5, 1.5);
           ctx.fill();
           ctx.stroke();
         }
@@ -2551,7 +2601,9 @@
     }
 
     function drawMinerTeam() {
-      const team = companions.filter(function (companion) { return companion.active; }).concat([player]).sort(function (a, b) {
+      const team = companions.filter(function (companion) {
+        return companion.active || companion.knockoutReason === 'damage';
+      }).concat([player]).sort(function (a, b) {
         return a.y - b.y;
       });
       for (const actor of team) drawMinerActor(actor, actor === player);
