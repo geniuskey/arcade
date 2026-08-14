@@ -379,6 +379,15 @@
     const FLOOR = { left: 24, top: 78, right: 876, bottom: 596 };
     const PLAYER_RADIUS = 14;
     const PLAYER_GROUND_HITBOX = { offsetY: 23, radiusX: 10, radiusY: 7 };
+    const COMPANION_FORMATION = [
+      { lateral: -28, behind: 34 },
+      { lateral: 28, behind: 34 },
+      { lateral: -52, behind: 66 },
+      { lateral: 0, behind: 66 },
+      { lateral: 52, behind: 66 }
+    ];
+    const COMPANION_NAV_STEP = 18;
+    const COMPANION_SPEED = 138;
     const JUMP_DURATION = 0.72;
     const TOTAL_MINERALS = 5;
     const MAX_LIVES = 5;
@@ -859,6 +868,8 @@
     let repairs = [];
     let particles = [];
     let dust = [];
+    let companions = [];
+    let companionNavGrid = null;
     let chestOpen = false;
     let hasKey = false;
     let shake = 0;
@@ -1036,6 +1047,7 @@
       player.jumpCooldown = 0;
       player.invulnerable = 0.7;
       player.moving = false;
+      setupCompanions();
       lastFootstep = -1;
       dust = createDust();
       showMessage(stage.name + ' 진입', stage.accent, 1.8);
@@ -1264,6 +1276,207 @@
       if (!collidesWithWall(player.x, nextY, PLAYER_RADIUS)) player.y = nextY;
     }
 
+    function getInitialCompanionPosition(index) {
+      const formation = COMPANION_FORMATION[index];
+      const forwardX = Math.cos(player.angle);
+      const forwardY = Math.sin(player.angle);
+      const rightX = -forwardY;
+      const rightY = forwardX;
+
+      for (let scale = 1; scale >= 0.2; scale -= 0.2) {
+        const x = clamp(
+          player.x - forwardX * formation.behind * scale + rightX * formation.lateral * scale,
+          FLOOR.left + 10,
+          FLOOR.right - 10
+        );
+        const y = clamp(
+          player.y - forwardY * formation.behind * scale + rightY * formation.lateral * scale,
+          FLOOR.top + 10,
+          FLOOR.bottom - 10
+        );
+        if (!collidesWithWall(x, y, 10)) return { x: x, y: y };
+      }
+      return { x: player.x, y: player.y };
+    }
+
+    function buildCompanionNavGrid() {
+      const originX = FLOOR.left + 10;
+      const originY = FLOOR.top + 10;
+      const columns = Math.floor((FLOOR.right - 10 - originX) / COMPANION_NAV_STEP) + 1;
+      const rows = Math.floor((FLOOR.bottom - 10 - originY) / COMPANION_NAV_STEP) + 1;
+      const open = new Array(columns * rows);
+      for (let row = 0; row < rows; row++) {
+        for (let column = 0; column < columns; column++) {
+          const x = originX + column * COMPANION_NAV_STEP;
+          const y = originY + row * COMPANION_NAV_STEP;
+          open[row * columns + column] = !collidesWithWall(x, y, 10);
+        }
+      }
+      return { originX: originX, originY: originY, columns: columns, rows: rows, open: open };
+    }
+
+    function getClosestCompanionNavCell(x, y) {
+      const grid = companionNavGrid;
+      let bestIndex = -1;
+      let bestDistance = Infinity;
+      for (let index = 0; index < grid.open.length; index++) {
+        if (!grid.open[index]) continue;
+        const column = index % grid.columns;
+        const row = Math.floor(index / grid.columns);
+        const pointX = grid.originX + column * COMPANION_NAV_STEP;
+        const pointY = grid.originY + row * COMPANION_NAV_STEP;
+        const candidateDistance = Math.pow(pointX - x, 2) + Math.pow(pointY - y, 2);
+        if (candidateDistance < bestDistance) {
+          bestDistance = candidateDistance;
+          bestIndex = index;
+        }
+      }
+      return bestIndex;
+    }
+
+    function findCompanionPath(startX, startY, targetX, targetY) {
+      const grid = companionNavGrid;
+      const startIndex = getClosestCompanionNavCell(startX, startY);
+      const targetIndex = getClosestCompanionNavCell(targetX, targetY);
+      if (startIndex < 0 || targetIndex < 0) return [{ x: targetX, y: targetY }];
+
+      const parents = new Int32Array(grid.open.length);
+      parents.fill(-2);
+      parents[startIndex] = -1;
+      const queue = new Int32Array(grid.open.length);
+      let queueStart = 0;
+      let queueEnd = 1;
+      queue[0] = startIndex;
+      const directions = [
+        [-1, 0], [1, 0], [0, -1], [0, 1],
+        [-1, -1], [1, -1], [-1, 1], [1, 1]
+      ];
+
+      while (queueStart < queueEnd && parents[targetIndex] === -2) {
+        const current = queue[queueStart++];
+        const currentColumn = current % grid.columns;
+        const currentRow = Math.floor(current / grid.columns);
+        for (const direction of directions) {
+          const column = currentColumn + direction[0];
+          const row = currentRow + direction[1];
+          if (column < 0 || column >= grid.columns || row < 0 || row >= grid.rows) continue;
+          const next = row * grid.columns + column;
+          if (!grid.open[next] || parents[next] !== -2) continue;
+          if (direction[0] !== 0 && direction[1] !== 0) {
+            const horizontal = currentRow * grid.columns + column;
+            const vertical = row * grid.columns + currentColumn;
+            if (!grid.open[horizontal] || !grid.open[vertical]) continue;
+          }
+          parents[next] = current;
+          queue[queueEnd++] = next;
+        }
+      }
+
+      if (parents[targetIndex] === -2) return [{ x: targetX, y: targetY }];
+      const reversed = [];
+      for (let current = targetIndex; current >= 0; current = parents[current]) reversed.push(current);
+      reversed.reverse();
+      const path = reversed.map(function (index) {
+        return {
+          x: grid.originX + (index % grid.columns) * COMPANION_NAV_STEP,
+          y: grid.originY + Math.floor(index / grid.columns) * COMPANION_NAV_STEP
+        };
+      });
+      path.push({ x: targetX, y: targetY });
+      return path;
+    }
+
+    function assignCompanionMineral(companion, mineralIndex) {
+      companion.targetMineralIndex = mineralIndex;
+      const mineral = minerals[mineralIndex];
+      companion.path = mineral ? findCompanionPath(companion.x, companion.y, mineral.x, mineral.y) : [];
+      companion.pathIndex = 0;
+      companion.repathTimer = 0.8;
+    }
+
+    function setupCompanions() {
+      companionNavGrid = buildCompanionNavGrid();
+      companions = COMPANION_FORMATION.map(function (_, index) {
+        const position = getInitialCompanionPosition(index);
+        const companion = {
+          x: position.x,
+          y: position.y,
+          direction: player.direction,
+          moving: false,
+          step: index * 0.83,
+          targetMineralIndex: -1,
+          path: [],
+          pathIndex: 0,
+          repathTimer: 0
+        };
+        assignCompanionMineral(companion, index);
+        return companion;
+      });
+    }
+
+    function updateCompanions(dt) {
+      for (let i = 0; i < companions.length; i++) {
+        const companion = companions[i];
+        const mineral = minerals[companion.targetMineralIndex];
+        if (!mineral || mineral.collected) {
+          companion.moving = false;
+          companion.targetMineralIndex = -1;
+          continue;
+        }
+
+        if (distance(companion.x, companion.y, mineral.x, mineral.y) < 24) {
+          collectMineral(mineral, true);
+          companion.moving = false;
+          companion.targetMineralIndex = -1;
+          continue;
+        }
+
+        companion.repathTimer -= dt;
+        if (companion.pathIndex >= companion.path.length || companion.repathTimer <= 0) {
+          companion.path = findCompanionPath(companion.x, companion.y, mineral.x, mineral.y);
+          companion.pathIndex = 0;
+          companion.repathTimer = 0.8;
+        }
+
+        let target = companion.path[companion.pathIndex] || mineral;
+        if (distance(companion.x, companion.y, target.x, target.y) < 7 && companion.pathIndex < companion.path.length - 1) {
+          companion.pathIndex += 1;
+          target = companion.path[companion.pathIndex];
+        }
+
+        const dx = target.x - companion.x;
+        const dy = target.y - companion.y;
+        const remaining = Math.hypot(dx, dy);
+        const maxMove = COMPANION_SPEED * dt;
+        const ratio = remaining > 0 ? Math.min(1, maxMove / remaining) : 0;
+        const moveX = dx * ratio;
+        const moveY = dy * ratio;
+        const previousX = companion.x;
+        const previousY = companion.y;
+
+        if (!collidesWithWall(companion.x + moveX, companion.y, 10)) companion.x += moveX;
+        if (!collidesWithWall(companion.x, companion.y + moveY, 10)) companion.y += moveY;
+
+        const actualX = companion.x - previousX;
+        const actualY = companion.y - previousY;
+        companion.moving = Math.hypot(actualX, actualY) > 0.2;
+        if (companion.moving) {
+          if (Math.abs(actualX) > Math.abs(actualY)) {
+            companion.direction = actualX < 0 ? 'left' : 'right';
+          } else {
+            companion.direction = actualY < 0 ? 'up' : 'down';
+          }
+          companion.step += dt * 8;
+        }
+
+        if (distance(companion.x, companion.y, mineral.x, mineral.y) < 24) {
+          collectMineral(mineral, true);
+          companion.moving = false;
+          companion.targetMineralIndex = -1;
+        }
+      }
+    }
+
     function getHazardSegments(hazard) {
       let x = hazard.x;
       let y = hazard.y;
@@ -1486,6 +1699,21 @@
       showEndOverlay('gameover', '<b>지하 갱도로 추락했습니다</b> · 즉시 구조 실패');
     }
 
+    function collectMineral(mineral, collectedByCompanion) {
+      if (mineral.collected) return;
+      mineral.collected = true;
+      const count = minerals.filter(function (item) { return item.collected; }).length;
+      burst(mineral.x, mineral.y, mineral.color, 16, 92);
+      playMineralSfx(count);
+      if (count === TOTAL_MINERALS) {
+        showMessage('광물 확보 완료 · 열쇠함 활성화', '#6ee7b7', 2);
+      } else if (collectedByCompanion) {
+        showMessage('동료가 광물 확보 · ' + count + ' / ' + TOTAL_MINERALS, mineral.color, 1.1);
+      } else {
+        showMessage('광물 ' + count + ' / ' + TOTAL_MINERALS, mineral.color, 1.1);
+      }
+    }
+
     function updateObjectives() {
       for (const repair of repairs) {
         if (!repair.collected && player.lives < MAX_LIVES &&
@@ -1500,15 +1728,7 @@
 
       for (const mineral of minerals) {
         if (!mineral.collected && distance(player.x, player.y, mineral.x, mineral.y) < PLAYER_RADIUS + 14) {
-          mineral.collected = true;
-          const count = minerals.filter(function (item) { return item.collected; }).length;
-          burst(mineral.x, mineral.y, mineral.color, 16, 92);
-          playMineralSfx(count);
-          if (count === TOTAL_MINERALS) {
-            showMessage('광물 확보 완료 · 열쇠함 활성화', '#6ee7b7', 2);
-          } else {
-            showMessage('광물 ' + count + ' / ' + TOTAL_MINERALS, mineral.color, 1.1);
-          }
+          collectMineral(mineral, false);
         }
       }
 
@@ -1577,6 +1797,7 @@
       if (state === 'playing') {
         stageTime += dt;
         updatePlayer(dt);
+        updateCompanions(dt);
         updateHazards();
         if (state === 'playing') updateObjectives();
       } else if (state === 'transition') {
@@ -2163,17 +2384,17 @@
       }
     }
 
-    function drawMiner() {
-      const jumpHeight = getJumpHeight();
+    function drawMinerActor(actor, isPlayer) {
+      const jumpHeight = isPlayer ? getJumpHeight() : 0;
       const scale = 1 + jumpHeight * 0.48;
-      const bob = player.moving && jumpHeight === 0 ? Math.sin(player.step * Math.PI / 2) * 0.6 : 0;
-      const blink = player.invulnerable > 0 && Math.floor(player.invulnerable * 12) % 2 === 0;
-      const directionFrames = MINER_DIRECTION_FRAMES[player.direction];
-      const walkFrame = 1 + Math.floor(player.step) % (directionFrames.length - 1);
-      const spriteName = player.moving ? directionFrames[walkFrame] : directionFrames[0];
+      const bob = actor.moving && jumpHeight === 0 ? Math.sin(actor.step * Math.PI / 2) * 0.6 : 0;
+      const blink = isPlayer && player.invulnerable > 0 && Math.floor(player.invulnerable * 12) % 2 === 0;
+      const directionFrames = MINER_DIRECTION_FRAMES[actor.direction];
+      const walkFrame = 1 + Math.floor(actor.step) % (directionFrames.length - 1);
+      const spriteName = actor.moving ? directionFrames[walkFrame] : directionFrames[0];
 
       ctx.save();
-      ctx.translate(player.x, player.y + 8);
+      ctx.translate(actor.x, actor.y + 8);
       ctx.scale(1 - jumpHeight * 0.25, 1 - jumpHeight * 0.25);
       ctx.globalAlpha = 0.42 - jumpHeight * 0.18;
       ctx.fillStyle = '#000';
@@ -2186,14 +2407,21 @@
 
       drawSprite(
         spriteName,
-        player.x,
-        player.y - jumpHeight * 12 + bob,
+        actor.x,
+        actor.y - jumpHeight * 12 + bob,
         47 * scale,
         60 * scale,
         {
           filter: 'drop-shadow(0 5px 4px rgba(0, 0, 0, 0.55))'
         }
       );
+    }
+
+    function drawMinerTeam() {
+      const team = companions.concat([player]).slice().sort(function (a, b) {
+        return a.y - b.y;
+      });
+      for (const actor of team) drawMinerActor(actor, actor === player);
     }
 
     function drawDarkness() {
@@ -2218,6 +2446,23 @@
       ctx.beginPath();
       ctx.arc(lampX, lampY, 65, 0, Math.PI * 2);
       ctx.fill();
+
+      for (const companion of companions) {
+        const companionLamp = ctx.createRadialGradient(
+          companion.x,
+          companion.y - 9,
+          0,
+          companion.x,
+          companion.y - 9,
+          54
+        );
+        companionLamp.addColorStop(0, 'rgba(255, 221, 143, 0.2)');
+        companionLamp.addColorStop(1, 'rgba(255, 221, 143, 0)');
+        ctx.fillStyle = companionLamp;
+        ctx.beginPath();
+        ctx.arc(companion.x, companion.y - 9, 54, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.restore();
     }
 
@@ -2359,7 +2604,7 @@
       drawStageMechanics();
       drawAmbientDust(true);
       drawParticles();
-      drawMiner();
+      drawMinerTeam();
       drawDarkness();
       drawDustHaze();
       ctx.restore();
