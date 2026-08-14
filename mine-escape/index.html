@@ -1809,7 +1809,6 @@
       if (!collidesWithWall(companion.x + knockbackX, companion.y, 10)) companion.x += knockbackX;
       if (!collidesWithWall(companion.x, companion.y + knockbackY, 10)) companion.y += knockbackY;
       burst(companion.x, companion.y, '#ff9b68', 13, 105);
-      burst(companion.x, companion.y, '#c69232', 5, 72);
       if (playSound) playHitSfx();
 
       if (companion.lives <= 0) {
@@ -2737,71 +2736,6 @@
       }
     }
 
-    function drawCompanionSuitDamage(companion, bob) {
-      const damageLevel = COMPANION_MAX_LIVES - companion.lives;
-      if (damageLevel <= 0) return;
-      const damageMarks = {
-        down: [
-          { x: -10, y: -7, angle: -0.28 },
-          { x: 9, y: 12, angle: 0.22 }
-        ],
-        up: [
-          { x: 10, y: -7, angle: 0.28 },
-          { x: -9, y: 12, angle: -0.22 }
-        ],
-        left: [
-          { x: -5, y: -8, angle: -0.42 },
-          { x: 4, y: 13, angle: 0.18 }
-        ],
-        right: [
-          { x: 5, y: -8, angle: 0.42 },
-          { x: -4, y: 13, angle: -0.18 }
-        ]
-      };
-      const marks = damageMarks[companion.direction] || damageMarks.down;
-
-      for (let markIndex = 0; markIndex < Math.min(damageLevel, marks.length); markIndex++) {
-        const mark = marks[markIndex];
-        ctx.save();
-        ctx.translate(companion.x + mark.x, companion.y + bob + mark.y);
-        ctx.rotate(mark.angle);
-
-        ctx.fillStyle = markIndex === 0 ? 'rgba(27, 25, 22, 0.94)' : 'rgba(38, 22, 20, 0.96)';
-        ctx.strokeStyle = markIndex === 0 ? '#d59c31' : '#b46d2d';
-        ctx.lineWidth = 1.1;
-        ctx.beginPath();
-        ctx.moveTo(-5, -1);
-        ctx.lineTo(-2.5, -3.4);
-        ctx.lineTo(-0.5, -1.8);
-        ctx.lineTo(2.2, -3.1);
-        ctx.lineTo(5, -0.4);
-        ctx.lineTo(2.8, 2.8);
-        ctx.lineTo(0.2, 1.7);
-        ctx.lineTo(-2.6, 3.2);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.strokeStyle = 'rgba(238, 184, 76, 0.72)';
-        ctx.lineWidth = 0.7;
-        for (const threadX of [-3.2, 0.4, 3.2]) {
-          ctx.beginPath();
-          ctx.moveTo(threadX, -2.2);
-          ctx.lineTo(threadX + (markIndex ? 1.4 : -1), -5.2);
-          ctx.stroke();
-        }
-
-        if (markIndex === 1) {
-          ctx.globalAlpha = 0.72;
-          ctx.fillStyle = '#7b1510';
-          ctx.beginPath();
-          ctx.ellipse(1.6, 1, 3.2, 1.5, 0.2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.restore();
-      }
-    }
-
     function drawMinerActor(actor, isPlayer) {
       if (!isPlayer && !actor.active) {
         drawDownedCompanion(actor);
@@ -2837,8 +2771,6 @@
           filter: 'drop-shadow(0 5px 4px rgba(0, 0, 0, 0.55))'
         }
       );
-
-      if (!isPlayer) drawCompanionSuitDamage(actor, bob);
 
       if (!isPlayer && actor.lives < COMPANION_MAX_LIVES) {
         ctx.save();
