@@ -404,6 +404,7 @@
       { lateral: 78, behind: 78 }
     ];
     const COMPANION_NAV_STEP = 18;
+    const COMPANION_NAV_CLEARANCE = 12;
     const COMPANION_SPEED = 138;
     const COMPANION_MAX_LIVES = 3;
     const COMPANION_HIT_INVULNERABILITY = 1.1;
@@ -891,6 +892,7 @@
     let companionNavGrid = null;
     let chestOpen = false;
     let hasKey = false;
+    let doorWaitNoticeShown = false;
     let shake = 0;
     let toastTimer = 0;
     let audioContext = null;
@@ -1059,6 +1061,7 @@
       particles = [];
       chestOpen = false;
       hasKey = false;
+      doorWaitNoticeShown = false;
       player.x = stage.start.x;
       player.y = stage.start.y;
       player.angle = -Math.PI / 2;
@@ -1343,7 +1346,7 @@
         for (let column = 0; column < columns; column++) {
           const x = originX + column * COMPANION_NAV_STEP;
           const y = originY + row * COMPANION_NAV_STEP;
-          open[row * columns + column] = !collidesWithWall(x, y, 10);
+          open[row * columns + column] = !collidesWithWall(x, y, COMPANION_NAV_CLEARANCE);
         }
       }
       return { originX: originX, originY: originY, columns: columns, rows: rows, open: open };
@@ -1422,6 +1425,7 @@
 
     function assignCompanionMineral(companion, mineralIndex) {
       companion.targetMineralIndex = mineralIndex;
+      companion.objectiveType = 'mineral';
       companion.patrolTarget = null;
       const mineral = minerals[mineralIndex];
       companion.path = mineral ? findCompanionPath(companion.x, companion.y, mineral.x, mineral.y) : [];
@@ -1454,6 +1458,15 @@
       return false;
     }
 
+    function assignCompanionPointObjective(companion, type, point) {
+      companion.targetMineralIndex = -1;
+      companion.objectiveType = type;
+      companion.patrolTarget = { x: point.x, y: point.y };
+      companion.path = findCompanionPath(companion.x, companion.y, point.x, point.y);
+      companion.pathIndex = 0;
+      companion.repathTimer = 0.8;
+    }
+
     function assignCompanionPatrolTarget(companion) {
       const grid = companionNavGrid;
       const totalCells = grid.open.length;
@@ -1479,12 +1492,14 @@
 
       if (!selectedTarget) {
         companion.moving = false;
+        companion.objectiveType = 'idle';
         companion.patrolTarget = null;
         companion.path = [];
         return;
       }
 
       companion.patrolTarget = selectedTarget;
+      companion.objectiveType = 'patrol';
       companion.path = selectedPath;
       companion.pathIndex = 0;
       companion.repathTimer = 0.8;
@@ -1506,6 +1521,8 @@
         knockoutReason: null,
         downedTimer: 0,
         downedImpactPlayed: false,
+        escaped: false,
+        objectiveType: 'mineral',
         targetMineralIndex: -1,
         patrolTarget: null,
         patrolStep: 0,
@@ -1549,16 +1566,26 @@
           }
           continue;
         }
-        let mineral = minerals[companion.targetMineralIndex];
-        if (!mineral || mineral.collected) {
-          assignCompanionNextMineral(companion);
+        const allMineralsCollected = minerals.every(function (mineral) { return mineral.collected; });
+        let mineral = null;
+        if (allMineralsCollected) {
+          const nextObjectiveType = chestOpen ? 'door' : 'chest';
+          const nextObjectivePoint = chestOpen ? stage.door : stage.chest;
+          if (companion.objectiveType !== nextObjectiveType) {
+            assignCompanionPointObjective(companion, nextObjectiveType, nextObjectivePoint);
+          }
+        } else {
           mineral = minerals[companion.targetMineralIndex];
-        }
+          if (!mineral || mineral.collected) {
+            assignCompanionNextMineral(companion);
+            mineral = minerals[companion.targetMineralIndex];
+          }
 
-        if (mineral && distance(companion.x, companion.y, mineral.x, mineral.y) < 24) {
-          collectMineral(mineral, companion);
-          assignCompanionNextMineral(companion);
-          mineral = minerals[companion.targetMineralIndex];
+          if (mineral && distance(companion.x, companion.y, mineral.x, mineral.y) < 24) {
+            collectMineral(mineral, companion);
+            assignCompanionNextMineral(companion);
+            mineral = minerals[companion.targetMineralIndex];
+          }
         }
 
         const destination = mineral || companion.patrolTarget;
@@ -1605,7 +1632,14 @@
         if (mineral && distance(companion.x, companion.y, mineral.x, mineral.y) < 24) {
           collectMineral(mineral, companion);
           assignCompanionNextMineral(companion);
-        } else if (!mineral && companion.patrolTarget &&
+        } else if (companion.objectiveType === 'chest' &&
+                   distance(companion.x, companion.y, stage.chest.x, stage.chest.y) < 42) {
+          openExpeditionChest(companion);
+          assignCompanionPointObjective(companion, 'door', stage.door);
+        } else if (companion.objectiveType === 'door' &&
+                   distance(companion.x, companion.y, stage.door.x, stage.door.y) < 45) {
+          escapeCompanion(companion);
+        } else if (companion.objectiveType === 'patrol' && companion.patrolTarget &&
                    distance(companion.x, companion.y, companion.patrolTarget.x, companion.patrolTarget.y) < 18) {
           assignCompanionPatrolTarget(companion);
         }
@@ -1920,6 +1954,55 @@
       }
     }
 
+    function openExpeditionChest(collector) {
+      if (chestOpen || !minerals.every(function (mineral) { return mineral.collected; })) return false;
+      chestOpen = true;
+      hasKey = true;
+      burst(stage.chest.x, stage.chest.y, '#f7b955', 28, 130);
+      playChestSfx();
+      if (collector === player) {
+        showMessage('탈출 열쇠 획득 · 탐사대가 공유합니다', '#f7c86d', 1.8);
+      } else {
+        showMessage(getCompanionLabel(collector) + '가 탈출 열쇠 획득', '#f7c86d', 1.8);
+      }
+      return true;
+    }
+
+    function escapeCompanion(companion) {
+      if (!hasKey || !companion.active || companion.escaped) return false;
+      companion.active = false;
+      companion.escaped = true;
+      companion.knockoutReason = 'escaped';
+      companion.moving = false;
+      companion.objectiveType = 'escaped';
+      companion.path = [];
+      companion.patrolTarget = null;
+      burst(stage.door.x, stage.door.y, getTeamColor(companion), 14, 90);
+      tone(440 + companion.teamSlot * 22, 0.08, 'sine', 0.018, 620);
+      const escapedCount = companions.filter(function (member) { return member.escaped; }).length;
+      const survivingCount = companions.filter(function (member) {
+        return member.active || member.escaped;
+      }).length;
+      showMessage(getCompanionLabel(companion) + ' 탈출 · 동료 ' + escapedCount + ' / ' + survivingCount, getTeamColor(companion), 1.1);
+      return true;
+    }
+
+    function completeStageExit() {
+      const finalDoor = stageIndex === STAGES.length - 1;
+      hasKey = false;
+      burst(stage.door.x, stage.door.y, stage.accent, 30, 160);
+      playDoorSfx(finalDoor);
+      if (finalDoor) {
+        state = 'win';
+        stopMusic(1.1);
+        showEndOverlay('win');
+      } else {
+        state = 'transition';
+        transitionTimer = 1.5;
+        transitionLoaded = false;
+      }
+    }
+
     function updateObjectives() {
       for (const repair of repairs) {
         if (!repair.collected && player.lives < MAX_LIVES &&
@@ -1941,27 +2024,23 @@
       const collected = minerals.filter(function (item) { return item.collected; }).length;
       if (collected === TOTAL_MINERALS && !chestOpen &&
           distance(player.x, player.y, stage.chest.x, stage.chest.y) < 42) {
-        chestOpen = true;
-        hasKey = true;
-        burst(stage.chest.x, stage.chest.y, '#f7b955', 28, 130);
-        playChestSfx();
-        showMessage('탈출 열쇠 획득', '#f7c86d', 1.8);
+        openExpeditionChest(player);
       }
 
       if (hasKey && distance(player.x, player.y, stage.door.x, stage.door.y) < 45) {
-        const finalDoor = stageIndex === STAGES.length - 1;
-        hasKey = false;
-        burst(stage.door.x, stage.door.y, stage.accent, 30, 160);
-        playDoorSfx(finalDoor);
-        if (finalDoor) {
-          state = 'win';
-          stopMusic(1.1);
-          showEndOverlay('win');
+        const waitingCompanions = companions.filter(function (companion) {
+          return companion.active && !companion.escaped;
+        }).length;
+        if (waitingCompanions > 0) {
+          if (!doorWaitNoticeShown) {
+            doorWaitNoticeShown = true;
+            showMessage('동료 ' + waitingCompanions + '명을 기다리는 중', '#f7c86d', 1.4);
+          }
         } else {
-          state = 'transition';
-          transitionTimer = 1.5;
-          transitionLoaded = false;
+          completeStageExit();
         }
+      } else if (distance(player.x, player.y, stage.door.x, stage.door.y) >= 55) {
+        doorWaitNoticeShown = false;
       }
     }
 
@@ -2801,17 +2880,18 @@
     function drawActorTeamBadge(actor, jumpHeight, bob) {
       const color = getTeamColor(actor);
       const y = actor.y - jumpHeight * 18 + bob - 44;
+      const badgeLabel = actor.team + '-' + (actor.teamSlot + 1);
       ctx.save();
       ctx.fillStyle = 'rgba(6, 10, 9, 0.9)';
       ctx.strokeStyle = color;
       ctx.lineWidth = 1;
-      roundedRectPath(ctx, actor.x - 13, y - 7, 26, 12, 4);
+      roundedRectPath(ctx, actor.x - 19, y - 7, 38, 12, 4);
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = color;
       ctx.font = '800 7px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText(String(actor.team), actor.x, y + 1.5);
+      ctx.fillText(badgeLabel, actor.x, y + 1.5);
       ctx.textAlign = 'left';
       ctx.restore();
     }
@@ -2980,10 +3060,14 @@
     function drawHud() {
       const collected = minerals.filter(function (item) { return item.collected; }).length;
       const active700 = 1 + companions.filter(function (companion) {
-        return companion.team === TEAM_700 && companion.active;
+        return companion.team === TEAM_700 && (companion.active || companion.escaped);
       }).length;
       const active659 = companions.filter(function (companion) {
-        return companion.team === TEAM_659 && companion.active;
+        return companion.team === TEAM_659 && (companion.active || companion.escaped);
+      }).length;
+      const escapedCompanions = companions.filter(function (companion) { return companion.escaped; }).length;
+      const survivingCompanions = companions.filter(function (companion) {
+        return companion.active || companion.escaped;
       }).length;
       const hpColors = ['#ff6758', '#ff805b', '#ffae5d', '#9edb78', '#73db9f'];
       const hudLeft = Math.max(28, 62 * WIDTH / Math.max(1, window.innerWidth));
@@ -3037,12 +3121,20 @@
 
       ctx.fillStyle = '#758079';
       ctx.font = '700 10px Arial';
-      const objective = collected < TOTAL_MINERALS ? '광물 탐색' : (!chestOpen ? '열쇠함 이동' : '탈출문 이동');
+      const companionsExiting = chestOpen && escapedCompanions < survivingCompanions;
+      const objective = collected < TOTAL_MINERALS
+        ? '광물 탐색'
+        : (!chestOpen ? '열쇠함 이동' : (companionsExiting ? '동료 탈출' : '탈출문 이동'));
       ctx.textAlign = 'right';
       ctx.fillText(objective, 870, 25);
       ctx.fillStyle = collected < TOTAL_MINERALS ? '#e8ece9' : stage.accent;
       ctx.font = '800 14px Arial';
-      ctx.fillText(collected < TOTAL_MINERALS ? collected + ' / ' + TOTAL_MINERALS : (chestOpen ? 'UNLOCKED' : 'READY'), 870, 47);
+      const objectiveStatus = collected < TOTAL_MINERALS
+        ? collected + ' / ' + TOTAL_MINERALS
+        : (!chestOpen
+          ? 'READY'
+          : (companionsExiting ? escapedCompanions + ' / ' + survivingCompanions : 'UNLOCKED'));
+      ctx.fillText(objectiveStatus, 870, 47);
       ctx.textAlign = 'left';
       ctx.restore();
     }
