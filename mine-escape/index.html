@@ -312,6 +312,7 @@
       minerRightWalk2: 'assets/miner-right-walk-2.webp',
       minerRightWalk3: 'assets/miner-right-walk-3.webp',
       minerRightWalk4: 'assets/miner-right-walk-4.webp',
+      minerDead: 'assets/miner-dead.png',
       mineralCyan: 'assets/mineral-cyan.webp',
       mineralGold: 'assets/mineral-gold.webp',
       mineralRuby: 'assets/mineral-ruby.webp',
@@ -1469,11 +1470,10 @@
         if (!companion.active) {
           if (companion.knockoutReason === 'damage') {
             const previousDownedTimer = companion.downedTimer;
-            companion.downedTimer = Math.min(0.7, companion.downedTimer + dt);
-            if (!companion.downedImpactPlayed && previousDownedTimer < 0.42 && companion.downedTimer >= 0.42) {
+            companion.downedTimer = Math.min(2.2, companion.downedTimer + dt);
+            if (!companion.downedImpactPlayed && previousDownedTimer < 0.22 && companion.downedTimer >= 0.22) {
               companion.downedImpactPlayed = true;
-              const fallDirection = companion.id % 2 === 0 ? 1 : -1;
-              burst(companion.x + fallDirection * 22, companion.y + 17, '#8a785d', 9, 48);
+              burst(companion.x, companion.y + 17, '#8a785d', 9, 48);
             }
           }
           continue;
@@ -1808,7 +1808,7 @@
         companion.path = [];
         companion.patrolTarget = null;
         burst(companion.x, companion.y, '#c8b79b', 22, 120);
-        showMessage('동료 ' + (companion.id + 1) + ' 구조 대기', '#ffb38a', 1.5);
+        showMessage('동료 ' + (companion.id + 1) + ' 사망', '#d77b6c', 1.5);
       } else {
         showMessage('동료 ' + (companion.id + 1) + ' 장비 손상 · ' + companion.lives + '칸', '#ffb38a', 1.1);
       }
@@ -2644,25 +2644,53 @@
 
     function drawDownedCompanion(companion) {
       const progress = clamp(companion.downedTimer / 0.62, 0, 1);
-      const fallProgress = clamp((progress - 0.08) / 0.68, 0, 1);
-      const eased = 1 - Math.pow(1 - fallProgress, 3);
-      const impactProgress = clamp((progress - 0.7) / 0.3, 0, 1);
-      const impactOvershoot = Math.sin(impactProgress * Math.PI) * 0.09;
-      const crouch = progress < 0.2 ? Math.sin(progress / 0.2 * Math.PI) * 3.5 : 0;
-      const impactBounce = impactProgress > 0 ? Math.sin(impactProgress * Math.PI * 2) * (1 - impactProgress) * 2.2 : 0;
+      const collapseProgress = clamp(progress / 0.42, 0, 1);
+      const eased = 1 - Math.pow(1 - collapseProgress, 3);
+      const deathPoseBlend = clamp((progress - 0.08) / 0.28, 0, 1);
+      const bloodProgress = clamp((companion.downedTimer - 0.22) / 1.55, 0, 1);
+      const bloodEase = 1 - Math.pow(1 - bloodProgress, 3);
       const directionFrames = MINER_DIRECTION_FRAMES[companion.direction];
-      const fallDirection = companion.id % 2 === 0 ? 1 : -1;
-      const rotation = fallDirection * (eased + impactOvershoot) * Math.PI / 2;
+
+      if (bloodProgress > 0) {
+        ctx.save();
+        ctx.translate(companion.x - 9, companion.y + 17);
+        ctx.scale(0.16 + bloodEase * 0.84, 0.2 + bloodEase * 0.8);
+        ctx.globalAlpha = 0.38 + bloodEase * 0.42;
+        ctx.fillStyle = '#5d0b09';
+        ctx.beginPath();
+        ctx.moveTo(-30, -2);
+        ctx.bezierCurveTo(-22, -13, -7, -11, 0, -8);
+        ctx.bezierCurveTo(13, -13, 29, -7, 31, 1);
+        ctx.bezierCurveTo(34, 10, 18, 13, 7, 10);
+        ctx.bezierCurveTo(-7, 15, -27, 10, -30, -2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = bloodEase * 0.36;
+        ctx.fillStyle = '#a51d16';
+        ctx.beginPath();
+        ctx.ellipse(-8, -3, 15, 4, -0.12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.globalAlpha = bloodEase * 0.72;
+        ctx.fillStyle = '#6a0d0a';
+        ctx.beginPath();
+        ctx.ellipse(companion.x + 25, companion.y + 22, 2.8 * bloodEase, 1.8 * bloodEase, 0.3, 0, Math.PI * 2);
+        ctx.ellipse(companion.x + 32, companion.y + 19, 1.7 * bloodEase, 1.1 * bloodEase, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
 
       ctx.save();
       ctx.globalAlpha = 0.5;
       ctx.fillStyle = '#000';
       ctx.beginPath();
       ctx.ellipse(
-        companion.x + fallDirection * eased * 18,
+        companion.x,
         companion.y + 14,
-        18 + eased * 12,
-        8 - eased * 2,
+        18 + deathPoseBlend * 13,
+        8 - deathPoseBlend * 2,
         0,
         0,
         Math.PI * 2
@@ -2673,9 +2701,9 @@
       const image = SPRITES[directionFrames[0]];
       if (image && image.complete && image.naturalWidth) {
         ctx.save();
-        ctx.translate(companion.x, companion.y + 23 + crouch + impactBounce);
-        ctx.rotate(rotation);
-        ctx.scale(1 + impactProgress * (1 - impactProgress) * 0.04, 1 - crouch * 0.018);
+        ctx.globalAlpha = 1 - deathPoseBlend;
+        ctx.translate(companion.x, companion.y + 23 + eased * 7);
+        ctx.scale(1 + eased * 0.05, 1 - eased * 0.14);
         ctx.filter = 'grayscale(' + (eased * 0.72) + ') brightness(' + (1 - eased * 0.3) + ') drop-shadow(0 5px 4px rgba(0, 0, 0, 0.62))';
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
@@ -2683,20 +2711,15 @@
         ctx.restore();
       }
 
-      if (progress >= 0.92) {
+      const deadImage = SPRITES.minerDead;
+      if (deathPoseBlend > 0 && deadImage && deadImage.complete && deadImage.naturalWidth) {
         ctx.save();
-        ctx.globalAlpha = clamp((progress - 0.92) / 0.08, 0, 1);
-        ctx.translate(companion.x + fallDirection * 27, companion.y - 5);
-        ctx.fillStyle = '#f6c85f';
-        ctx.strokeStyle = '#fff1b8';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(0, 0, 8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        ctx.fillStyle = '#593f20';
-        ctx.fillRect(-1.5, -5, 3, 10);
-        ctx.fillRect(-5, -1.5, 10, 3);
+        ctx.globalAlpha = deathPoseBlend;
+        ctx.translate(companion.x, companion.y + 11);
+        ctx.filter = 'saturate(0.58) brightness(0.68) drop-shadow(0 6px 4px rgba(0, 0, 0, 0.72))';
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(deadImage, -48, -36.5, 96, 73);
         ctx.restore();
       }
     }
