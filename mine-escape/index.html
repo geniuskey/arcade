@@ -257,7 +257,7 @@
       <img id="overlay-image" class="helmet-mark" src="assets/miner-down-idle.webp" alt="" aria-hidden="true">
       <div id="overlay-kicker" class="eyebrow">MINE 01 // DESCENT READY</div>
       <h1 id="overlay-title">광산 탈출</h1>
-      <div id="overlay-route" class="mission-route"><b>광물 5개</b> → 열쇠함 → 탈출문</div>
+      <div id="overlay-route" class="mission-route"><b>700팀 5명 + 659팀 5명</b> · 공동 탐사</div>
       <button id="start-button" class="start-button" type="button">탐사 시작</button>
       <div class="controls">
         <span><span class="key">WASD</span><span class="key">↕</span> 이동</span>
@@ -388,12 +388,20 @@
     const FLOOR = { left: 24, top: 78, right: 876, bottom: 596 };
     const PLAYER_RADIUS = 14;
     const PLAYER_GROUND_HITBOX = { offsetY: 23, radiusX: 10, radiusY: 7 };
-    const COMPANION_FORMATION = [
+    const TEAM_700 = 700;
+    const TEAM_659 = 659;
+    const TEAM_700_FORMATION = [
       { lateral: -28, behind: 34 },
       { lateral: 28, behind: 34 },
       { lateral: -52, behind: 66 },
-      { lateral: 0, behind: 66 },
-      { lateral: 52, behind: 66 }
+      { lateral: 24, behind: 70 }
+    ];
+    const TEAM_659_FORMATION = [
+      { lateral: -74, behind: 42 },
+      { lateral: 74, behind: 42 },
+      { lateral: -78, behind: 78 },
+      { lateral: 0, behind: 104 },
+      { lateral: 78, behind: 78 }
     ];
     const COMPANION_NAV_STEP = 18;
     const COMPANION_SPEED = 138;
@@ -913,6 +921,8 @@
       angle: 0,
       speed: 178,
       lives: MAX_LIVES,
+      team: TEAM_700,
+      teamSlot: 0,
       jumpTimer: 0,
       jumpCooldown: 0,
       invulnerable: 0,
@@ -1291,8 +1301,7 @@
       if (!collidesWithWall(player.x, nextY, PLAYER_RADIUS)) player.y = nextY;
     }
 
-    function getInitialCompanionPosition(index) {
-      const formation = COMPANION_FORMATION[index];
+    function getInitialTeamPosition(formation) {
       const forwardX = Math.cos(player.angle);
       const forwardY = Math.sin(player.angle);
       const rightX = -forwardY;
@@ -1309,9 +1318,19 @@
           FLOOR.top + 10,
           FLOOR.bottom - 10
         );
-        if (!collidesWithWall(x, y, 10)) return { x: x, y: y };
+        if (!collidesWithWall(x, y, 10) && !getActorCartTunnelCollision({ x: x, y: y })) {
+          return { x: x, y: y };
+        }
       }
       return { x: player.x, y: player.y };
+    }
+
+    function getInitialCompanionPosition(index) {
+      return getInitialTeamPosition(TEAM_700_FORMATION[index]);
+    }
+
+    function getInitialTeam659Position(index) {
+      return getInitialTeamPosition(TEAM_659_FORMATION[index]);
     }
 
     function buildCompanionNavGrid() {
@@ -1410,6 +1429,31 @@
       companion.repathTimer = 0.8;
     }
 
+    function assignCompanionNextMineral(companion) {
+      let nextIndex = -1;
+      let bestAssignmentScore = Infinity;
+      for (let index = 0; index < minerals.length; index++) {
+        const mineral = minerals[index];
+        if (mineral.collected) continue;
+        const assignedCompanions = companions.filter(function (other) {
+          return other !== companion && other.active && other.targetMineralIndex === index;
+        }).length;
+        const mineralDistance = distance(companion.x, companion.y, mineral.x, mineral.y);
+        const assignmentScore = assignedCompanions * 1000 + mineralDistance;
+        if (assignmentScore < bestAssignmentScore) {
+          bestAssignmentScore = assignmentScore;
+          nextIndex = index;
+        }
+      }
+      if (nextIndex >= 0) {
+        assignCompanionMineral(companion, nextIndex);
+        return true;
+      }
+      companion.targetMineralIndex = -1;
+      assignCompanionPatrolTarget(companion);
+      return false;
+    }
+
     function assignCompanionPatrolTarget(companion) {
       const grid = companionNavGrid;
       const totalCells = grid.open.length;
@@ -1446,33 +1490,48 @@
       companion.repathTimer = 0.8;
     }
 
+    function createCompanion(id, team, teamSlot, position, mineralIndex) {
+      const companion = {
+        id: id,
+        team: team,
+        teamSlot: teamSlot,
+        x: position.x,
+        y: position.y,
+        direction: team === TEAM_700 ? player.direction : 'down',
+        moving: false,
+        step: id * 0.83,
+        lives: COMPANION_MAX_LIVES,
+        invulnerable: 0.45,
+        active: true,
+        knockoutReason: null,
+        downedTimer: 0,
+        downedImpactPlayed: false,
+        targetMineralIndex: -1,
+        patrolTarget: null,
+        patrolStep: 0,
+        path: [],
+        pathIndex: 0,
+        repathTimer: 0
+      };
+      assignCompanionMineral(companion, mineralIndex);
+      return companion;
+    }
+
     function setupCompanions() {
       companionNavGrid = buildCompanionNavGrid();
-      companions = COMPANION_FORMATION.map(function (_, index) {
-        const position = getInitialCompanionPosition(index);
-        const companion = {
-          id: index,
-          x: position.x,
-          y: position.y,
-          direction: player.direction,
-          moving: false,
-          step: index * 0.83,
-          lives: COMPANION_MAX_LIVES,
-          invulnerable: 0.45,
-          active: true,
-          knockoutReason: null,
-          downedTimer: 0,
-          downedImpactPlayed: false,
-          targetMineralIndex: -1,
-          patrolTarget: null,
-          patrolStep: 0,
-          path: [],
-          pathIndex: 0,
-          repathTimer: 0
-        };
-        assignCompanionMineral(companion, index);
-        return companion;
+      const team700 = TEAM_700_FORMATION.map(function (_, index) {
+        return createCompanion(index, TEAM_700, index + 1, getInitialCompanionPosition(index), index);
       });
+      const team659 = TEAM_659_FORMATION.map(function (_, index) {
+        return createCompanion(
+          team700.length + index,
+          TEAM_659,
+          index,
+          getInitialTeam659Position(index),
+          index
+        );
+      });
+      companions = team700.concat(team659);
     }
 
     function updateCompanions(dt) {
@@ -1492,18 +1551,14 @@
         }
         let mineral = minerals[companion.targetMineralIndex];
         if (!mineral || mineral.collected) {
-          companion.targetMineralIndex = -1;
-          mineral = null;
-          if (!companion.patrolTarget || distance(companion.x, companion.y, companion.patrolTarget.x, companion.patrolTarget.y) < 18) {
-            assignCompanionPatrolTarget(companion);
-          }
+          assignCompanionNextMineral(companion);
+          mineral = minerals[companion.targetMineralIndex];
         }
 
         if (mineral && distance(companion.x, companion.y, mineral.x, mineral.y) < 24) {
-          collectMineral(mineral, true);
-          companion.targetMineralIndex = -1;
-          mineral = null;
-          assignCompanionPatrolTarget(companion);
+          collectMineral(mineral, companion);
+          assignCompanionNextMineral(companion);
+          mineral = minerals[companion.targetMineralIndex];
         }
 
         const destination = mineral || companion.patrolTarget;
@@ -1548,9 +1603,8 @@
         }
 
         if (mineral && distance(companion.x, companion.y, mineral.x, mineral.y) < 24) {
-          collectMineral(mineral, true);
-          companion.targetMineralIndex = -1;
-          assignCompanionPatrolTarget(companion);
+          collectMineral(mineral, companion);
+          assignCompanionNextMineral(companion);
         } else if (!mineral && companion.patrolTarget &&
                    distance(companion.x, companion.y, companion.patrolTarget.x, companion.patrolTarget.y) < 18) {
           assignCompanionPatrolTarget(companion);
@@ -1820,9 +1874,9 @@
         companion.path = [];
         companion.patrolTarget = null;
         burst(companion.x, companion.y, '#c8b79b', 22, 120);
-        showMessage('동료 ' + (companion.id + 1) + ' 사망', '#d77b6c', 1.5);
+        showMessage(getCompanionLabel(companion) + ' 사망', '#d77b6c', 1.5);
       } else {
-        showMessage('동료 ' + (companion.id + 1) + ' 장비 손상 · ' + companion.lives + '칸', '#ffb38a', 1.1);
+        showMessage(getCompanionLabel(companion) + ' 장비 손상 · ' + companion.lives + '칸', '#ffb38a', 1.1);
       }
     }
 
@@ -1837,7 +1891,7 @@
       shake = Math.max(shake, 10);
       burst(point.x, point.y, '#8b7351', 20, 125);
       if (playSound) playFallSfx();
-      showMessage('동료 ' + (companion.id + 1) + ' 갱도 추락 · 구조 대기', '#d3ad76', 1.5);
+      showMessage(getCompanionLabel(companion) + ' 갱도 추락 · 구조 대기', '#d3ad76', 1.5);
     }
 
     function fallIntoCartTunnel(point) {
@@ -1851,18 +1905,18 @@
       showEndOverlay('gameover', '<b>지하 갱도로 추락했습니다</b> · 즉시 구조 실패');
     }
 
-    function collectMineral(mineral, collectedByCompanion) {
+    function collectMineral(mineral, collector) {
       if (mineral.collected) return;
       mineral.collected = true;
       const count = minerals.filter(function (item) { return item.collected; }).length;
       burst(mineral.x, mineral.y, mineral.color, 16, 92);
       playMineralSfx(count);
       if (count === TOTAL_MINERALS) {
-        showMessage('광물 확보 완료 · 열쇠함 활성화', '#6ee7b7', 2);
-      } else if (collectedByCompanion) {
-        showMessage('동료가 광물 확보 · ' + count + ' / ' + TOTAL_MINERALS, mineral.color, 1.1);
+        showMessage('탐사대가 광물 공동 확보 · 열쇠함 활성화', '#6ee7b7', 2);
+      } else if (collector === player) {
+        showMessage('광물 확보 · 탐사대 ' + count + ' / ' + TOTAL_MINERALS, mineral.color, 1.1);
       } else {
-        showMessage('광물 ' + count + ' / ' + TOTAL_MINERALS, mineral.color, 1.1);
+        showMessage('동료가 광물 확보 · 탐사대 ' + count + ' / ' + TOTAL_MINERALS, mineral.color, 1.1);
       }
     }
 
@@ -1880,7 +1934,7 @@
 
       for (const mineral of minerals) {
         if (!mineral.collected && distance(player.x, player.y, mineral.x, mineral.y) < PLAYER_RADIUS + 14) {
-          collectMineral(mineral, false);
+          collectMineral(mineral, player);
         }
       }
 
@@ -2736,9 +2790,36 @@
       }
     }
 
+    function getTeamColor(actor) {
+      return actor.team === TEAM_659 ? '#ff8d65' : '#65d8ff';
+    }
+
+    function getCompanionLabel(companion) {
+      return companion.team + '팀 ' + (companion.teamSlot + 1) + '번 동료';
+    }
+
+    function drawActorTeamBadge(actor, jumpHeight, bob) {
+      const color = getTeamColor(actor);
+      const y = actor.y - jumpHeight * 18 + bob - 44;
+      ctx.save();
+      ctx.fillStyle = 'rgba(6, 10, 9, 0.9)';
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      roundedRectPath(ctx, actor.x - 13, y - 7, 26, 12, 4);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.font = '800 7px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(String(actor.team), actor.x, y + 1.5);
+      ctx.textAlign = 'left';
+      ctx.restore();
+    }
+
     function drawMinerActor(actor, isPlayer) {
       if (!isPlayer && !actor.active) {
         drawDownedCompanion(actor);
+        drawActorTeamBadge(actor, 0, 0);
         return;
       }
       const jumpHeight = isPlayer ? getJumpHeight() : 0;
@@ -2757,6 +2838,10 @@
       ctx.beginPath();
       ctx.ellipse(0, 0, 18, 10, 0, 0, Math.PI * 2);
       ctx.fill();
+      ctx.globalAlpha = 0.52;
+      ctx.strokeStyle = getTeamColor(actor);
+      ctx.lineWidth = 2;
+      ctx.stroke();
       ctx.restore();
 
       if (blink) return;
@@ -2772,13 +2857,15 @@
         }
       );
 
+      drawActorTeamBadge(actor, jumpHeight, bob);
+
       if (!isPlayer && actor.lives < COMPANION_MAX_LIVES) {
         ctx.save();
         for (let i = 0; i < COMPANION_MAX_LIVES; i++) {
           ctx.fillStyle = i < actor.lives ? '#ff9b68' : 'rgba(23, 29, 25, 0.82)';
           ctx.strokeStyle = i < actor.lives ? '#ffe0c8' : '#515b54';
           ctx.lineWidth = 1;
-          roundedRectPath(ctx, actor.x - 8 + i * 6, actor.y - 37, 4, 5, 1.5);
+          roundedRectPath(ctx, actor.x - 8 + i * 6, actor.y - 34, 4, 5, 1.5);
           ctx.fill();
           ctx.stroke();
         }
@@ -2819,6 +2906,7 @@
       ctx.fill();
 
       for (const companion of companions) {
+        if (!companion.active) continue;
         const companionLamp = ctx.createRadialGradient(
           companion.x,
           companion.y - 9,
@@ -2870,8 +2958,33 @@
       ctx.restore();
     }
 
+    function drawExpeditionGroupCard(x, teamId, activeCount, color) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(17, 23, 20, 0.92)';
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      roundedRectPath(ctx, x, 17, 54, 36, 6);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.font = '800 9px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(teamId + '팀', x + 27, 30);
+      ctx.fillStyle = '#e8ece9';
+      ctx.font = '800 11px Arial';
+      ctx.fillText(activeCount + ' / 5명', x + 27, 45);
+      ctx.textAlign = 'left';
+      ctx.restore();
+    }
+
     function drawHud() {
       const collected = minerals.filter(function (item) { return item.collected; }).length;
+      const active700 = 1 + companions.filter(function (companion) {
+        return companion.team === TEAM_700 && companion.active;
+      }).length;
+      const active659 = companions.filter(function (companion) {
+        return companion.team === TEAM_659 && companion.active;
+      }).length;
       const hpColors = ['#ff6758', '#ff805b', '#ffae5d', '#9edb78', '#73db9f'];
       const hudLeft = Math.max(28, 62 * WIDTH / Math.max(1, window.innerWidth));
       ctx.save();
@@ -2903,6 +3016,9 @@
       ctx.font = '700 10px Arial';
       ctx.fillText('열쇠', 446, 23);
       drawKeyIcon(472, 43, hasKey || chestOpen);
+
+      drawExpeditionGroupCard(510, TEAM_700, active700, '#65d8ff');
+      drawExpeditionGroupCard(575, TEAM_659, active659, '#ff8d65');
 
       ctx.fillStyle = '#758079';
       ctx.font = '700 10px Arial';
