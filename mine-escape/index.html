@@ -524,13 +524,17 @@
     const JUMP_DURATION = 0.72;
     const TOTAL_MINERALS = 5;
     const MAX_LIVES = 5;
+    const TARGET_HZ = 30;
+    const FRAME_INTERVAL_MS = 1000 / TARGET_HZ;
+    const SIMULATION_DT = 1 / TARGET_HZ;
+    const MAX_PARTICLES = 220;
+    const DUST_PARTICLE_COUNT = 72;
     let renderScaleX = 1;
     let renderScaleY = 1;
 
     function resizeCanvas() {
-      // The game is deliberately soft-lit; a 1.5x backing store keeps the
-      // cave effects crisp while avoiding a 4x pixel workload on retina screens.
-      const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+      // 30Hz와 1.25x backing store로 저사양 기기에서도 동굴 효과 비용을 제한한다.
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.25);
       const displayWidth = Math.max(1, window.innerWidth);
       const displayHeight = Math.max(1, window.innerHeight);
       const nextWidth = Math.round(displayWidth * pixelRatio);
@@ -1136,7 +1140,7 @@
       ctx.globalAlpha = settings.alpha === undefined ? 1 : settings.alpha;
       ctx.filter = settings.filter || 'none';
       ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
+      ctx.imageSmoothingQuality = 'medium';
       ctx.drawImage(image, -width / 2, -height / 2, width, height);
       ctx.restore();
       return true;
@@ -1155,7 +1159,7 @@
 
     function createDust() {
       const result = [];
-      for (let i = 0; i < 108; i++) {
+      for (let i = 0; i < DUST_PARTICLE_COUNT; i++) {
         const seed = i * 917 + stageIndex * 311;
         result.push({
           x: FLOOR.left + 12 + ((seed * 37) % 824),
@@ -2466,7 +2470,8 @@
     }
 
     function burst(x, y, color, count, speed) {
-      for (let i = 0; i < count; i++) {
+      const particleCount = Math.min(count, Math.max(0, MAX_PARTICLES - particles.length));
+      for (let i = 0; i < particleCount; i++) {
         const angle = Math.random() * Math.PI * 2;
         const velocity = speed * (0.3 + Math.random() * 0.7);
         particles.push({
@@ -3275,7 +3280,7 @@
         ctx.scale(1 + eased * 0.05, 1 - eased * 0.14);
         ctx.filter = 'grayscale(' + (eased * 0.72) + ') brightness(' + (1 - eased * 0.3) + ') drop-shadow(0 5px 4px rgba(0, 0, 0, 0.62))';
         ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
+        ctx.imageSmoothingQuality = 'medium';
         ctx.drawImage(image, -23.5, -53, 47, 60);
         ctx.restore();
       }
@@ -3287,7 +3292,7 @@
         ctx.translate(companion.x, companion.y + 11);
         ctx.filter = 'saturate(0.58) brightness(0.68) drop-shadow(0 6px 4px rgba(0, 0, 0, 0.72))';
         ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
+        ctx.imageSmoothingQuality = 'medium';
         ctx.drawImage(deadImage, -48, -36.5, 96, 73);
         ctx.restore();
       }
@@ -3663,9 +3668,16 @@
     }
 
     function loop(now) {
-      const dt = Math.min(0.034, Math.max(0, (now - lastTime) / 1000));
+      if (now - lastTime < FRAME_INTERVAL_MS) {
+        requestAnimationFrame(loop);
+        return;
+      }
       lastTime = now;
-      update(dt);
+      if (state === 'start' || state === 'gameover' || state === 'win') {
+        requestAnimationFrame(loop);
+        return;
+      }
+      update(SIMULATION_DT);
       draw();
       requestAnimationFrame(loop);
     }
