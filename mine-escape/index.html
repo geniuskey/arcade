@@ -507,7 +507,9 @@
     const COMPANION_SPEED = 156;
     const COMPANION_HAZARD_SCAN_INTERVAL = 0.16;
     const COMPANION_STUCK_TIMEOUT = 0.24;
-    const COMPANION_MAX_LIVES = 3;
+    // 동료는 어린이 플레이어가 탐사 흐름을 잃지 않도록 최대 10회까지
+    // 함정 피해를 버틸 수 있는 레벨 10 장비를 사용한다.
+    const COMPANION_MAX_LIVES = 10;
     const COMPANION_HIT_INVULNERABILITY = 1.1;
     const PUSH_RANGE = 78;
     const PUSH_FORCE = 52;
@@ -995,6 +997,7 @@
     let state = 'start';
     let stageIndex = 0;
     let stage = STAGES[0];
+    let stageHazards = [];
     let stageTime = 0;
     let transitionTimer = 0;
     let transitionLoaded = false;
@@ -1167,6 +1170,49 @@
       return result;
     }
 
+    function buildStageHazards(stageMinerals, index) {
+      const hazards = (stage.hazards || []).map(function (hazard) {
+        return Object.assign({}, hazard);
+      });
+      // 광물 배열의 루비는 MINERAL_VARIANTS[2]이며, 각 스테이지에 하나만 둔다.
+      const ruby = stageMinerals.find(function (mineral) {
+        return mineral.sprite === MINERAL_VARIANTS[2].sprite;
+      });
+      if (!ruby) return hazards;
+
+      const coveredByRotatingHazard = hazards.some(function (hazard) {
+        const reach = hazard.type === 'slider'
+          ? 28
+          : (hazard.length || 0) + 18;
+        return distance(ruby.x, ruby.y, hazard.x, hazard.y) <= reach;
+      });
+      const staticTrapGroups = [
+        stage.crushers || [],
+        stage.vents || [],
+        stage.rockfalls || [],
+        stage.lavaVents || []
+      ];
+      const coveredByStaticTrap = staticTrapGroups.some(function (group) {
+        return group.some(function (trap) {
+          return distance(ruby.x, ruby.y, trap.x, trap.y) <= (trap.radius || 0) + 18;
+        });
+      });
+
+      // 이미 낙석·분출구·회전봉이 있는 루비에는 중복 생성하지 않는다.
+      if (!coveredByRotatingHazard && !coveredByStaticTrap) {
+        hazards.push({
+          type: 'spinner',
+          x: ruby.x,
+          y: ruby.y,
+          length: 42,
+          speed: 1.75 + index * 0.06,
+          phase: (index * 0.71) % (Math.PI * 2),
+          arms: 2
+        });
+      }
+      return hazards;
+    }
+
     function setupStage(index) {
       stage = STAGES[index];
       stageTime = 0;
@@ -1179,6 +1225,7 @@
           color: variant.color
         });
       });
+      stageHazards = buildStageHazards(minerals, index);
       collectedMineralCount = 0;
       repairs = (stage.repairs || []).map(function (repair) {
         return Object.assign({}, repair, { collected: false });
@@ -2066,7 +2113,7 @@
     }
 
     function getActorHazardCollision(actor) {
-      for (const hazard of stage.hazards) {
+      for (const hazard of stageHazards) {
         const segments = getHazardSegments(hazard);
         for (const segment of segments) {
           if (actorGroundHitsSegment(actor, segment.ax, segment.ay, segment.bx, segment.by, 13)) {
@@ -2614,9 +2661,9 @@
     }
 
     function drawHazards() {
-      for (const hazard of stage.hazards) drawHazardTrack(hazard);
+      for (const hazard of stageHazards) drawHazardTrack(hazard);
 
-      for (const hazard of stage.hazards) {
+      for (const hazard of stageHazards) {
         const segments = getHazardSegments(hazard);
         for (const segment of segments) drawSpikedBar(segment);
         if (hazard.type !== 'spinner') continue;
@@ -3267,11 +3314,15 @@
 
       if (!isPlayer && actor.lives < COMPANION_MAX_LIVES) {
         ctx.save();
+        const lifeSegmentWidth = 4;
+        const lifeSegmentGap = 2;
+        const lifeBarWidth = COMPANION_MAX_LIVES * lifeSegmentWidth + (COMPANION_MAX_LIVES - 1) * lifeSegmentGap;
+        const lifeBarStartX = actor.x - lifeBarWidth / 2;
         for (let i = 0; i < COMPANION_MAX_LIVES; i++) {
           ctx.fillStyle = i < actor.lives ? '#ff9b68' : 'rgba(23, 29, 25, 0.82)';
           ctx.strokeStyle = i < actor.lives ? '#ffe0c8' : '#515b54';
           ctx.lineWidth = 1;
-          roundedRectPath(ctx, actor.x - 8 + i * 6, actor.y - 34, 4, 5, 1.5);
+          roundedRectPath(ctx, lifeBarStartX + i * (lifeSegmentWidth + lifeSegmentGap), actor.y - 34, lifeSegmentWidth, 5, 1.5);
           ctx.fill();
           ctx.stroke();
         }
