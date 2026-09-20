@@ -45,7 +45,7 @@
         left: { code: 'ArrowLeft', key: 'ArrowLeft' }, right: { code: 'ArrowRight', key: 'ArrowRight' },
         w: { code: 'KeyW', key: 'w' }, a: { code: 'KeyA', key: 'a' }, s: { code: 'KeyS', key: 's' }, d: { code: 'KeyD', key: 'd' },
         space: { code: 'Space', key: ' ' }, enter: { code: 'Enter', key: 'Enter' },
-        x: { code: 'KeyX', key: 'x' }, r: { code: 'KeyR', key: 'r' }, h: { code: 'KeyH', key: 'h' }, e: { code: 'KeyE', key: 'e' }
+        x: { code: 'KeyX', key: 'x' }, r: { code: 'KeyR', key: 'r' }, h: { code: 'KeyH', key: 'h' }, e: { code: 'KeyE', key: 'e' }, q: { code: 'KeyQ', key: 'q' }
     };
 
     function fire(k, type) {
