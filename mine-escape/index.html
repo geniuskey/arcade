@@ -510,6 +510,8 @@
     const COMPANION_MAX_LIVES = 3;
     // 실력 등급은 목숨과 별개로 이동·회피·재탐색 판단에만 사용한다.
     const COMPANION_SKILL_RATING = 999999;
+    const COMPANION_INTELLIGENCE_RATING = 999999;
+    const COMPANION_CAUTION_RATING = 999999;
     const COMPANION_HIT_INVULNERABILITY = 1.1;
     const PUSH_RANGE = 78;
     const PUSH_FORCE = 52;
@@ -1662,6 +1664,26 @@
       return path;
     }
 
+    function getCompanionIntelligenceTier(companion) {
+      return clamp(
+        Math.log10(Math.max(1, companion.intelligenceRating || 0)) / 6,
+        0,
+        1
+      );
+    }
+
+    function getCompanionCautionTier(companion) {
+      return clamp(
+        Math.log10(Math.max(1, companion.cautionRating || 0)) / 6,
+        0,
+        1
+      );
+    }
+
+    function getCompanionRepathInterval(companion) {
+      return 0.8 * (1 - getCompanionIntelligenceTier(companion) * 0.6);
+    }
+
     function assignCompanionMineral(companion, mineralIndex) {
       companion.targetMineralIndex = mineralIndex;
       companion.objectiveType = 'mineral';
@@ -1669,7 +1691,7 @@
       const mineral = minerals[mineralIndex];
       companion.path = mineral ? findCompanionPath(companion.x, companion.y, mineral.x, mineral.y) : [];
       companion.pathIndex = 0;
-      companion.repathTimer = 0.8;
+      companion.repathTimer = getCompanionRepathInterval(companion);
     }
 
     function assignCompanionNextMineral(companion) {
@@ -1682,7 +1704,19 @@
           return other !== companion && other.active && other.targetMineralIndex === index;
         }).length;
         const mineralDistance = distance(companion.x, companion.y, mineral.x, mineral.y);
-        const assignmentScore = assignedCompanions * 1000 + mineralDistance;
+        const candidatePath = findCompanionPath(companion.x, companion.y, mineral.x, mineral.y);
+        let routeLength = 0;
+        let hazardExposure = 0;
+        for (let pathIndex = 1; pathIndex < candidatePath.length; pathIndex += 2) {
+          const previous = candidatePath[pathIndex - 1];
+          const point = candidatePath[pathIndex];
+          routeLength += distance(previous.x, previous.y, point.x, point.y);
+          if (getActorHazardCollision(point)) hazardExposure += 1;
+        }
+        const intelligenceTier = getCompanionIntelligenceTier(companion);
+        const assignmentScore = assignedCompanions * 1000
+          + Math.max(mineralDistance, routeLength)
+          + hazardExposure * (260 + intelligenceTier * 740 + getCompanionCautionTier(companion) * 500);
         if (assignmentScore < bestAssignmentScore) {
           bestAssignmentScore = assignmentScore;
           nextIndex = index;
@@ -1703,7 +1737,7 @@
       companion.patrolTarget = { x: point.x, y: point.y };
       companion.path = findCompanionPath(companion.x, companion.y, point.x, point.y);
       companion.pathIndex = 0;
-      companion.repathTimer = 0.8;
+      companion.repathTimer = getCompanionRepathInterval(companion);
     }
 
     function assignCompanionPatrolTarget(companion) {
@@ -1750,6 +1784,8 @@
         team: team,
         teamSlot: teamSlot,
         skillRating: COMPANION_SKILL_RATING,
+        intelligenceRating: COMPANION_INTELLIGENCE_RATING,
+        cautionRating: COMPANION_CAUTION_RATING,
         x: position.x,
         y: position.y,
         direction: team === TEAM_700 ? player.direction : 'down',
@@ -1798,11 +1834,8 @@
     function updateCompanions(dt) {
       for (let i = 0; i < companions.length; i++) {
         const companion = companions[i];
-        const skillTier = clamp(
-          Math.log10(Math.max(1, companion.skillRating || 0)) / 6,
-          0,
-          1
-        );
+        const skillTier = getCompanionIntelligenceTier(companion);
+        const cautionTier = getCompanionCautionTier(companion);
         const skillScanInterval = COMPANION_HAZARD_SCAN_INTERVAL * (1 - skillTier * 0.65);
         const skillRepathInterval = 0.8 * (1 - skillTier * 0.6);
         if (companion.invulnerable > 0) companion.invulnerable = Math.max(0, companion.invulnerable - dt);
@@ -1886,7 +1919,7 @@
             const candidateX = companion.x + candidate.x;
             const candidateY = companion.y + candidate.y;
             if (collidesWithWall(candidateX, candidateY, 10)) continue;
-            if (getActorHazardCollision({ x: candidateX, y: candidateY })) continue;
+            if (!isCompanionPositionSafe(companion, candidateX, candidateY, cautionTier)) continue;
             safeMoveX = candidate.x;
             safeMoveY = candidate.y;
             foundSafeMove = true;
@@ -2169,6 +2202,52 @@
       return null;
     }
 
+    function isCompanionPositionSafe(companion, x, y, cautionTier) {
+      const candidate = { x: x, y: y };
+      if (getActorCartTunnelCollision(candidate) || getActorHazardCollision(candidate)) return false;
+      const probeDistance = 6 + cautionTier * 10;
+      const probeDirections = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+      for (const direction of probeDirections) {
+        const probe = {
+          x: x + direction[0] * probeDistance,
+          y: y + direction[1] * probeDistance
+        };
+        if (getActorHazardCollision(probe)) return false;
+      }
+      return true;
+    }
+
+    function tryCompanionEmergencyDodge(companion, sourceX, sourceY) {
+      const awayAngle = Math.atan2(companion.y - sourceY, companion.x - sourceX);
+      const angleOffsets = [0, -0.42, 0.42, -0.84, 0.84, Math.PI];
+      const distances = [24, 36, 50, 66];
+      const cautionTier = getCompanionCautionTier(companion);
+      for (const escapeDistance of distances) {
+        for (const angleOffset of angleOffsets) {
+          const angle = awayAngle + angleOffset;
+          const candidate = {
+            x: companion.x + Math.cos(angle) * escapeDistance,
+            y: companion.y + Math.sin(angle) * escapeDistance
+          };
+          if (collidesWithWall(candidate.x, candidate.y, 10)) continue;
+          if (!isCompanionPositionSafe(companion, candidate.x, candidate.y, cautionTier)) continue;
+          companion.x = candidate.x;
+          companion.y = candidate.y;
+          companion.invulnerable = Math.max(companion.invulnerable, 0.72);
+          companion.hazardScanTimer = 0;
+          companion.repathTimer = 0;
+          companion.moving = false;
+          burst(companion.x, companion.y, getTeamColor(companion), 5, 46);
+          return true;
+        }
+      }
+
+      // 박사급 AI가 빠져나갈 틈을 계산하는 동안에는 즉시 피해를 받지 않도록 보호한다.
+      companion.invulnerable = Math.max(companion.invulnerable, 0.72);
+      companion.hazardScanTimer = 0;
+      return true;
+    }
+
     function updateHazards() {
       const jumpHeight = getJumpHeight();
       let hitSoundPlayed = false;
@@ -2192,6 +2271,8 @@
         if (!companion.active) continue;
         const tunnelPoint = getActorCartTunnelCollision(companion);
         if (tunnelPoint) {
+          if (getCompanionIntelligenceTier(companion) >= 0.99 &&
+              tryCompanionEmergencyDodge(companion, tunnelPoint.x, tunnelPoint.y)) continue;
           knockOutCompanion(companion, tunnelPoint, !hitSoundPlayed);
           hitSoundPlayed = true;
           continue;
@@ -2199,6 +2280,8 @@
         if (companion.invulnerable > 0) continue;
         const collision = getActorHazardCollision(companion);
         if (collision) {
+          if (getCompanionIntelligenceTier(companion) >= 0.99 &&
+              tryCompanionEmergencyDodge(companion, collision.x, collision.y)) continue;
           hitCompanion(companion, collision.x, collision.y, !hitSoundPlayed);
           hitSoundPlayed = true;
         }
