@@ -454,6 +454,10 @@
     const CART_SPEED_MULTIPLIER = 1.4;
     const CART_TUNNEL_FRACTION = 0.13;
     const SPRITES = {};
+    const COMPANION_PATH_DIRECTIONS = [
+      [-1, 0], [1, 0], [0, -1], [0, 1],
+      [-1, -1], [1, -1], [-1, 1], [1, 1]
+    ];
     let spritesReady = false;
 
     startButton.disabled = true;
@@ -500,7 +504,9 @@
     ];
     const COMPANION_NAV_STEP = 18;
     const COMPANION_NAV_CLEARANCE = 12;
-    const COMPANION_SPEED = 138;
+    const COMPANION_SPEED = 156;
+    const COMPANION_HAZARD_SCAN_INTERVAL = 0.16;
+    const COMPANION_STUCK_TIMEOUT = 0.24;
     const COMPANION_MAX_LIVES = 3;
     const COMPANION_HIT_INVULNERABILITY = 1.1;
     const PUSH_RANGE = 78;
@@ -518,7 +524,9 @@
     let renderScaleY = 1;
 
     function resizeCanvas() {
-      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      // The game is deliberately soft-lit; a 1.5x backing store keeps the
+      // cave effects crisp while avoiding a 4x pixel workload on retina screens.
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
       const displayWidth = Math.max(1, window.innerWidth);
       const displayHeight = Math.max(1, window.innerHeight);
       const nextWidth = Math.round(displayWidth * pixelRatio);
@@ -993,10 +1001,12 @@
     let lastTime = performance.now();
     let keys = {};
     let minerals = [];
+    let collectedMineralCount = 0;
     let repairs = [];
     let particles = [];
     let dust = [];
     let companions = [];
+    const renderActors = [];
     let companionNavGrid = null;
     let chestOpen = false;
     let hasKey = false;
@@ -1169,6 +1179,7 @@
           color: variant.color
         });
       });
+      collectedMineralCount = 0;
       repairs = (stage.repairs || []).map(function (repair) {
         return Object.assign({}, repair, { collected: false });
       });
@@ -1570,16 +1581,11 @@
       let queueStart = 0;
       let queueEnd = 1;
       queue[0] = startIndex;
-      const directions = [
-        [-1, 0], [1, 0], [0, -1], [0, 1],
-        [-1, -1], [1, -1], [-1, 1], [1, 1]
-      ];
-
       while (queueStart < queueEnd && parents[targetIndex] === -2) {
         const current = queue[queueStart++];
         const currentColumn = current % grid.columns;
         const currentRow = Math.floor(current / grid.columns);
-        for (const direction of directions) {
+        for (const direction of COMPANION_PATH_DIRECTIONS) {
           const column = currentColumn + direction[0];
           const row = currentRow + direction[1];
           if (column < 0 || column >= grid.columns || row < 0 || row >= grid.rows) continue;
@@ -1716,7 +1722,9 @@
         patrolStep: 0,
         path: [],
         pathIndex: 0,
-        repathTimer: 0
+        repathTimer: 0,
+        hazardScanTimer: 0,
+        stuckTimer: 0
       };
       assignCompanionMineral(companion, mineralIndex);
       return companion;
@@ -1743,6 +1751,7 @@
       for (let i = 0; i < companions.length; i++) {
         const companion = companions[i];
         if (companion.invulnerable > 0) companion.invulnerable = Math.max(0, companion.invulnerable - dt);
+        if (companion.hazardScanTimer > 0) companion.hazardScanTimer = Math.max(0, companion.hazardScanTimer - dt);
         if (!companion.active) {
           if (companion.knockoutReason === 'damage') {
             const previousDownedTimer = companion.downedTimer;
@@ -1759,7 +1768,7 @@
           companion.moving = false;
           continue;
         }
-        const allMineralsCollected = minerals.every(function (mineral) { return mineral.collected; });
+        const allMineralsCollected = collectedMineralCount === TOTAL_MINERALS;
         let mineral = null;
         if (allMineralsCollected) {
           const nextObjectiveType = chestOpen ? 'door' : 'chest';
@@ -1806,13 +1815,47 @@
         const moveY = dy * ratio;
         const previousX = companion.x;
         const previousY = companion.y;
+        let safeMoveX = moveX;
+        let safeMoveY = moveY;
+        if (companion.hazardScanTimer <= 0) {
+          const sideX = -moveY;
+          const sideY = moveX;
+          const candidates = [
+            { x: moveX, y: moveY },
+            { x: sideX * 0.86, y: sideY * 0.86 },
+            { x: -sideX * 0.86, y: -sideY * 0.86 },
+            { x: moveX * 0.45, y: moveY * 0.45 }
+          ];
+          let foundSafeMove = false;
+          for (const candidate of candidates) {
+            const candidateX = companion.x + candidate.x;
+            const candidateY = companion.y + candidate.y;
+            if (collidesWithWall(candidateX, candidateY, 10)) continue;
+            if (getActorHazardCollision({ x: candidateX, y: candidateY })) continue;
+            safeMoveX = candidate.x;
+            safeMoveY = candidate.y;
+            foundSafeMove = true;
+            break;
+          }
+          companion.hazardScanTimer = COMPANION_HAZARD_SCAN_INTERVAL;
+          if (!foundSafeMove) {
+            safeMoveX = 0;
+            safeMoveY = 0;
+          }
+        }
 
-        if (!collidesWithWall(companion.x + moveX, companion.y, 10)) companion.x += moveX;
-        if (!collidesWithWall(companion.x, companion.y + moveY, 10)) companion.y += moveY;
+        if (!collidesWithWall(companion.x + safeMoveX, companion.y, 10)) companion.x += safeMoveX;
+        if (!collidesWithWall(companion.x, companion.y + safeMoveY, 10)) companion.y += safeMoveY;
 
         const actualX = companion.x - previousX;
         const actualY = companion.y - previousY;
         companion.moving = Math.hypot(actualX, actualY) > 0.2;
+        if (companion.moving) companion.stuckTimer = 0;
+        else if (remaining > 16) companion.stuckTimer += dt;
+        if (companion.stuckTimer >= COMPANION_STUCK_TIMEOUT) {
+          companion.repathTimer = 0;
+          companion.stuckTimer = 0;
+        }
         if (companion.moving) {
           if (Math.abs(actualX) > Math.abs(actualY)) {
             companion.direction = actualX < 0 ? 'left' : 'right';
@@ -2181,7 +2224,8 @@
     function collectMineral(mineral, collector) {
       if (mineral.collected) return;
       mineral.collected = true;
-      const count = minerals.filter(function (item) { return item.collected; }).length;
+      collectedMineralCount += 1;
+      const count = collectedMineralCount;
       burst(mineral.x, mineral.y, mineral.color, 16, 92);
       playMineralSfx(count);
       if (count === TOTAL_MINERALS) {
@@ -2194,7 +2238,7 @@
     }
 
     function openExpeditionChest(collector) {
-      if (chestOpen || !minerals.every(function (mineral) { return mineral.collected; })) return false;
+      if (chestOpen || collectedMineralCount !== TOTAL_MINERALS) return false;
       chestOpen = true;
       hasKey = true;
       burst(stage.chest.x, stage.chest.y, '#f7b955', 28, 130);
@@ -2260,7 +2304,7 @@
         }
       }
 
-      const collected = minerals.filter(function (item) { return item.collected; }).length;
+      const collected = collectedMineralCount;
       if (collected === TOTAL_MINERALS && !chestOpen &&
           distance(player.x, player.y, stage.chest.x, stage.chest.y) < 42) {
         openExpeditionChest(player);
@@ -2301,14 +2345,17 @@
     }
 
     function updateParticles(dt) {
-      for (const particle of particles) {
+      let writeIndex = 0;
+      for (let readIndex = 0; readIndex < particles.length; readIndex++) {
+        const particle = particles[readIndex];
         particle.x += particle.vx * dt;
         particle.y += particle.vy * dt;
         particle.vx *= Math.pow(0.03, dt);
         particle.vy *= Math.pow(0.03, dt);
         particle.life -= dt;
+        if (particle.life > 0) particles[writeIndex++] = particle;
       }
-      particles = particles.filter(function (particle) { return particle.life > 0; });
+      particles.length = writeIndex;
     }
 
     function update(dt) {
@@ -2462,7 +2509,7 @@
     }
 
     function drawChest() {
-      const collected = minerals.filter(function (item) { return item.collected; }).length;
+      const collected = collectedMineralCount;
       const ready = collected === TOTAL_MINERALS;
       const x = stage.chest.x;
       const y = stage.chest.y;
@@ -3233,12 +3280,15 @@
     }
 
     function drawMinerTeam() {
-      const team = companions.filter(function (companion) {
-        return companion.active || companion.knockoutReason === 'damage';
-      }).concat([player]).sort(function (a, b) {
+      renderActors.length = 0;
+      for (const companion of companions) {
+        if (companion.active || companion.knockoutReason === 'damage') renderActors.push(companion);
+      }
+      renderActors.push(player);
+      renderActors.sort(function (a, b) {
         return a.y - b.y;
       });
-      for (const actor of team) drawMinerActor(actor, actor === player);
+      for (const actor of renderActors) drawMinerActor(actor, actor === player);
     }
 
     function drawDarkness() {
@@ -3337,17 +3387,17 @@
     }
 
     function drawHud() {
-      const collected = minerals.filter(function (item) { return item.collected; }).length;
-      const active700 = 1 + companions.filter(function (companion) {
-        return companion.team === TEAM_700 && (companion.active || companion.escaped);
-      }).length;
-      const active659 = companions.filter(function (companion) {
-        return companion.team === TEAM_659 && (companion.active || companion.escaped);
-      }).length;
-      const escapedCompanions = companions.filter(function (companion) { return companion.escaped; }).length;
-      const survivingCompanions = companions.filter(function (companion) {
-        return companion.active || companion.escaped;
-      }).length;
+      const collected = collectedMineralCount;
+      let active700 = 1;
+      let active659 = 0;
+      let escapedCompanions = 0;
+      let survivingCompanions = 0;
+      for (const companion of companions) {
+        if (companion.team === TEAM_700 && (companion.active || companion.escaped)) active700 += 1;
+        if (companion.team === TEAM_659 && (companion.active || companion.escaped)) active659 += 1;
+        if (companion.escaped) escapedCompanions += 1;
+        if (companion.active || companion.escaped) survivingCompanions += 1;
+      }
       const hpColors = ['#ff6758', '#ff805b', '#ffae5d', '#9edb78', '#73db9f'];
       const hudLeft = Math.max(28, 62 * WIDTH / Math.max(1, window.innerWidth));
       ctx.save();
