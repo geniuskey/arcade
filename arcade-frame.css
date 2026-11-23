@@ -1,0 +1,66 @@
+@media (orientation: landscape) and (max-height: 550px) {
+  :is(#shell, #game-shell, #game-container)[data-arcade-frame="standard"] {
+    width: min(1120px, calc(100vw - 12px), calc((100dvh - 12px) * 1.6));
+    max-height: none;
+  }
+}
+
+@media (max-width: 700px) and (max-aspect-ratio: 4/5) {
+  :is(#shell, #game-shell, #game-container)[data-arcade-frame]:has(:is(.panel, .menu).active) {
+    width: min(460px, calc(100vw - 20px));
+    height: min(460px, calc(100dvh - 24px));
+    max-height: none;
+    aspect-ratio: auto;
+    border-radius: 22px;
+  }
+
+  :is(#shell, #game-shell, #game-container)[data-arcade-frame]:has(#main-menu.active) {
+    height: min(568px, calc(100dvh - 24px));
+    background-image: linear-gradient(180deg, transparent 4%, #080a14 53%), var(--menu-art);
+    background-position: center top;
+    background-size: 100% 100%, auto 56%;
+    background-repeat: no-repeat;
+  }
+
+  [data-arcade-frame]:has(:is(.panel, .menu).active) > canvas {
+    object-fit: contain;
+    opacity: .28;
+  }
+
+  [data-arcade-frame]:has(#main-menu.active) > canvas { visibility: hidden; }
+
+  [data-arcade-frame] :is(.panel, .menu) {
+    width: min(420px, calc(100% - 26px));
+    padding: 20px;
+    max-height: calc(100% - 64px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+
+  [data-arcade-frame] #main-menu.active { align-self: end; margin-bottom: 13px; }
+  [data-arcade-frame] :is(.panel, .menu) :is(h1, h2) { font-size: clamp(26px, 8vw, 40px); }
+  [data-arcade-frame] :is(.tagline, .menu-copy) {
+    margin: 10px 0 14px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: #c8cede;
+  }
+
+  [data-arcade-frame] :is(.panel, .menu) .kicker { font-size: 9px; line-height: 1.3; }
+  [data-arcade-frame] :is(.features, .how) { gap: 5px; margin: 10px 0; }
+  [data-arcade-frame] :is(.features, .how) :is(.feature, .how > div) { padding: 8px 6px; }
+  [data-arcade-frame] :is(.feature, .how > div) :is(b, strong) { font-size: 9px; line-height: 1.3; }
+  [data-arcade-frame] :is(.feature, .how > div) span { font-size: 10px; line-height: 1.4; }
+
+  [data-arcade-frame] :is(.difficulty, .mode) button { min-height: 37px; font-size: 10px; }
+  [data-arcade-frame] :is(.primary, .primary-button) { min-height: 44px; font-size: 11px; }
+  [data-arcade-frame] :is(.panel-foot, .best-line, .menu-foot) {
+    font-size: 9px;
+    line-height: 1.4;
+    color: #a6adbf;
+  }
+  [data-arcade-frame] .result span { font-size: 9px; }
+  [data-arcade-frame] .result strong { font-size: 16px; }
+  [data-arcade-frame] :is(.corner, .top-button) { min-width: 32px; min-height: 32px; font-size: 12px; }
+}

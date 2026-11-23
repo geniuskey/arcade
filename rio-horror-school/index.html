@@ -708,7 +708,6 @@
                 padding: 5px;
             }
 
-            #gameContainer { transform-origin: top center; }
             body.controls-active #mobileControls { display: block; }
             .mobile-only { display: inline; }
             .desktop-only { display: none; }
@@ -765,19 +764,110 @@
             box-shadow: 0 10px 24px rgba(0,0,0,0.3);
             backdrop-filter: blur(10px);
         }
+        #gameContainer {
+            width: min(968px, calc(100vw - 10px), calc((100dvh - 144px) * 1.5));
+        }
+        #playfield { position: relative; }
+        #gameCanvas { display: block; width: 100%; height: auto; }
+        #bottomBar { width: 100%; }
+        #statusPanel { min-width: 0; }
+        #statusPanel .row { min-width: 0; }
+        #hpBarOuter, #resourceBarOuter { flex: 1; min-width: 24px; }
+
+        @media (max-width: 1000px), (max-height: 620px) {
+            #gameContainer.menu-open {
+                width: calc(100vw - 10px);
+                height: calc(100dvh - 10px);
+            }
+            .menu-open #playfield, .menu-open #bottomBar { display: none; }
+            #helpText { display: none; }
+            #countdown { font-size: clamp(50px, 14vmin, 96px); }
+            #warningText { font-size: clamp(13px, 3.4vmin, 20px); }
+            #floorBanner, #opponentTag { top: 8px; font-size: 12px; padding: 5px 9px; }
+            #toast { max-width: 92%; font-size: 12px; padding: 7px 12px; }
+        }
+
+        @media (max-width: 700px) and (orientation: portrait) {
+            body.controls-active { padding-top: max(58px, env(safe-area-inset-top)); }
+            #gameContainer { width: calc(100vw - 12px); }
+            #bottomBar {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) 112px;
+                gap: 8px;
+                padding: 9px;
+            }
+            #statusPanel { padding: 7px; gap: 5px; }
+            #statusPanel .row { gap: 5px; }
+            #roleBadge { font-size: 11px; }
+            #weaponIcon { width: 29px; height: 29px; }
+            #weaponIcon img { width: 24px; height: 24px; }
+            #objectiveText {
+                grid-column: 1 / -1;
+                grid-row: 2;
+                padding: 7px;
+                min-height: 0;
+                font-size: 13px;
+            }
+            #minimapContainer { padding: 3px; }
+            #minimap { width: 100%; height: auto; }
+            #objectiveText small { font-size: 10px; }
+        }
+
+        @media (max-height: 540px) and (min-width: 480px) and (orientation: landscape) {
+            body { min-height: 100dvh; align-items: center; padding: 4px; }
+            #gameContainer:not(.menu-open) {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) 154px;
+                width: min(calc(100vw - 8px), calc((100dvh - 8px) * 1.5 + 154px), 1122px);
+                align-items: stretch;
+            }
+            #gameContainer.menu-open { display: flex; }
+            #gameCanvas { border: 2px solid #303747; border-radius: 10px 0 0 10px; }
+            #bottomBar {
+                display: flex;
+                flex-direction: column;
+                flex-wrap: nowrap;
+                justify-content: flex-start;
+                align-items: stretch;
+                padding: 9px 7px;
+                padding-top: 40px;
+                gap: 6px;
+                border: 2px solid #303747;
+                border-left: 0;
+                border-radius: 0 10px 10px 0;
+            }
+            #statusPanel, #objectiveText { width: 100%; }
+            #statusPanel { padding: 5px 6px; gap: 3px; font-size: 10px; }
+            #statusPanel .row { gap: 5px; }
+            #roleBadge { padding: 3px 7px; font-size: 10px; }
+            #weaponIcon { width: 23px; height: 23px; }
+            #weaponIcon img { width: 18px; height: 18px; }
+            #hpBarOuter { height: 9px; }
+            #resourceBarOuter { height: 8px; }
+            #statusPanel .label { font-size: 8px; min-width: 23px; }
+            #objectiveText { flex: initial; min-height: 0; padding: 3px 2px; font-size: 11px; }
+            #objectiveText small { font-size: 9px; }
+            #minimapContainer { align-self: center; padding: 2px; }
+            #minimap { width: 96px; height: auto; }
+            #joystickBase { width: 84px; height: 84px; left: 14px; bottom: 12px; }
+            #joystickKnob { width: 35px; height: 35px; }
+            #actionButtons { flex-direction: row; right: 13px; bottom: 11px; gap: 6px; }
+            .action-btn, .action-btn.attack { width: 50px; height: 50px; font-size: 21px; }
+        }
     </style>
 </head>
 
 <body>
     <a href="../" class="back-btn">← Arcade</a>
     <div id="gameContainer">
-        <canvas id="gameCanvas"></canvas>
-
-        <div id="countdown">3</div>
-        <div id="warningText">⚠️ 빌런이 깨어나고 있어요!</div>
-        <div id="toast"></div>
-        <div id="floorBanner">4층</div>
-        <div id="opponentTag">👹 빌런: 4층</div>
+        <div id="playfield">
+            <canvas id="gameCanvas" aria-label="리오의 공포학교 탐색 화면"></canvas>
+            <div id="countdown">3</div>
+            <div id="warningText">⚠️ 빌런이 깨어나고 있어요!</div>
+            <div id="toast"></div>
+            <div id="floorBanner">4층</div>
+            <div id="opponentTag">👹 빌런: 4층</div>
+        </div>
 
         <!-- Bottom Bar -->
         <div id="bottomBar">
@@ -3557,44 +3647,11 @@
         }, { passive: false });
         canvas.style.touchAction = 'none';
 
-        // ---------------- Responsive scaling ----------------
-        // The game is laid out at a fixed size (960px canvas + bottom bar). On small
-        // screens we scale the whole container down so it fits the viewport width and
-        // the map is fully visible, then compensate the layout box so no extra gap
-        // or horizontal scroll remains.
         const gameContainer = document.getElementById('gameContainer');
-        const bottomBar = document.getElementById('bottomBar');
         function fitToScreen() {
-            gameContainer.style.transform = 'none';
-            gameContainer.style.marginBottom = '';
-            gameContainer.style.width = '';
-            gameContainer.style.height = '';
-            canvas.style.display = '';
-            bottomBar.style.display = '';
-
-            const mobileMenu = window.innerWidth <= 1000 &&
-                (gameState === 'start' || gameState === 'keypad' || gameState === 'gameover' || gameState === 'victory');
-            if (mobileMenu) {
-                gameContainer.style.width = 'calc(100vw - 10px)';
-                gameContainer.style.height = 'calc(100dvh - 10px)';
-                canvas.style.display = 'none';
-                bottomBar.style.display = 'none';
-                return;
-            }
-
-            const fullW = gameContainer.offsetWidth;
-            const fullH = gameContainer.offsetHeight;
-            const availW = window.innerWidth - 6;
-            const scale = Math.min(1, availW / fullW);
-            if (scale < 1) {
-                gameContainer.style.transformOrigin = 'top center';
-                gameContainer.style.transform = 'scale(' + scale + ')';
-                gameContainer.style.marginBottom = '-' + (fullH * (1 - scale)) + 'px';
-            }
+            const menu = ['start', 'keypad', 'gameover', 'victory'].includes(gameState);
+            gameContainer.classList.toggle('menu-open', menu);
         }
-        window.addEventListener('resize', fitToScreen);
-        window.addEventListener('orientationchange', () => setTimeout(fitToScreen, 250));
-        window.addEventListener('load', fitToScreen);
         fitToScreen();
     </script>
 </body>

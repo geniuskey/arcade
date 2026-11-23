@@ -41,9 +41,10 @@
     @media(max-aspect-ratio:4/5){#game-shell{width:calc(100vw - 12px);max-height:none;border-radius:18px}#hud{inset:7px 45px auto;gap:4px}.driver-hud{padding:6px 7px;border-radius:9px}.place{width:25px;height:25px;border-radius:7px;font-size:12px}.driver-name{font-size:6px}.micro,.meter,.best{display:none}.race-center{min-width:70px;padding:6px}.race-center #race-time{font-size:11px}#race-lap{font-size:6px}.corner-button{top:7px;height:29px;padding:0 9px;border-radius:8px;font-size:8px}#back{left:7px;width:29px;padding:0}.back-label{display:none}#sound{right:7px;width:29px}.panel{padding:22px 18px;border-radius:20px}.title{font-size:38px}.tagline{font-size:11px;margin:14px auto 17px}.menu-actions{grid-template-columns:1fr}.primary{height:43px}.difficulty button{height:31px}#speed-panel,#progress,#controls-hint{display:none}#countdown{font-size:70px}}
   </style>
   <script src="../arcade-storage.js"></script>
+  <link rel="stylesheet" href="../arcade-frame.css">
 </head>
 <body>
-  <main id="game-shell">
+  <main id="game-shell" data-arcade-frame="wide" style="--menu-art:url(../assets/thumbnails/offload.webp)">
     <canvas id="game" width="1280" height="720" aria-label="Dustline Rally offroad racing game"></canvas>
     <a id="back" class="corner-button" href="../"><span>← <span class="back-label">Arcade</span></span></a>
     <button id="sound" class="corner-button" type="button" aria-label="소리 끄기">♪</button>

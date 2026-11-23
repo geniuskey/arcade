@@ -168,20 +168,20 @@
 
         #joystick-knob {
             position: absolute;
-            width: 60px;
-            height: 60px;
-            background: var(--neon-blue);
+            width: 46px;
+            height: 46px;
+            background: radial-gradient(circle at 35% 30%, #bff8ff, var(--neon-blue) 58%, #166c89);
             border-radius: 50%;
-            top: 30px;
-            left: 30px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             pointer-events: none;
             box-shadow: 0 0 15px var(--neon-blue);
         }
 
-        @media (pointer: coarse) {
-            #joystick-container {
-                display: block;
-            }
+        @media (any-pointer: coarse) {
+            #joystick-container { display: block; }
+            .keyboard-hint { display: none; }
         }
 
         @media (max-width: 600px) {
@@ -220,8 +220,6 @@
             #joystick-knob {
                 width: 52px;
                 height: 52px;
-                top: 26px;
-                left: 26px;
             }
 
         }
@@ -254,6 +252,23 @@
                 padding: 8px 12px;
             }
         }
+        .keyboard-hint { font-size: 12px; color: #b7bfd0; margin-top: 10px; }
+
+        @media (orientation: landscape) and (max-height: 550px) {
+            #minimap-container {
+                width: clamp(90px, 29dvh, 140px);
+                height: auto;
+                aspect-ratio: 1;
+                bottom: max(10px, env(safe-area-inset-bottom));
+                right: max(12px, env(safe-area-inset-right));
+            }
+            #joystick-container {
+                width: 92px;
+                height: 92px;
+                bottom: max(12px, env(safe-area-inset-bottom));
+                left: max(14px, env(safe-area-inset-left));
+            }
+        }
     </style>
   <script src="../arcade-storage.js"></script>
 </head>
@@ -268,7 +283,7 @@
             </div>
             <button class="btn" style="background: var(--neon-blue); color: black;" onclick="openShop()">SHOP</button>
         </div>
-        <div style="font-size: 12px; color: #888; margin-top: 10px;">WASD or Arrows to drive</div>
+        <div class="keyboard-hint">WASD or Arrows to drive</div>
     </div>
 
     <div id="minimap-container">
@@ -344,6 +359,7 @@
         let keys = {};
         const joystick = { x: 0, y: 0, pointerId: null };
         let lastFrameTime = 0;
+        let viewWidth = 0, viewHeight = 0;
         const fpsInterval = 1000 / 60;
         let gameTime = 0;
 
@@ -561,15 +577,15 @@
         }
 
         function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, viewWidth, viewHeight);
 
             const speedFactor = Math.min(1, Math.abs(car.speed) / car.maxSpeed);
             const shake = speedFactor > 0.72 ? (speedFactor - 0.72) * 3 : 0;
 
             ctx.save();
             ctx.translate(
-                canvas.width / 2 + Math.sin(gameTime * 38) * shake,
-                canvas.height / 2 + Math.cos(gameTime * 43) * shake
+                viewWidth / 2 + Math.sin(gameTime * 38) * shake,
+                viewHeight / 2 + Math.cos(gameTime * 43) * shake
             );
             ctx.translate(-car.x, -car.y);
 
@@ -965,18 +981,18 @@
 
         function drawPostEffects(speedFactor) {
             const vignette = ctx.createRadialGradient(
-                canvas.width / 2,
-                canvas.height / 2,
-                Math.min(canvas.width, canvas.height) * 0.2,
-                canvas.width / 2,
-                canvas.height / 2,
-                Math.max(canvas.width, canvas.height) * 0.68
+                viewWidth / 2,
+                viewHeight / 2,
+                Math.min(viewWidth, viewHeight) * 0.2,
+                viewWidth / 2,
+                viewHeight / 2,
+                Math.max(viewWidth, viewHeight) * 0.68
             );
             vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
             vignette.addColorStop(0.72, 'rgba(0, 0, 0, 0.16)');
             vignette.addColorStop(1, 'rgba(0, 0, 0, 0.54)');
             ctx.fillStyle = vignette;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, viewWidth, viewHeight);
         }
 
         function drawCrosswalk(x, y) {
@@ -1035,10 +1051,10 @@
         }
 
         function isVisible(x, y, w, h, margin = 0) {
-            const left = car.x - canvas.width / 2 - margin;
-            const right = car.x + canvas.width / 2 + margin;
-            const top = car.y - canvas.height / 2 - margin;
-            const bottom = car.y + canvas.height / 2 + margin;
+            const left = car.x - viewWidth / 2 - margin;
+            const right = car.x + viewWidth / 2 + margin;
+            const top = car.y - viewHeight / 2 - margin;
+            const bottom = car.y + viewHeight / 2 + margin;
             return x + w >= left && x <= right && y + h >= top && y <= bottom;
         }
 
@@ -1103,8 +1119,8 @@
             mCtx.fill();
             mCtx.shadowBlur = 0;
 
-            const viewW = canvas.width * scale;
-            const viewH = canvas.height * scale;
+            const viewW = viewWidth * scale;
+            const viewH = viewHeight * scale;
             mCtx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
             mCtx.lineWidth = 1;
             mCtx.strokeRect(car.x * scale - viewW / 2, car.y * scale - viewH / 2, viewW, viewH);
@@ -1205,8 +1221,12 @@
         }
 
         function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            viewWidth = window.innerWidth;
+            viewHeight = window.innerHeight;
+            const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = Math.round(viewWidth * pixelRatio);
+            canvas.height = Math.round(viewHeight * pixelRatio);
+            ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
             mCanvas.width = 200;
             mCanvas.height = 200;
         }

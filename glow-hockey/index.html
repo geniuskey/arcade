@@ -32,9 +32,10 @@
     @media(max-aspect-ratio:4/5){#game-shell{width:calc(100vw - 12px);border-radius:18px}#hud{inset:7px 39px auto;gap:3px}.player-hud{padding:5px 6px;border-radius:8px}.score{width:24px;height:24px;border-radius:6px;font-size:12px}.player-line{font-size:5px}.control-label,.power-track,.match-hud small{display:none}.match-hud{min-width:59px;padding:5px}.match-hud strong{font-size:5px}.match-hud span{font-size:9px}.corner{top:7px;height:28px;padding:0 8px;border-radius:8px;font-size:7px}#back{left:7px;width:28px;padding:0}.back-label{display:none}#sound{right:7px;width:28px}#hint{display:none}.panel{padding:21px 17px;border-radius:19px}.title{font-size:37px}.tagline{font-size:10px;margin:13px auto 16px}.actions{grid-template-columns:1fr}.primary{height:42px}.difficulty button{height:29px}.panel-foot{margin-top:12px}#callout{top:24%;font-size:7px;padding:6px 9px}}
   </style>
   <script src="../arcade-storage.js"></script>
+  <link rel="stylesheet" href="../arcade-frame.css">
 </head>
 <body>
-  <main id="game-shell">
+  <main id="game-shell" data-arcade-frame="standard" style="--menu-art:url(../assets/thumbnails/glow-hockey.webp)">
     <canvas id="game" width="1120" height="700" aria-label="Glow Hockey game"></canvas>
     <a id="back" class="corner" href="../"><span>← <span class="back-label">Arcade</span></span></a>
     <button id="sound" class="corner" type="button" aria-label="소리 끄기">♪</button>

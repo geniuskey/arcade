@@ -105,6 +105,12 @@
             font-weight: bold;
         }
 
+        #player-rank:not(:empty) {
+            margin-top: 8px;
+            color: var(--neon-blue);
+            font-size: 11px;
+        }
+
         #game-log {
             position: fixed;
             top: 70px;
@@ -346,12 +352,37 @@
         .back-btn { top: 18px; left: 18px; padding: 12px 16px; border-radius: 13px; background: rgba(5,7,18,.72); }
         #mobile-hint { padding: 7px 12px; border: 1px solid rgba(255,255,255,.09); border-radius: 10px; background: rgba(5,7,18,.68); }
         @media (max-width: 768px) { #top-bar { top: 6px; width: calc(100% - 80px); padding: 5px 8px; border-radius: 8px; } .stat-label { font-size: 5px; } .stat-value { font-size: 9px; } #leaderboard { top: 46px; left: 7px; padding: 7px; min-width: 95px; transform: scale(.72); transform-origin: top left; } .back-btn { top: 6px; left: 6px; padding: 7px 8px; font-size: 7px; } .screen { padding: 20px; gap: 10px; } h2 { font-size: 26px; } .screen p { font-size: 8px; } .diff-btn { padding: 7px 5px; font-size: 6px; } .btn { padding: 10px; font-size: 7px; } }
+        #pause-toggle {
+            position: fixed; top: 18px; right: 18px; z-index: 40;
+            width: 44px; height: 44px; border-radius: 13px; cursor: pointer;
+            color: white; background: #101127; border: 1px solid #ffffff30;
+        }
+        .screen :focus-visible, #pause-toggle:focus-visible {
+            outline: 2px solid var(--neon-blue); outline-offset: 3px;
+        }
+        @media (max-width: 768px) {
+            #top-bar { width: auto; left: 65px; right: 60px; transform: none; }
+            .stat-label { font-size: 8px; }
+            .stat-value { font-size: 13px; }
+            #pause-toggle { top: 6px; right: 7px; }
+            .back-btn { display: grid; place-items: center; min-height: 44px; font-size: 9px; }
+            .screen p { font-size: 13px; }
+            .diff-btn { min-height: 38px; font-size: 9px; }
+            .btn { min-height: 44px; font-size: 11px; }
+            #joystick-container { width: 96px; height: 96px; left: 16px; bottom: 16px; }
+            #joystick-knob { width: 38px; height: 38px; }
+        }
+        @media (any-pointer: coarse) {
+            #joystick-container.active { display: block; }
+            #mobile-hint { display: none; }
+        }
     </style>
   <script src="../arcade-storage.js"></script>
 </head>
 
 <body>
     <a href="../" class="back-btn">← Arcade</a>
+    <button id="pause-toggle" type="button" aria-label="Pause game" hidden>Ⅱ</button>
     <div id="top-bar">
         <div class="stat-item">
             <span class="stat-label">Mass</span>
@@ -375,6 +406,7 @@
     <div id="leaderboard">
         <div class="leaderboard-title">Top Celestials</div>
         <div id="leaderboard-list"></div>
+        <div id="player-rank"></div>
     </div>
 
     <div id="game-log"></div>
@@ -395,8 +427,13 @@
                     <button class="diff-btn active" onclick="setDifficulty('normal')">NORMAL</button>
                     <button class="diff-btn" onclick="setDifficulty('hard')">HARD</button>
                 </div>
-                <p style="opacity: 0.7;">Absorb smaller objects to grow. Avoid larger ones.</p>
-                <button class="btn" onclick="startGame()">SINGULARITY</button>
+                <p style="opacity: 0.7;">Collect stardust and absorb smaller rivals. Take first place to reach the next stage.</p>
+                <button class="btn" onclick="startGame()">START RUN</button>
+            </div>
+
+            <div id="pause-screen" class="screen">
+                <h2>PAUSED</h2>
+                <button id="resume" class="btn" type="button">RESUME</button>
             </div>
 
             <div id="game-over-screen" class="screen">
@@ -405,6 +442,7 @@
                 <div style="margin: 10px 0;">
                     <div class="stat-label">Final Mass</div>
                     <div id="final-score" class="stat-value">0</div>
+                    <p id="final-stage"></p>
                 </div>
                 <button class="btn" onclick="startGame()">REGENERATE</button>
             </div>
@@ -415,7 +453,7 @@
         <div id="joystick-knob"></div>
     </div>
 
-    <div id="mobile-hint">Use WASD, Arrows, or Joystick to navigate</div>
+    <div id="mobile-hint" hidden>WASD / Arrows · P to pause</div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -424,6 +462,10 @@
         const bestScoreEl = document.getElementById('best-score');
         const finalScoreEl = document.getElementById('final-score');
         const joystickContainer = document.getElementById('joystick-container');
+        const pauseButton = document.getElementById('pause-toggle');
+        const resumeButton = document.getElementById('resume');
+        const pauseScreen = document.getElementById('pause-screen');
+        const announce = document.getElementById('announcement');
         const joystickKnob = document.getElementById('joystick-knob');
 
         // Game Constants
@@ -439,9 +481,9 @@
         ];
 
         const DIFFICULTIES = {
-            easy: { enemySpeed: 1.5, foodValue: 2, label: 'EASY' },
-            normal: { enemySpeed: 2.5, foodValue: 1.5, label: 'NORMAL' },
-            hard: { enemySpeed: 4.0, foodValue: 1.0, label: 'HARD' }
+            easy: { enemySpeed: 1.5, sense: 155, foodValue: 2, label: 'EASY' },
+            normal: { enemySpeed: 2.5, sense: 240, foodValue: 1.5, label: 'NORMAL' },
+            hard: { enemySpeed: 4.0, sense: 335, foodValue: 1.0, label: 'HARD' }
         };
 
         // Game State
@@ -449,7 +491,9 @@
         let gameActive = false;
         let lastTime = performance.now();
         let currentStage = 1;
-        let isTransitioning = false;
+        let paused = false;
+        let stageCountdown = 0;
+        let leaderboardTimer = 0;
 
         let player = {
             name: 'Singularity',
@@ -463,8 +507,8 @@
         let food = [];
         let enemies = [];
         let camera = { x: 0, y: 0 };
-        let keys = {};
-        let joystick = { active: false, x: 0, y: 0 };
+        const keys = new Set();
+        const joystick = { pointerId: null, x: 0, y: 0 };
         let effects = [];
         let screenShake = 0;
         const spaceDust = Array.from({ length: 260 }, (_, i) => ({
@@ -517,7 +561,7 @@
             }
         }
 
-        function spawnEnemy(isInitial = false) {
+        function spawnEnemy() {
             const minMass = 100;
             const maxMass = 2000 * Math.pow(2, currentStage - 1);
             const randomMass = minMass + Math.random() * (maxMass - minMass);
@@ -531,22 +575,30 @@
             } while (Math.hypot(x - player.x, y - player.y) < 800);
 
             const name = CELESTIAL_NAMES[Math.floor(Math.random() * CELESTIAL_NAMES.length)];
+            const angle = Math.random() * Math.PI * 2;
             const enemy = {
                 name,
                 x, y,
                 radius,
                 color: '#ff3e3e',
                 hue: Math.floor(Math.random() * 360),
-                vx: (Math.random() - 0.5),
-                vy: (Math.random() - 0.5)
+                vx: Math.cos(angle) * .65,
+                vy: Math.sin(angle) * .65,
+                targetAngle: angle,
+                steerTimer: Math.random() * 250
             };
 
-            if (isInitial) enemies.push(enemy);
-            else return enemy;
+            return enemy;
         }
 
         function initGame() {
             currentStage = 1;
+            stageCountdown = 0;
+            leaderboardTimer = 0;
+            paused = false;
+            resetInput();
+            announce.style.display = 'none';
+            document.getElementById('game-log').replaceChildren();
             document.getElementById('stage-display').innerText = currentStage;
             player.radius = INITIAL_RADIUS;
             player.x = WORLD_SIZE / 2;
@@ -554,14 +606,23 @@
             player.vx = 0;
             player.vy = 0;
 
-            food = [];
+            food = Array.from({ length: 24 }, () => {
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 42 + Math.random() * 225;
+                return {
+                    x: player.x + Math.cos(angle) * distance,
+                    y: player.y + Math.sin(angle) * distance,
+                    radius: 3 + Math.random() * 3,
+                    color: '#68ebff'
+                };
+            });
             spawnFood();
 
             enemies = [];
             effects = [];
             screenShake = 0;
             for (let i = 0; i < ENEMY_COUNT; i++) {
-                spawnEnemy(true);
+                enemies.push(spawnEnemy());
             }
 
             scoreEl.innerText = Math.floor(player.radius * player.radius);
@@ -572,10 +633,8 @@
         function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            if (!gameActive) {
-                camera.x = player.x - canvas.width / 2;
-                camera.y = player.y - canvas.height / 2;
-            }
+            camera.x = player.x - canvas.width / 2;
+            camera.y = player.y - canvas.height / 2;
         }
 
         window.addEventListener('resize', resize);
@@ -586,19 +645,24 @@
             initGame();
             gameActive = true;
             joystickContainer.classList.add('active');
-            document.getElementById('mobile-hint').style.display = '';
+            document.getElementById('mobile-hint').hidden = false;
+            pauseButton.hidden = false;
+            updateLeaderboard();
         }
 
         function gameOver() {
             gameActive = false;
-            joystick.active = false;
+            stageCountdown = 0;
+            announce.style.display = 'none';
+            resetInput();
+            pauseButton.hidden = true;
             joystickContainer.classList.remove('active');
-            joystickKnob.style.transform = 'translate(-50%, -50%)';
-            document.getElementById('mobile-hint').style.display = 'none';
+            document.getElementById('mobile-hint').hidden = true;
+            document.getElementById('final-stage').textContent = `Stage ${currentStage} reached`;
             const finalMass = Math.floor(player.radius * player.radius);
             finalScoreEl.innerText = finalMass;
             const bestKey = `eater_best_${currentDifficulty}`;
-            const best = parseInt(ArcadeStorage.getItem(bestKey) || 0);
+            const best = Number.parseInt(ArcadeStorage.getItem(bestKey), 10) || 0;
             if (finalMass > best) {
                 ArcadeStorage.setItem(bestKey, finalMass);
                 bestScoreEl.innerText = finalMass;
@@ -606,202 +670,215 @@
             document.getElementById('game-over-screen').classList.add('active');
         }
 
-        function update(timestamp) {
-            const deltaTime = timestamp - lastTime;
-            lastTime = timestamp;
-            const f = Math.min(deltaTime / (1000 / 60), 3);
+        function setPaused(value) {
+            if (!gameActive || paused === value) return;
+            paused = value;
+            resetInput();
+            pauseScreen.classList.toggle('active', paused);
+            joystickContainer.classList.toggle('active', !paused);
+            pauseButton.hidden = paused;
+            announce.style.display = !paused && stageCountdown > 0 ? 'block' : 'none';
+            if (paused) resumeButton.focus();
+        }
 
-            if (gameActive) {
-                const config = DIFFICULTIES[currentDifficulty];
-
-                // Handle Input (Keyboard and Joystick)
-                let inputX = 0;
-                let inputY = 0;
-
-                if (joystick.active) {
-                    inputX = joystick.x;
-                    inputY = joystick.y;
+        function steerEnemy(enemy, deltaTime, frame) {
+            enemy.steerTimer -= deltaTime;
+            if (enemy.steerTimer <= 0) {
+                enemy.steerTimer = 200 + Math.random() * 220;
+                const dx = player.x - enemy.x, dy = player.y - enemy.y;
+                const distance = Math.hypot(dx, dy);
+                const sense = DIFFICULTIES[currentDifficulty].sense;
+                if (distance < sense && enemy.radius !== player.radius) {
+                    enemy.targetAngle = Math.atan2(dy, dx) + (enemy.radius < player.radius ? Math.PI : 0);
                 } else {
-                    if (keys['ArrowUp'] || keys['w'] || keys['W']) inputY -= 1;
-                    if (keys['ArrowDown'] || keys['s'] || keys['S']) inputY += 1;
-                    if (keys['ArrowLeft'] || keys['a'] || keys['A']) inputX -= 1;
-                    if (keys['ArrowRight'] || keys['d'] || keys['D']) inputX += 1;
-                    
-                    // Normalize keyboard diagonal
-                    const mag = Math.hypot(inputX, inputY);
-                    if (mag > 1) {
-                        inputX /= mag;
-                        inputY /= mag;
-                    }
+                    enemy.targetAngle += (Math.random() - .5) * .8;
+                }
+            }
+            const steer = 1 - Math.pow(.88, frame);
+            enemy.vx += (Math.cos(enemy.targetAngle) * .65 - enemy.vx) * steer;
+            enemy.vy += (Math.sin(enemy.targetAngle) * .65 - enemy.vy) * steer;
+        }
+
+        function simulate(deltaTime, f) {
+            const config = DIFFICULTIES[currentDifficulty];
+            let inputX = Number(keys.has('ArrowRight') || keys.has('KeyD')) - Number(keys.has('ArrowLeft') || keys.has('KeyA'));
+            let inputY = Number(keys.has('ArrowDown') || keys.has('KeyS')) - Number(keys.has('ArrowUp') || keys.has('KeyW'));
+            if (joystick.pointerId !== null) {
+                inputX = joystick.x;
+                inputY = joystick.y;
+            }
+            const magnitude = Math.max(1, Math.hypot(inputX, inputY));
+            inputX /= magnitude;
+            inputY /= magnitude;
+
+            const maxSpeed = 20 / Math.sqrt(player.radius);
+            if (inputX !== 0 || inputY !== 0) {
+                const targetVx = inputX * maxSpeed;
+                const targetVy = inputY * maxSpeed;
+
+                // Acceleration
+                player.vx += (targetVx - player.vx) * 0.15 * f;
+                player.vy += (targetVy - player.vy) * 0.15 * f;
+            } else {
+                // Friction/Deceleration
+                player.vx *= Math.pow(0.92, f);
+                player.vy *= Math.pow(0.92, f);
+                if (Math.abs(player.vx) < 0.01) player.vx = 0;
+                if (Math.abs(player.vy) < 0.01) player.vy = 0;
+            }
+
+            player.x += player.vx * f;
+            player.y += player.vy * f;
+
+            // Keep in world bounds
+            player.x = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, player.x));
+            player.y = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, player.y));
+
+            // If hit world bound, stop velocity
+            if (player.x === player.radius || player.x === WORLD_SIZE - player.radius) player.vx = 0;
+            if (player.y === player.radius || player.y === WORLD_SIZE - player.radius) player.vy = 0;
+
+            // Camera follow player
+            camera.x = player.x - canvas.width / 2;
+            camera.y = player.y - canvas.height / 2;
+
+            // Food collision
+            food = food.filter(f => {
+                const d = Math.hypot(player.x - f.x, player.y - f.y);
+                if (d < player.radius) {
+                    consumeFx(f.x, f.y, f.color, 5, 4);
+                    player.radius = Math.sqrt(player.radius * player.radius + f.radius * f.radius * config.foodValue);
+                    scoreEl.innerText = Math.floor(player.radius * player.radius);
+                    return false;
+                }
+                return true;
+            });
+            spawnFood();
+
+            // Enemy updates
+            for (let i = 0; i < enemies.length; i++) {
+                const en = enemies[i];
+                steerEnemy(en, deltaTime, f);
+
+                // Move enemy based on their mass (speed = 20 / sqrt(radius))
+                const enemyMaxSpeed = (20 / Math.sqrt(en.radius)) * (config.enemySpeed / 2.5);
+                en.x += en.vx * (enemyMaxSpeed + currentStage * 0.2) * f;
+                en.y += en.vy * (enemyMaxSpeed + currentStage * 0.2) * f;
+
+                // Bounce off walls
+                if (en.x < en.radius || en.x > WORLD_SIZE - en.radius) {
+                    en.x = clamp(en.x, en.radius, WORLD_SIZE - en.radius);
+                    en.vx *= -1;
+                    en.targetAngle = Math.atan2(en.vy, en.vx);
+                }
+                if (en.y < en.radius || en.y > WORLD_SIZE - en.radius) {
+                    en.y = clamp(en.y, en.radius, WORLD_SIZE - en.radius);
+                    en.vy *= -1;
+                    en.targetAngle = Math.atan2(en.vy, en.vx);
                 }
 
-                const maxSpeed = 20 / Math.sqrt(player.radius);
-                if (inputX !== 0 || inputY !== 0) {
-                    const targetVx = inputX * maxSpeed;
-                    const targetVy = inputY * maxSpeed;
-                    
-                    // Acceleration
-                    player.vx += (targetVx - player.vx) * 0.15 * f;
-                    player.vy += (targetVy - player.vy) * 0.15 * f;
-                } else {
-                    // Friction/Deceleration
-                    player.vx *= Math.pow(0.92, f);
-                    player.vy *= Math.pow(0.92, f);
-                    if (Math.abs(player.vx) < 0.01) player.vx = 0;
-                    if (Math.abs(player.vy) < 0.01) player.vy = 0;
-                }
-
-                player.x += player.vx * f;
-                player.y += player.vy * f;
-
-                // Keep in world bounds
-                player.x = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, player.x));
-                player.y = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, player.y));
-                
-                // If hit world bound, stop velocity
-                if (player.x === player.radius || player.x === WORLD_SIZE - player.radius) player.vx = 0;
-                if (player.y === player.radius || player.y === WORLD_SIZE - player.radius) player.vy = 0;
-
-                // Update Leaderboard
-                if (Math.floor(timestamp / 500) !== Math.floor((timestamp - deltaTime) / 500)) {
-                    updateLeaderboard();
-                }
-
-                // Camera follow player
-                camera.x = player.x - canvas.width / 2;
-                camera.y = player.y - canvas.height / 2;
-
-                // Food collision
-                food = food.filter(f => {
-                    const d = Math.hypot(player.x - f.x, player.y - f.y);
-                    if (d < player.radius) {
-                        consumeFx(f.x, f.y, f.color, 5, 4);
-                        player.radius = Math.sqrt(player.radius * player.radius + f.radius * f.radius * config.foodValue);
+                // Interaction with player
+                const d = Math.hypot(player.x - en.x, player.y - en.y);
+                if (d < Math.max(player.radius, en.radius)) {
+                    if (player.radius > en.radius) {
+                        // Player eats enemy
+                        addLog(`You consumed ${en.name}`);
+                        consumeFx(en.x, en.y, `hsl(${en.hue}, 90%, 65%)`, 42, 13);
+                        screenShake = Math.min(20, 6 + en.radius * .12);
+                        player.radius = Math.sqrt(player.radius * player.radius + en.radius * en.radius);
                         scoreEl.innerText = Math.floor(player.radius * player.radius);
-                        return false;
+                        enemies.splice(i, 1);
+                        i--;
+                        continue;
+                    } else if (en.radius > player.radius) {
+                        // Enemy eats player
+                        addLog(`${en.name} absorbed you`);
+                        consumeFx(player.x, player.y, '#43eaff', 55, 16);
+                        screenShake = 22;
+                        gameOver();
+                        return;
                     }
-                    return true;
-                });
-                spawnFood();
+                }
 
-                // Enemy updates
-                for (let i = 0; i < enemies.length; i++) {
-                    const en = enemies[i];
-                    
-                    // Move enemy based on their mass (speed = 20 / sqrt(radius))
-                    const enemyMaxSpeed = (20 / Math.sqrt(en.radius)) * (config.enemySpeed / 2.5);
-                    en.x += en.vx * (enemyMaxSpeed + currentStage * 0.2) * f;
-                    en.y += en.vy * (enemyMaxSpeed + currentStage * 0.2) * f;
-
-                    // Bounce off walls
-                    if (en.x < en.radius || en.x > WORLD_SIZE - en.radius) en.vx *= -1;
-                    if (en.y < en.radius || en.y > WORLD_SIZE - en.radius) en.vy *= -1;
-
-                    // Interaction with player
-                    const d = Math.hypot(player.x - en.x, player.y - en.y);
-                    if (d < Math.max(player.radius, en.radius)) {
-                        if (player.radius > en.radius) {
-                            // Player eats enemy
-                            addLog(`You consumed ${en.name}`);
-                            consumeFx(en.x, en.y, `hsl(${en.hue}, 90%, 65%)`, 42, 13);
-                            screenShake = Math.min(20, 6 + en.radius * .12);
-                            player.radius = Math.sqrt(player.radius * player.radius + en.radius * en.radius);
-                            scoreEl.innerText = Math.floor(player.radius * player.radius);
+                // Interaction with other enemies
+                for (let j = i + 1; j < enemies.length; j++) {
+                    const en2 = enemies[j];
+                    const d2 = Math.hypot(en.x - en2.x, en.y - en2.y);
+                    if (d2 < Math.max(en.radius, en2.radius)) {
+                        if (en.radius > en2.radius) {
+                            addLog(`${en.name} consumed ${en2.name}`);
+                            en.radius = Math.sqrt(en.radius * en.radius + en2.radius * en2.radius);
+                            enemies.splice(j, 1);
+                            j--;
+                        } else if (en2.radius > en.radius) {
+                            addLog(`${en2.name} consumed ${en.name}`);
+                            en2.radius = Math.sqrt(en2.radius * en2.radius + en.radius * en.radius);
                             enemies.splice(i, 1);
                             i--;
-                            continue;
-                        } else if (en.radius > player.radius) {
-                            // Enemy eats player
-                            addLog(`${en.name} absorbed you`);
-                            consumeFx(player.x, player.y, '#43eaff', 55, 16);
-                            screenShake = 22;
-                            gameOver();
-                            return;
+                            break;
                         }
                     }
-
-                    // Interaction with other enemies
-                    for (let j = i + 1; j < enemies.length; j++) {
-                        const en2 = enemies[j];
-                        const d2 = Math.hypot(en.x - en2.x, en.y - en2.y);
-                        if (d2 < Math.max(en.radius, en2.radius)) {
-                            if (en.radius > en2.radius) {
-                                addLog(`${en.name} consumed ${en2.name}`);
-                                en.radius = Math.sqrt(en.radius * en.radius + en2.radius * en2.radius);
-                                enemies.splice(j, 1);
-                                j--;
-                            } else if (en2.radius > en.radius) {
-                                addLog(`${en2.name} consumed ${en.name}`);
-                                en2.radius = Math.sqrt(en2.radius * en2.radius + en.radius * en.radius);
-                                enemies.splice(i, 1);
-                                i--;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                // Stage Clear Logic
-                if (enemies.length === 0 && gameActive) {
-                    nextStage();
                 }
             }
 
-            effects.forEach(p => {
-                p.x += p.vx * f;
-                p.y += p.vy * f;
-                p.vx *= Math.pow(.91, f);
-                p.vy *= Math.pow(.91, f);
-                p.life -= deltaTime / 900;
-            });
-            effects = effects.filter(p => p.life > 0);
-            screenShake *= Math.pow(.82, f);
+            leaderboardTimer += deltaTime;
+            if (!enemies.length || leaderboardTimer >= 250) {
+                leaderboardTimer = 0;
+                updateLeaderboard();
+                if (enemies.every(enemy => enemy.radius < player.radius)) nextStage();
+            }
+        }
 
-            draw();
+        function update(timestamp) {
             requestAnimationFrame(update);
+            const deltaTime = clamp(timestamp - lastTime, 0, 50);
+            lastTime = timestamp;
+            const f = deltaTime / (1000 / 60);
+
+            if (gameActive && !paused) {
+                if (stageCountdown > 0) {
+                    stageCountdown -= deltaTime;
+                    if (stageCountdown <= 0) advanceStage();
+                } else {
+                    simulate(deltaTime, f);
+                }
+            }
+
+            if (!paused) {
+                effects.forEach(p => {
+                    p.x += p.vx * f;
+                    p.y += p.vy * f;
+                    p.vx *= Math.pow(.91, f);
+                    p.vy *= Math.pow(.91, f);
+                    p.life -= deltaTime / 900;
+                });
+                effects = effects.filter(p => p.life > 0);
+                screenShake *= Math.pow(.82, f);
+            }
+            draw();
         }
 
         function nextStage() {
-            if (isTransitioning) return;
-            isTransitioning = true;
-            
-            // Show Announcement
-            const announce = document.getElementById('announcement');
-            const title = document.getElementById('announce-title');
-            const subtitle = document.getElementById('announce-subtitle');
-            
-            title.innerText = "MISSION CLEAR";
-            subtitle.innerText = `STAGE ${currentStage + 1} START!`;
+            stageCountdown = 1800;
+            document.getElementById('announce-title').textContent = 'STAGE CLEAR';
+            document.getElementById('announce-subtitle').textContent = `STAGE ${currentStage + 1}`;
             announce.style.display = 'block';
+        }
 
-            addLog(`Rank 1 Achieved! Stage ${currentStage} Clear!`);
-
-            setTimeout(() => {
-                currentStage++;
-                document.getElementById('stage-display').innerText = currentStage;
-                
-                // Spawn new set of enemies for next stage
-                enemies = [];
-                const count = ENEMY_COUNT + (currentStage - 1) * 2;
-                for (let i = 0; i < count; i++) {
-                    enemies.push(spawnEnemy());
-                }
-                
-                spawnFood();
-                announce.style.display = 'none';
-                isTransitioning = false;
-            }, 3000);
+        function advanceStage() {
+            currentStage++;
+            document.getElementById('stage-display').textContent = currentStage;
+            const count = Math.min(27, ENEMY_COUNT + (currentStage - 1) * 2);
+            enemies = Array.from({ length: count }, spawnEnemy);
+            spawnFood();
+            announce.style.display = 'none';
+            updateLeaderboard();
         }
 
         function updateLeaderboard() {
-            const list = [...enemies, player]
-                .sort((a, b) => b.radius - a.radius);
-            
-            // Check for Rank 1 Stage Clear
-            if (gameActive && !isTransitioning && list[0] === player && enemies.length > 0) {
-                nextStage();
-            }
-
+            const list = [...enemies, player].sort((a, b) => b.radius - a.radius);
+            const rank = list.indexOf(player) + 1;
+            document.getElementById('player-rank').textContent = rank > 5 ? `Your rank · ${rank} / ${list.length}` : '';
             const container = document.getElementById('leaderboard-list');
             container.innerHTML = list.slice(0, 5).map((item, idx) => `
                 <div class="leaderboard-item ${item === player ? 'is-player' : ''}">
@@ -975,34 +1052,58 @@
             vignette.addColorStop(0, 'transparent'); vignette.addColorStop(1, 'rgba(0,0,7,.52)'); ctx.fillStyle = vignette; ctx.fillRect(0, 0, cw, ch);
         }
 
-        // Controls
-        // Removed mouse/touch follow controls in favor of WASD/Arrows/Joystick
-
-        window.addEventListener('keydown', e => {
-            keys[e.key] = true;
-            if (!gameActive && document.querySelector('.screen.active')) {
+        const movementKeys = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD']);
+        window.addEventListener('keydown', event => {
+            if (gameActive && !event.repeat && (event.code === 'KeyP' || event.code === 'Escape')) {
+                event.preventDefault();
+                setPaused(!paused);
+                return;
+            }
+            if (!gameActive && event.code === 'Enter' && !event.repeat && !(event.target instanceof HTMLElement && event.target.closest('button,a'))) {
                 startGame();
+                return;
             }
+            if (!gameActive || paused || !movementKeys.has(event.code)) return;
+            event.preventDefault();
+            keys.add(event.code);
         });
-        window.addEventListener('keyup', e => {
-            keys[e.key] = false;
-        });
+        window.addEventListener('keyup', event => keys.delete(event.code));
+        pauseButton.addEventListener('click', () => setPaused(true));
+        resumeButton.addEventListener('click', () => setPaused(false));
 
-        // Virtual Joystick Logic
-        joystickContainer.addEventListener('touchstart', e => {
-            joystick.active = true;
-            updateJoystick(e.touches[0]);
-        });
-        window.addEventListener('touchmove', e => {
-            if (joystick.active) {
-                updateJoystick(e.touches[0]);
+        function resetJoystick() {
+            const pointerId = joystick.pointerId;
+            joystick.pointerId = null;
+            if (pointerId !== null && joystickContainer.hasPointerCapture(pointerId)) {
+                joystickContainer.releasePointerCapture(pointerId);
             }
-        });
-        window.addEventListener('touchend', () => {
-            joystick.active = false;
+            joystick.x = joystick.y = 0;
             joystickKnob.style.transform = 'translate(-50%, -50%)';
-            joystick.x = 0;
-            joystick.y = 0;
+        }
+
+        function resetInput() {
+            keys.clear();
+            resetJoystick();
+        }
+
+        joystickContainer.addEventListener('pointerdown', event => {
+            if (event.button !== 0 || joystick.pointerId !== null || !gameActive || paused) return;
+            event.preventDefault();
+            joystickContainer.setPointerCapture(event.pointerId);
+            joystick.pointerId = event.pointerId;
+            updateJoystick(event);
+        });
+        joystickContainer.addEventListener('pointermove', event => {
+            if (event.pointerId === joystick.pointerId) updateJoystick(event);
+        });
+        for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+            joystickContainer.addEventListener(type, event => {
+                if (event.pointerId === joystick.pointerId) resetJoystick();
+            });
+        }
+        window.addEventListener('blur', () => setPaused(true));
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) setPaused(true);
         });
 
         function updateJoystick(touch) {

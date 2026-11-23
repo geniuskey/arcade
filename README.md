@@ -45,7 +45,7 @@ python -m http.server 8765
 | 어드벤처·생존 | Tank Survival | 1인 웨이브 생존 |
 | 어드벤처·생존 | Prison Life | 1인 잠입 어드벤처 |
 | 어드벤처·생존 | Defend the Island | 1인 디펜스 |
-| 어드벤처·생존 | Save the Island | 1인 슈팅 캠페인 |
+| 어드벤처·생존 | Save the Island | 1인 섬 방어 생존 |
 | 멀티플레이 | Cute Volleyball | 1인 AI / 2인 대전 |
 | 멀티플레이 | Bomb Survival | 1인 AI / 2인 생존 |
 | 멀티플레이 | Safe Zone Scramble | 1인 AI / 2인 파티 액션 |

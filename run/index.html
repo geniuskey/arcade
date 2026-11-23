@@ -273,7 +273,7 @@
   </div>
 
   <div id="toast" role="status"></div>
-  <div id="flight-hint">Tap anywhere to thrust</div>
+  <div id="flight-hint">Tap or press Space to launch</div>
 
   <script>
     (() => {
@@ -295,7 +295,7 @@
       };
 
       const state = {
-        difficulty: 'normal', active: false, paused: false, score: 0, combo: 1, bestCombo: 1, shards: 0,
+        difficulty: 'normal', active: false, engaged: false, paused: false, score: 0, combo: 1, bestCombo: 1, shards: 0,
         gatesPassed: 0, created: 0, shield: 0, invulnerable: 0, shake: 0, flash: 0, lastTime: performance.now(), muted: false
       };
       const rocket = { x: 140, y: 0, vy: 0, rotation: 0 };
@@ -318,12 +318,36 @@
       }
 
       function resize() {
+        const previousHeight = h;
+        const previousX = rocket.x;
         dpr = Math.min(devicePixelRatio || 1, 2);
-        w = innerWidth; h = innerHeight;
-        canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+        w = innerWidth;
+        h = innerHeight;
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         rocket.x = Math.max(82, Math.min(170, w * .18));
-        if (!state.active) rocket.y = h * .48;
+
+        if (state.active && previousHeight > 0) {
+          const ratio = h / previousHeight;
+          const offsetX = rocket.x - previousX;
+          rocket.y = Math.max(10, Math.min(h - 10, rocket.y * ratio));
+          for (const gate of gates) {
+            gate.x += offsetX;
+            const center = (gate.top + gate.gap / 2) * ratio;
+            setGateOpening(gate, center);
+          }
+          for (const item of pickups) {
+            item.x += offsetX;
+            item.y = item.gate.top + item.gate.gap * item.offset;
+          }
+          for (const particle of particles) {
+            particle.x += offsetX;
+            particle.y *= ratio;
+          }
+        } else {
+          rocket.y = h * .48;
+        }
         makeBackdrop();
       }
 
@@ -332,29 +356,38 @@
         clouds = Array.from({ length: 5 }, (_, i) => ({ x: w * (i / 4) + Math.random() * 180, y: Math.random() * h, r: 140 + Math.random() * 180, hue: i % 2 ? 260 : 190 }));
       }
 
+      function setGateOpening(gate, center) {
+        const margin = Math.min(115, Math.max(58, h * .09), h * .19);
+        gate.gap = Math.min(gate.desiredGap, h - margin * 2);
+        const minCenter = margin + gate.gap / 2;
+        const maxCenter = h - minCenter;
+        gate.top = Math.max(minCenter, Math.min(maxCenter, center)) - gate.gap / 2;
+      }
+
       function spawnGate(x) {
         const config = DIFFICULTIES[state.difficulty];
-        const dynamicGap = Math.max(config.gap - 24, config.gap - state.gatesPassed * .65);
-        const margin = Math.min(115, Math.max(58, h * .09));
+        const desiredGap = Math.max(config.gap - 24, config.gap - state.gatesPassed * .65);
         const previous = gates[gates.length - 1];
-        let center = margin + dynamicGap / 2 + Math.random() * Math.max(30, h - dynamicGap - margin * 2);
-        if (previous) {
-          const previousCenter = previous.top + previous.gap / 2;
-          center = Math.max(margin + dynamicGap / 2, Math.min(h - margin - dynamicGap / 2, previousCenter + (Math.random() - .5) * Math.min(230, h * .33)));
-        }
-        const gate = { x, top: center - dynamicGap / 2, gap: dynamicGap, width: 66, passed: false, broken: false, pulse: Math.random() * Math.PI * 2 };
+        const previousCenter = previous ? previous.top + previous.gap / 2 : h / 2;
+        const center = previousCenter + (Math.random() - .5) * Math.min(230, h * .33);
+        const gate = { x, desiredGap, width: 66, passed: false, broken: false, pulse: Math.random() * Math.PI * 2 };
+        setGateOpening(gate, center);
         gates.push(gate);
         state.created++;
         const type = state.created > 3 && state.created % 7 === 0 ? 'shield' : 'shard';
-        pickups.push({ x: x + gate.width / 2, y: center + (Math.random() - .5) * dynamicGap * .38, type, taken: false, spin: Math.random() * Math.PI });
+        const offset = .5 + (Math.random() - .5) * .38;
+        pickups.push({ x: x + gate.width / 2, y: gate.top + gate.gap * offset, gate, offset, type, taken: false, spin: Math.random() * Math.PI });
       }
 
       function resetGame() {
-        Object.assign(state, { active: true, paused: false, score: 0, combo: 1, bestCombo: 1, shards: 0, gatesPassed: 0, created: 0, shield: 0, invulnerable: 0, shake: 0, flash: 0, lastTime: performance.now() });
+        Object.assign(state, { active: true, engaged: false, paused: false, score: 0, combo: 1, bestCombo: 1, shards: 0, gatesPassed: 0, created: 0, shield: 0, invulnerable: 0, shake: 0, flash: 0, lastTime: performance.now() });
         rocket.y = h * .48; rocket.vy = 0; rocket.rotation = 0;
         gates = []; pickups = []; particles = [];
         const spacing = Math.max(350, Math.min(DIFFICULTIES[state.difficulty].spacing, w * .52));
-        spawnGate(w + 230); spawnGate(w + 230 + spacing); spawnGate(w + 230 + spacing * 2);
+        const firstGate = Math.min(w + 70, rocket.x + 330);
+        for (let i = 0; i < 3; i++) spawnGate(firstGate + spacing * i);
+        clearTimeout(toastTimer);
+        ui.toast.classList.remove('show');
         document.body.classList.add('playing');
         document.body.classList.remove('engaged');
         ui.pauseToggle.hidden = false;
@@ -390,6 +423,7 @@
 
       function thrust() {
         if (!state.active || state.paused) return;
+        state.engaged = true;
         document.body.classList.add('engaged');
         rocket.vy = DIFFICULTIES[state.difficulty].thrust;
         for (let i = 0; i < 7; i++) particles.push({ x: rocket.x - 24, y: rocket.y + (Math.random() - .5) * 12, vx: -5 - Math.random() * 5, vy: (Math.random() - .5) * 2.5, life: 1, max: 1, size: 2 + Math.random() * 4, color: i % 2 ? '#3de1ff' : '#865cff', glow: 12 });
@@ -442,39 +476,49 @@
         } else endGame();
       }
 
-      function update(timestamp) {
-        const frame = Math.min(2.4, Math.max(.2, (timestamp - state.lastTime) / (1000 / 60)));
-        state.lastTime = timestamp;
+      function advanceFlight(frame) {
         const config = DIFFICULTIES[state.difficulty];
+        const speed = config.speed + Math.min(3.1, state.gatesPassed * .075);
+        rocket.vy += config.gravity * frame; rocket.y += rocket.vy * frame;
+        rocket.rotation += (Math.max(-.52, Math.min(.62, rocket.vy * .055)) - rocket.rotation) * .16;
+        if (state.invulnerable > 0) state.invulnerable -= frame;
+        if (rocket.y < 8 || rocket.y > h - 8) {
+          endGame();
+          return;
+        }
 
-        if (state.active && !state.paused) {
-          const speed = config.speed + Math.min(3.1, state.gatesPassed * .075);
-          rocket.vy += config.gravity * frame; rocket.y += rocket.vy * frame;
-          rocket.rotation += (Math.max(-.52, Math.min(.62, rocket.vy * .055)) - rocket.rotation) * .16;
-          if (state.invulnerable > 0) state.invulnerable -= frame;
-          if (rocket.y < 8 || rocket.y > h - 8) endGame();
+        for (const star of stars) { star.x -= speed * star.z * .22 * frame; if (star.x < -4) { star.x = w + 4; star.y = Math.random() * h; } }
+        for (const cloud of clouds) { cloud.x -= speed * .035 * frame; if (cloud.x < -cloud.r) { cloud.x = w + cloud.r; cloud.y = Math.random() * h; } }
 
-          for (const star of stars) { star.x -= speed * star.z * .22 * frame; if (star.x < -4) { star.x = w + 4; star.y = Math.random() * h; } }
-          for (const cloud of clouds) { cloud.x -= speed * .035 * frame; if (cloud.x < -cloud.r) { cloud.x = w + cloud.r; cloud.y = Math.random() * h; } }
-
-          for (const gate of gates) {
-            gate.x -= speed * frame; gate.pulse += .035 * frame;
-            const hitX = rocket.x + 19 > gate.x && rocket.x - 18 < gate.x + gate.width;
-            const hitY = rocket.y - 10 < gate.top || rocket.y + 10 > gate.top + gate.gap;
-            if (hitX && hitY) hitGate(gate);
-            if (!gate.passed && rocket.x - 18 > gate.x + gate.width) passGate(gate);
+        for (const gate of gates) {
+          gate.x -= speed * frame; gate.pulse += .035 * frame;
+          const hitX = rocket.x + 19 > gate.x && rocket.x - 18 < gate.x + gate.width;
+          const hitY = rocket.y - 10 < gate.top || rocket.y + 10 > gate.top + gate.gap;
+          if (hitX && hitY) {
+            hitGate(gate);
+            if (!state.active) return;
           }
-          for (const item of pickups) {
-            item.x -= speed * frame; item.spin += .055 * frame;
-            if (!item.taken && Math.hypot(item.x - rocket.x, item.y - rocket.y) < 32) collect(item);
-          }
+          if (!gate.passed && rocket.x - 18 > gate.x + gate.width) passGate(gate);
+        }
+        for (const item of pickups) {
+          item.x -= speed * frame; item.spin += .055 * frame;
+          if (!item.taken && Math.hypot(item.x - rocket.x, item.y - rocket.y) < 32) collect(item);
+        }
 
-          gates = gates.filter(gate => gate.x > -130);
-          pickups = pickups.filter(item => item.x > -70 && !item.taken);
-          const last = gates[gates.length - 1];
-          const spacing = Math.max(340, Math.min(config.spacing, w * .53));
-          if (last && last.x < w - spacing) spawnGate(w + 70);
+        gates = gates.filter(gate => gate.x > -130);
+        pickups = pickups.filter(item => item.x > -70 && !item.taken);
+        const last = gates[gates.length - 1];
+        const spacing = Math.max(340, Math.min(config.spacing, w * .53));
+        if (!last) spawnGate(w + 70);
+        else if (last.x + spacing < w + 70) spawnGate(last.x + spacing);
+      }
 
+      function update(timestamp) {
+        const frame = Math.max(0, Math.min(2.4, (timestamp - state.lastTime) / (1000 / 60)));
+        state.lastTime = timestamp;
+
+        if (state.active && state.engaged && !state.paused) {
+          advanceFlight(frame);
           particles.forEach(p => { p.x += p.vx * frame; p.y += p.vy * frame; p.vx *= .985; p.vy *= .985; p.life -= .022 * frame; });
           particles = particles.filter(p => p.life > 0);
           state.shake *= .87; state.flash *= .9;
@@ -569,7 +613,7 @@
           if (!event.repeat) togglePause();
           return;
         }
-        if (![' ','ArrowUp','w','W'].includes(event.key)) return;
+        if (event.repeat || ![' ','ArrowUp','w','W'].includes(event.key)) return;
         if (state.active && !state.paused) thrust(); else if (ui.over.classList.contains('active')) startGame();
       });
       addEventListener('resize', resize, {passive:true});

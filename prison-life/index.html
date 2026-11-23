@@ -31,9 +31,10 @@
     @media(max-aspect-ratio:4/5){#game-shell{width:calc(100vw - 12px);border-radius:18px}#hud{inset:7px 38px auto;grid-template-columns:1fr 1.2fr 1fr;gap:3px}.hud-card{padding:5px 6px;border-radius:8px}.hud-line,.alert-head,.loot-line{font-size:5px}.lives{margin-top:4px;gap:2px}.life{width:12px;height:3px}.mission-card{padding:5px}.mission-card strong{font-size:5px}.mission-card span{font-size:6px;margin-top:3px}.mission-card small{display:none}.alert-track{height:3px;margin-top:4px}.corner{top:7px;height:28px;padding:0 8px;border-radius:8px;font-size:7px}#back{left:7px;width:28px;padding:0}.back-label{display:none}#sound{right:7px;width:28px}#prompt{bottom:3px;min-width:0;padding:5px 8px;font-size:6px}.panel{padding:21px 17px;border-radius:19px}.title{font-size:36px}.tagline{font-size:10px;margin:13px auto 16px}.briefing{gap:4px}.brief{padding:8px 4px}.brief b{font-size:12px}.actions{grid-template-columns:1fr}.primary{height:41px}.panel-foot{margin-top:11px}#callout{top:24%;font-size:7px;padding:6px 9px}}
   </style>
   <script src="../arcade-storage.js"></script>
+  <link rel="stylesheet" href="../arcade-frame.css">
 </head>
 <body>
-  <main id="game-shell">
+  <main id="game-shell" data-arcade-frame="standard" style="--menu-art:url(../assets/thumbnails/prison-life.webp)">
     <canvas id="game" width="1120" height="700" aria-label="Prison Life stealth escape game"></canvas>
     <a id="back" class="corner" href="../"><span>← <span class="back-label">Arcade</span></span></a>
     <button id="sound" class="corner" type="button" aria-label="소리 끄기">♪</button>

@@ -61,6 +61,9 @@
         text-decoration: none;
       }
 
+      #pause-toggle { top: max(64px, calc(env(safe-area-inset-top) + 52px)); cursor: pointer; font-family: inherit; }
+      #pause-toggle[hidden] { display: none; }
+
       .hud {
         position: fixed;
         top: 20px;
@@ -221,7 +224,7 @@
         color: #94a3b8;
       }
 
-      #restart-btn {
+      #restart-btn, #resume-btn {
         max-width: 200px;
       }
 
@@ -243,7 +246,8 @@
   </head>
   <body>
     <a class="back-link" href="../">← Arcade</a>
-    <canvas id="game"></canvas>
+    <button id="pause-toggle" class="back-link" type="button" aria-label="Pause game">Ⅱ</button>
+    <canvas id="game" aria-label="Save the Island game area"></canvas>
 
     <div class="hud">
       <div class="panel">
@@ -256,6 +260,11 @@
           <span class="stat-label">Currency</span>
           <span class="money-text" id="money">$0</span>
         </div>
+        <div class="stat-row">
+          <span class="stat-label">Base Integrity</span>
+          <span class="stat-value" id="base-health">100%</span>
+        </div>
+        <div class="hp-bar-container" aria-hidden="true"><div id="hp-fill"></div></div>
         <button class="btn" id="upgrade-btn">Upgrade Gun ($20)</button>
         <div id="item-status" class="item-badge">No Special Item</div>
         <div class="controls-tip">
@@ -263,6 +272,11 @@
           [X]: Special Weapon
         </div>
       </div>
+    </div>
+
+    <div class="game-over" id="pause-screen">
+      <h2>PAUSED</h2>
+      <button class="btn" id="resume-btn" type="button">Resume</button>
     </div>
 
     <div class="game-over" id="game-over">
@@ -352,6 +366,11 @@
       // UI elements
       const ui = {
         money: document.getElementById("money"),
+        baseHealth: document.getElementById("base-health"),
+        hpFill: document.getElementById("hp-fill"),
+        pauseToggle: document.getElementById("pause-toggle"),
+        pauseScreen: document.getElementById("pause-screen"),
+        resume: document.getElementById("resume-btn"),
         gunLevel: document.getElementById("gun-level"),
         upgradeBtn: document.getElementById("upgrade-btn"),
         itemStatus: document.getElementById("item-status"),
@@ -378,6 +397,7 @@
         aim: { x: 0, y: 0 },
         lastTime: 0,
         gameOver: false,
+        paused: false,
         shake: 0,
         frame: 0
       };
@@ -411,14 +431,28 @@
       }
 
       function resize() {
+        const oldWidth = width;
+        const oldHeight = height;
         width = window.innerWidth;
         height = window.innerHeight;
-        canvas.width = width * window.devicePixelRatio;
-        canvas.height = height * window.devicePixelRatio;
-        ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
-        if (state.aim.x === 0 && state.aim.y === 0) {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        if (!oldWidth || !oldHeight) {
           state.aim.x = width * 0.55;
           state.aim.y = height * 0.42;
+          return;
+        }
+        const xScale = width / oldWidth;
+        const yScale = height / oldHeight;
+        for (const object of [state.aim, ...enemies, ...enemyMissiles, ...projectiles, ...gifts, ...popups, ...particles]) {
+          object.x *= xScale;
+          object.y *= yScale;
+        }
+        for (const enemy of enemies) {
+          if (enemy.type === "ship") enemy.y = getSeaY() - 25;
+          enemy.targetY *= yScale;
         }
       }
 
@@ -456,6 +490,9 @@
       }
 
       function updateHud() {
+        const health = Math.ceil(100 * state.baseHp / state.maxHp);
+        ui.baseHealth.textContent = `${health}%`;
+        ui.hpFill.style.width = `${health}%`;
         ui.money.textContent = `$${state.money}`;
         ui.gunLevel.textContent = state.gunLevel;
         
@@ -488,24 +525,44 @@
       });
 
       canvas.addEventListener("mousedown", (e) => {
-        if (state.gameOver) return;
+        if (state.gameOver || state.paused) return;
         if (e.button === 2) {
           // Cannon is now more of a secondary/item-like heavy shot
           fireCannon();
-        } else {
+        } else if (e.button === 0) {
           fireGun();
         }
       });
 
       canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
-      window.addEventListener("keydown", (e) => {
-        if (e.repeat) return;
-        if (e.code === "KeyC" && !state.gameOver) fireCannon();
-        if (e.key.toLowerCase() === "x" && state.itemReady && !state.gameOver) fireSuperShot();
-        if (e.key.toLowerCase() === "r" && state.gameOver) restart();
+      function setPaused(value) {
+        if (state.gameOver || state.paused === value) return;
+        state.paused = value;
+        state.lastTime = performance.now();
+        ui.pauseToggle.hidden = value;
+        ui.pauseScreen.classList.toggle("show", value);
+        touchActions.style.display = value ? "none" : "";
+        if (value) ui.resume.focus();
+      }
+
+      window.addEventListener("keydown", event => {
+        if (event.repeat) return;
+        if (event.code === "KeyP" || event.code === "Escape") {
+          event.preventDefault();
+          setPaused(!state.paused);
+        }
+        if (state.paused) return;
+        if (event.code === "KeyC" && !state.gameOver) fireCannon();
+        if (event.code === "KeyX" && state.itemReady && !state.gameOver) fireSuperShot();
+        if (event.code === "KeyR" && state.gameOver) restart();
       });
       ui.restartBtn.addEventListener("click", restart);
+      ui.pauseToggle.addEventListener("click", () => setPaused(true));
+      ui.resume.addEventListener("click", () => setPaused(false));
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) setPaused(true);
+      });
 
       function fireGun() {
         if (state.gunCooldown > 0) return;
@@ -530,14 +587,8 @@
         for (let j = enemies.length - 1; j >= 0; j--) {
           const e = enemies[j];
           if (Math.hypot(tx - e.x, ty - e.y) < e.size + hitRadius) {
-            e.hp -= (2 + state.gunLevel);
             hitSomething = true;
-            if (e.hp <= 0) {
-              Sfx.play("explosion");
-              createExplosion(e.x, e.y, "#f87171", 20);
-              addMoney(e.reward, e.x, e.y);
-              enemies.splice(j, 1);
-            }
+            damageEnemy(j, 2 + state.gunLevel);
           }
         }
 
@@ -634,7 +685,7 @@
         
         if (roll > 0.6 && roll <= 0.85) { 
           type = "heli"; 
-          y = 100 + Math.random() * 200; 
+          y = seaY * (0.23 + Math.random() * 0.36);
           hp = 8; 
           speed = 1.6; 
           targetY = y;
@@ -644,7 +695,7 @@
           y = seaY - 85; // On the ground
           hp = 6; 
           speed = 3.5; 
-          targetY = 50 + Math.random() * 120; // Flight altitude
+          targetY = seaY * (0.12 + Math.random() * 0.28);
           takingOff = true;
         }
         
@@ -676,7 +727,7 @@
       const timers = { enemy: 0, gift: 0, missile: 0 };
 
       function update(delta) {
-        if (state.gameOver) return;
+        if (state.gameOver || state.paused) return;
         // Keep gameplay and visual timing stable on 60/90/120Hz displays.
         const ts = delta / 16.67;
         state.frame += ts;
@@ -759,6 +810,7 @@
             // Only ships deal collision damage now, or planes if they are very low
             enemies.splice(i, 1);
             takeDamage(10);
+            if (state.gameOver) return;
           }
         }
 
@@ -789,6 +841,7 @@
             // Hit the island
             enemyMissiles.splice(i, 1);
             takeDamage(m.type === "bomb" ? 8 : 5);
+            if (state.gameOver) return;
           } else if (m.y > getSeaY()) {
             // Splash in water (only if not hitting island)
             createExplosion(m.x, m.y, "#2f7bc3", 5);
@@ -823,12 +876,13 @@
       }
 
       function takeDamage(amt) {
-        state.baseHp -= amt;
+        state.baseHp = Math.max(0, state.baseHp - amt);
         state.shake = 10;
         Sfx.play("damage");
         updateHud();
         if (state.baseHp <= 0) {
           state.gameOver = true;
+          ui.pauseToggle.hidden = true;
           touchActions.style.display = "none";
           ui.gameOver.classList.add("show");
         }
@@ -843,14 +897,10 @@
           for (let j = enemies.length - 1; j >= 0; j--) {
             const e = enemies[j];
             if (distance(p, e) < p.radius + e.size) {
-              e.hp -= p.damage;
+              const blastHitsTarget = p.splash && distance(p, e) < p.splash;
+              damageEnemy(j, p.damage + (blastHitsTarget ? 8 : 0));
+              if (p.splash) splashDamage(p, e);
               hit = true;
-              if (p.splash) splashDamage(p, p.splash);
-              if (e.hp <= 0) {
-                createExplosion(e.x, e.y, "#f87171", 20);
-                addMoney(e.reward, e.x, e.y);
-                enemies.splice(j, 1);
-              }
               break;
             }
           }
@@ -909,17 +959,23 @@
         }
       }
 
-      function splashDamage(p, radius) {
-        enemies.forEach((e, idx) => {
-          if (distance(p, e) < radius) {
-            e.hp -= 8;
-            if (e.hp <= 0) {
-              createExplosion(e.x, e.y, "#f87171", 15);
-              addMoney(e.reward, e.x, e.y);
-              enemies.splice(idx, 1);
-            }
+      function damageEnemy(index, amount) {
+        const enemy = enemies[index];
+        enemy.hp -= amount;
+        if (enemy.hp > 0) return;
+        enemies.splice(index, 1);
+        Sfx.play("explosion");
+        createExplosion(enemy.x, enemy.y, "#f87171", 20);
+        addMoney(enemy.reward, enemy.x, enemy.y);
+      }
+
+      function splashDamage(projectile, directTarget) {
+        for (let index = enemies.length - 1; index >= 0; index--) {
+          const enemy = enemies[index];
+          if (enemy !== directTarget && distance(projectile, enemy) < projectile.splash) {
+            damageEnemy(index, 8);
           }
-        });
+        }
       }
 
       function distance(a, b) {
@@ -1800,10 +1856,15 @@
 
       function restart() {
         Object.assign(state, {
-          money: 0, baseHp: 100, gunLevel: 1, gunCooldown: 0, cannonCooldown: 0,
-          itemReady: false, launcherAlive: true, launcherHp: 6, launcherCooldown: 0,
-          gameOver: false, shake: 0
+          money: 0, baseHp: state.maxHp, gunLevel: 1, gunCooldown: 0, cannonCooldown: 0,
+          itemReady: false, launcherAlive: true, launcherHp: state.launcherMaxHp, launcherCooldown: 0,
+          gameOver: false, paused: false, shake: 0, frame: 0, lastTime: performance.now()
         });
+        Object.assign(timers, { enemy: 0, gift: 0, missile: 0 });
+        state.aim.x = width * 0.55;
+        state.aim.y = height * 0.42;
+        ui.pauseToggle.hidden = false;
+        ui.pauseScreen.classList.remove("show");
         projectiles.length = 0; enemies.length = 0; gifts.length = 0;
         enemyMissiles.length = 0; popups.length = 0; particles.length = 0;
         ui.gameOver.classList.remove("show");
@@ -1812,7 +1873,7 @@
       }
 
       function loop(t) {
-        const delta = Math.min(32, t - state.lastTime || 16);
+        const delta = Math.max(0, Math.min(32, t - state.lastTime));
         state.lastTime = t;
         update(delta);
         draw();

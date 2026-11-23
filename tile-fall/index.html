@@ -30,9 +30,10 @@
     .result-title{margin:9px 0 0;font-size:41px;line-height:1;font-weight:1000;letter-spacing:-.05em}.result-title span{color:var(--lime)}.results{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:20px 0}.result{padding:12px 6px;border:1px solid #ffffff12;border-radius:13px;background:#ffffff05}.result span{display:block;color:#837b90;font-size:7px;font-weight:900;letter-spacing:.09em}.result strong{display:block;margin-top:5px;font:950 17px/1 ui-monospace,monospace}
     @media(max-aspect-ratio:4/5){#game-shell{width:calc(100vw - 12px);border-radius:18px}#hud{inset:7px 38px auto;gap:3px}.fighter-card{padding:4px 5px;border-radius:8px}.avatar{width:18px;height:18px;border-radius:5px;font-size:6px}.fighter-line{font-size:5px}.fighter-line span:last-child,.dash-track{display:none}.round-pips{margin-top:3px;gap:2px}.pip{width:8px;height:2px}.match-card{min-width:62px;padding:5px}.match-card strong{font-size:5px}.match-card span{font-size:7px;margin-top:3px}.match-card small{display:none}.corner{top:7px;height:28px;padding:0 8px;border-radius:8px;font-size:7px}#back{left:7px;width:28px;padding:0}.back-label{display:none}#sound{right:7px;width:28px}#hint{display:none}#countdown{font-size:65px}.panel{padding:21px 17px;border-radius:19px}.title{font-size:35px}.tagline{font-size:10px;margin:13px auto 16px}.intensity button{height:29px}.actions{grid-template-columns:1fr}.primary{height:41px}.panel-foot{margin-top:11px}#callout{top:24%;font-size:7px;padding:6px 9px}}
   </style>
+  <link rel="stylesheet" href="../arcade-frame.css">
 </head>
 <body>
-  <main id="game-shell">
+  <main id="game-shell" data-arcade-frame="standard" style="--menu-art:url(../assets/thumbnails/tile-fall.webp)">
     <canvas id="game" width="1120" height="700" aria-label="Tile Fall Survival arena"></canvas>
     <a id="back" class="corner" href="../"><span>← <span class="back-label">Arcade</span></span></a>
     <button id="sound" class="corner" type="button" aria-label="소리 끄기">♪</button>

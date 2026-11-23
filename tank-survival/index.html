@@ -422,10 +422,6 @@
             }
             #ui .value { min-width: 26px; text-align: center; }
             #pauseBtn, #soundBtn { padding: 6px 7px; font-size: 9px; }
-            canvas {
-                width: min(calc(100vw - 12px), calc(100vh - 280px)) !important;
-                height: min(calc(100vw - 12px), calc(100vh - 280px)) !important;
-            }
             #overlay {
                 width: calc(100vw - 28px);
                 padding: 22px 16px;
@@ -472,6 +468,52 @@
         .back-btn:hover {
             background: rgba(0, 0, 0, 0.8);
         }
+        #game {
+            display: block;
+            width: min(800px, calc(100vw - 20px), calc(100dvh - 118px));
+            height: auto;
+            aspect-ratio: 1;
+        }
+
+        #ui .value { min-width: 0; font-variant-numeric: tabular-nums; }
+        #overlay { max-height: calc(100dvh - 24px); overflow-y: auto; }
+        body:not(.game-active) #mobileControls { display: none; }
+
+        @media (max-width: 920px) {
+            #ui { column-gap: 11px; }
+            #ui div { display: grid; justify-items: center; gap: 3px; }
+            #ui .label { display: block; color: #c3ceda; font-size: 8px; }
+            #ui .value { font-size: 13px; }
+            #pauseBtn, #soundBtn { min-height: 32px; }
+        }
+
+        @media (any-pointer: coarse) and (orientation: portrait) {
+            #game { width: min(800px, calc(100vw - 12px), calc(100dvh - 220px)); }
+        }
+
+        @media (orientation: landscape) and (max-height: 550px) {
+            body { align-items: flex-start; padding-top: 5px; }
+            #game { width: min(800px, calc(100vw - 20px), calc(100dvh - 68px)); }
+            #ui { margin-bottom: 5px; padding: 5px 9px; }
+            #overlay {
+                position: fixed;
+                width: min(440px, calc(100vw - 28px));
+                padding: 16px 20px;
+            }
+            #overlay h1 { margin-bottom: 8px; font-size: 25px; }
+            #overlay p { margin-bottom: 8px; font-size: 13px; }
+            #overlay button { margin-top: 10px; padding: 8px 20px; font-size: 14px; }
+            #arenaOptions { width: 100%; }
+        }
+
+        @media (any-pointer: coarse) and (orientation: landscape) and (max-height: 550px) {
+            #game { width: min(800px, calc(100vw - 224px), calc(100dvh - 68px)); }
+            .joystick-container { width: 92px; height: 92px; bottom: max(36px, env(safe-area-inset-bottom)); }
+            #moveJoystick { left: max(12px, env(safe-area-inset-left)); }
+            #aimJoystick { right: max(12px, env(safe-area-inset-right)); }
+            .joystick-stick { width: 38px; height: 38px; }
+            .back-btn { top: 8px; left: 8px; }
+        }
     </style>
 </head>
 
@@ -486,7 +528,7 @@
             <button id="pauseBtn">PAUSE</button>
             <button id="soundBtn">SOUND ON</button>
         </div>
-        <canvas id="game" width="800" height="800"></canvas>
+        <canvas id="game" width="800" height="800" aria-label="Tank Survival 전장"></canvas>
         <div id="bossWarning">WARNING! BOSS INCOMING!</div>
         <div id="overlay">
             <h1 id="overlayTitle">Tank Survival</h1>
@@ -738,7 +780,6 @@
         let isMobile = false;
 
         // Canvas scaling
-        let canvasScale = 1;
         const baseWidth = 800;
         const baseHeight = 800;
         const terrainDetails = createTerrainDetails(132);
@@ -875,33 +916,6 @@
         function getBattlefield() {
             return battlefields.find(field => field.id === selectedBattlefieldId) || battlefields[0];
         }
-
-        function resizeCanvas() {
-            const maxWidth = window.innerWidth - 20;
-            // On mobile (touch devices), leave more room at bottom for controls
-            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-            const controlsHeight = isTouchDevice ? 200 : 100;
-            const maxHeight = window.innerHeight - controlsHeight;
-
-            let newWidth = baseWidth;
-            let newHeight = baseHeight;
-
-            if (maxWidth < baseWidth || maxHeight < baseHeight) {
-                const scaleX = maxWidth / baseWidth;
-                const scaleY = maxHeight / baseHeight;
-                canvasScale = Math.min(scaleX, scaleY, 1);
-                newWidth = Math.floor(baseWidth * canvasScale);
-                newHeight = Math.floor(baseHeight * canvasScale);
-            } else {
-                canvasScale = 1;
-            }
-
-            canvas.style.width = newWidth + 'px';
-            canvas.style.height = newHeight + 'px';
-        }
-
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
 
         // Player
         const player = {
@@ -1138,10 +1152,12 @@
             startBtn.textContent = buttonText;
             if (arenaPicker) arenaPicker.style.display = mode === 'pause' ? 'none' : 'block';
             overlay.style.display = 'block';
+            document.body.classList.remove('game-active');
         }
 
         function hideOverlay() {
             overlay.style.display = 'none';
+            document.body.classList.add('game-active');
         }
 
         function startGame() {

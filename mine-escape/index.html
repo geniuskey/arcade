@@ -285,6 +285,49 @@
         bottom: auto;
       }
     }
+    .mine-status { display: none; }
+    .ma-btn[hidden] { display: none; }
+
+    @media (max-width: 700px) and (orientation: portrait) {
+      #game-shell {
+        --mine-top: max(106px, calc(env(safe-area-inset-top) + 96px));
+        --mine-bottom: max(176px, calc(env(safe-area-inset-bottom) + 156px));
+        background: radial-gradient(ellipse at 50% 86%, #15211b 0%, #080c09 61%);
+      }
+
+      body:not(.mobile-controls-hidden) #game {
+        position: absolute;
+        top: var(--mine-top);
+        height: calc(100% - var(--mine-top) - var(--mine-bottom));
+        border-block: 1px solid #314037;
+      }
+
+      body:not(.mobile-controls-hidden) .mine-status {
+        position: absolute;
+        inset: max(7px, env(safe-area-inset-top)) 8px auto 54px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        align-items: center;
+        gap: 7px 12px;
+        padding: 9px 11px;
+        border: 1px solid #3c4c43;
+        border-radius: 10px;
+        background: #111813;
+        color: #ecf2eb;
+      }
+
+      .mine-status span { display: block; font-size: 10px; color: #b3c2b7; }
+      .mine-status strong { display: block; font-size: 14px; }
+      #mine-stage { color: var(--amber); }
+      #mine-objective {
+        grid-column: 1 / -1;
+        padding-top: 6px;
+        border-top: 1px solid #334037;
+        color: #f2cc88;
+        font-size: 12px;
+      }
+      #toast { top: calc(var(--mine-top) + 8px); min-width: 0; width: max-content; }
+    }
   </style>
 </head>
 
@@ -293,7 +336,13 @@
 
   <main id="game-shell">
     <canvas id="game" width="900" height="620" aria-label="광산 탈출 게임"></canvas>
-    <div id="toast"></div>
+    <section class="mine-status" aria-label="탐사 상태">
+      <div><span id="mine-code"></span><strong id="mine-stage"></strong></div>
+      <div><span>광물</span><strong id="mine-minerals"></strong></div>
+      <div><span>장비</span><strong id="mine-lives"></strong></div>
+      <strong id="mine-objective"></strong>
+    </section>
+    <div id="toast" role="status"></div>
 
     <section id="overlay" class="overlay active">
       <img id="overlay-image" class="helmet-mark" src="assets/miner-down-idle.webp" alt="" aria-hidden="true">
@@ -331,6 +380,14 @@
     const playerRoleSelect = document.getElementById('player-role-select');
     const startButton = document.getElementById('start-button');
     const toast = document.getElementById('toast');
+    const portraitViewport = matchMedia('(max-width: 700px) and (orientation: portrait)');
+    const portraitHud = {
+      code: document.getElementById('mine-code'),
+      stage: document.getElementById('mine-stage'),
+      minerals: document.getElementById('mine-minerals'),
+      lives: document.getElementById('mine-lives'),
+      objective: document.getElementById('mine-objective')
+    };
 
     const SPRITE_PATHS = {
       key: 'assets/key.webp',
@@ -462,27 +519,43 @@
       [-1, -1], [1, -1], [-1, 1], [1, 1]
     ];
     let spritesReady = false;
+    let loadingSprites = false;
 
-    startButton.disabled = true;
-    startButton.textContent = '장비 준비 중';
-    const spriteLoads = Object.entries(SPRITE_PATHS).map(function ([name, source]) {
+    function loadSprite(name, source) {
+      const current = SPRITES[name];
+      if (current?.complete && current.naturalWidth) return Promise.resolve();
       return new Promise(function (resolve, reject) {
         const image = new Image();
         SPRITES[name] = image;
-        image.onload = resolve;
-        image.onerror = reject;
+        const finish = function (success) {
+          clearTimeout(timeout);
+          image.onload = image.onerror = null;
+          if (success) resolve();
+          else reject(source);
+        };
+        const timeout = setTimeout(function () { finish(false); }, 6000);
+        image.onload = function () { finish(true); };
+        image.onerror = function () { finish(false); };
         image.src = source;
-        if (image.complete && image.naturalWidth) resolve();
       });
-    });
+    }
 
-    Promise.all(spriteLoads).then(function () {
-      spritesReady = true;
+    async function loadSprites() {
+      loadingSprites = true;
+      startButton.disabled = true;
+      startButton.textContent = '장비 준비 중';
+      let pending = Object.entries(SPRITE_PATHS);
+      for (let attempt = 0; attempt < 2 && pending.length; attempt++) {
+        const results = await Promise.allSettled(pending.map(function ([name, source]) {
+          return loadSprite(name, source);
+        }));
+        pending = pending.filter(function (_, index) { return results[index].status === 'rejected'; });
+      }
+      spritesReady = pending.length === 0;
+      loadingSprites = false;
       startButton.disabled = false;
-      startButton.textContent = '탐사 시작';
-    }).catch(function () {
-      startButton.textContent = '이미지 로드 실패';
-    });
+      startButton.textContent = spritesReady ? '탐사 시작' : '이미지 다시 불러오기';
+    }
 
     const WIDTH = 900;
     const HEIGHT = 620;
@@ -534,21 +607,38 @@
     const SIMULATION_DT = 1 / TARGET_HZ;
     const MAX_PARTICLES = 220;
     const DUST_PARTICLE_COUNT = 72;
-    let renderScaleX = 1;
-    let renderScaleY = 1;
+    const view = { scale: 1, width: WIDTH, height: HEIGHT, x: 0, y: 0, portrait: false };
 
     function resizeCanvas() {
-      // 30Hz와 1.25x backing store로 저사양 기기에서도 동굴 효과 비용을 제한한다.
       const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.25);
-      const displayWidth = Math.max(1, window.innerWidth);
-      const displayHeight = Math.max(1, window.innerHeight);
-      const nextWidth = Math.round(displayWidth * pixelRatio);
-      const nextHeight = Math.round(displayHeight * pixelRatio);
-
+      const display = canvas.getBoundingClientRect();
+      const nextWidth = Math.max(1, Math.round(display.width * pixelRatio));
+      const nextHeight = Math.max(1, Math.round(display.height * pixelRatio));
       if (canvas.width !== nextWidth) canvas.width = nextWidth;
       if (canvas.height !== nextHeight) canvas.height = nextHeight;
-      renderScaleX = canvas.width / WIDTH;
-      renderScaleY = canvas.height / HEIGHT;
+      view.portrait = portraitViewport.matches && !document.body.classList.contains('mobile-controls-hidden');
+
+      if (view.portrait) {
+        view.scale = Math.max(canvas.width / 470, canvas.height / (HEIGHT - HUD_HEIGHT));
+        view.width = canvas.width / view.scale;
+        view.height = canvas.height / view.scale;
+      } else {
+        view.scale = Math.min(canvas.width / WIDTH, canvas.height / HEIGHT);
+        view.width = WIDTH;
+        view.height = HEIGHT;
+        view.x = (canvas.width - WIDTH * view.scale) / 2;
+        view.y = (canvas.height - HEIGHT * view.scale) / 2;
+      }
+    }
+
+    function setWorldTransform() {
+      if (view.portrait) {
+        const left = clamp(player.x - view.width / 2, 0, WIDTH - view.width);
+        const top = clamp(player.y - view.height * .56, HUD_HEIGHT, HEIGHT - view.height);
+        ctx.setTransform(view.scale, 0, 0, view.scale, -left * view.scale, -top * view.scale);
+      } else {
+        ctx.setTransform(view.scale, 0, 0, view.scale, view.x, view.y);
+      }
     }
 
     const STAGES = [
@@ -1270,6 +1360,8 @@
 
     function setMobileControlsVisible(visible) {
       document.body.classList.toggle('mobile-controls-hidden', !visible);
+      if (mobileActions) mobileActions.lastElementChild.hidden = player.role !== 'impostor';
+      resizeCanvas();
     }
 
     function applyRoleSelection() {
@@ -1295,7 +1387,10 @@
     }
 
     function startGame() {
-      if (!spritesReady) return;
+      if (!spritesReady) {
+        if (!loadingSprites) loadSprites();
+        return;
+      }
       initAudio();
       applyRoleSelection();
       stageIndex = 0;
@@ -3557,7 +3652,7 @@
       gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
       gradient.addColorStop(0.36, 'rgba(0, 0, 0, 0.06)');
       gradient.addColorStop(0.72, 'rgba(0, 0, 0, 0.68)');
-      gradient.addColorStop(1, 'rgba(0, 0, 0, 0.965)');
+      gradient.addColorStop(1, 'rgba(0, 0, 0, 0.87)');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, HUD_HEIGHT, WIDTH, HEIGHT - HUD_HEIGHT);
 
@@ -3657,8 +3752,27 @@
         if (companion.escaped) escapedCompanions += 1;
         if (companion.active || companion.escaped) survivingCompanions += 1;
       }
+      const companionsExiting = chestOpen && escapedCompanions < survivingCompanions;
+      const objective = collected < TOTAL_MINERALS
+        ? '광물 탐색'
+        : (!chestOpen ? '열쇠함 이동' : (companionsExiting ? '동료 탈출' : '탈출문 이동'));
+
+      if (view.portrait) {
+        const values = {
+          code: stage.code + ' / ' + String(STAGES.length).padStart(2, '0'),
+          stage: stage.name,
+          minerals: collected + ' / ' + TOTAL_MINERALS,
+          lives: player.lives + ' / ' + MAX_LIVES,
+          objective: companionsExiting ? objective + ' · ' + escapedCompanions + ' / ' + survivingCompanions : objective
+        };
+        for (const [key, value] of Object.entries(values)) {
+          if (portraitHud[key].textContent !== value) portraitHud[key].textContent = value;
+        }
+        return;
+      }
+
       const hpColors = ['#ff6758', '#ff805b', '#ffae5d', '#9edb78', '#73db9f'];
-      const hudLeft = Math.max(28, 62 * WIDTH / Math.max(1, window.innerWidth));
+      const hudLeft = Math.max(28, (58 * canvas.width / Math.max(1, window.innerWidth) - view.x) / view.scale);
       ctx.save();
       ctx.fillStyle = 'rgba(7, 10, 8, 0.97)';
       ctx.fillRect(0, 0, WIDTH, HUD_HEIGHT);
@@ -3709,10 +3823,6 @@
 
       ctx.fillStyle = '#758079';
       ctx.font = '700 10px Arial';
-      const companionsExiting = chestOpen && escapedCompanions < survivingCompanions;
-      const objective = collected < TOTAL_MINERALS
-        ? '광물 탐색'
-        : (!chestOpen ? '열쇠함 이동' : (companionsExiting ? '동료 탈출' : '탈출문 이동'));
       ctx.textAlign = 'right';
       ctx.fillText(objective, 870, 25);
       ctx.fillStyle = collected < TOTAL_MINERALS ? '#e8ece9' : stage.accent;
@@ -3755,7 +3865,9 @@
     }
 
     function draw() {
-      ctx.setTransform(renderScaleX, 0, 0, renderScaleY, 0, 0);
+      ctx.resetTransform();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setWorldTransform();
       ctx.save();
       if (shake > 0.3) {
         ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
@@ -3777,6 +3889,9 @@
       drawDustHaze();
       ctx.restore();
       drawHud();
+      if (view.portrait) {
+        ctx.setTransform(canvas.width / WIDTH, 0, 0, canvas.height / HEIGHT, 0, 0);
+      }
       drawTransition();
     }
 
@@ -3824,6 +3939,7 @@
     });
     startButton.addEventListener('click', startGame);
 
+    let mobileActions;
     if (window.MobileArcade) {
       window.MobileArcade.dpad({
         up: 'up',
@@ -3831,14 +3947,14 @@
         left: 'left',
         right: 'right'
       }, { side: 'left', tag: 'MOVE' });
-      window.MobileArcade.actions([
+      mobileActions = window.MobileArcade.actions([
         { label: 'JUMP', key: 'space' },
         { label: '밀치기<br>E', key: 'e' },
         { label: '제거<br>Q', key: 'q' }
       ], { side: 'right', bottom: '42px' });
     }
 
-    resizeCanvas();
+    loadSprites();
     updateRolePreview();
     setupStage(0);
     setMobileControlsVisible(false);
