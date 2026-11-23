@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" type="image/png" href="../assets/arcade-icon.png">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
   <title>Dustline Rally — Offroad Racing</title>
   <style>
@@ -39,6 +40,7 @@
     .result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:22px 0}.result{padding:12px 7px;border:1px solid #ffffff12;border-radius:13px;background:#ffffff05}.result span{display:block;color:#838b9f;font-size:8px;font-weight:900;letter-spacing:.1em}.result strong{display:block;margin-top:5px;font:950 17px/1 ui-monospace,monospace}.finish-title{margin:9px 0 0;font-size:43px;font-weight:1000;letter-spacing:-.05em}.finish-title span{color:var(--lime)}
     @media(max-aspect-ratio:4/5){#game-shell{width:calc(100vw - 12px);max-height:none;border-radius:18px}#hud{inset:7px 45px auto;gap:4px}.driver-hud{padding:6px 7px;border-radius:9px}.place{width:25px;height:25px;border-radius:7px;font-size:12px}.driver-name{font-size:6px}.micro,.meter,.best{display:none}.race-center{min-width:70px;padding:6px}.race-center #race-time{font-size:11px}#race-lap{font-size:6px}.corner-button{top:7px;height:29px;padding:0 9px;border-radius:8px;font-size:8px}#back{left:7px;width:29px;padding:0}.back-label{display:none}#sound{right:7px;width:29px}.panel{padding:22px 18px;border-radius:20px}.title{font-size:38px}.tagline{font-size:11px;margin:14px auto 17px}.menu-actions{grid-template-columns:1fr}.primary{height:43px}.difficulty button{height:31px}#speed-panel,#progress,#controls-hint{display:none}#countdown{font-size:70px}}
   </style>
+  <script src="../arcade-storage.js"></script>
 </head>
 <body>
   <main id="game-shell">
@@ -89,7 +91,7 @@
     const scenery=[];let seed=83271;const rand=()=>((seed=(seed*1664525+1013904223)>>>0)/4294967296);
     for(let i=0;i<260;i++){const a=rand()*TAU,r=580+rand()*1050,p={x:Math.cos(a)*r+(rand()-.5)*650,y:Math.sin(a)*r+(rand()-.5)*450,type:rand()>.78?'crystal':rand()>.5?'cactus':'rock',s:.6+rand()*1.5,rot:rand()*TAU};let near=Infinity;for(const t of track)near=Math.min(near,dist(p,t));if(near>TRACK_W*.62)scenery.push(p)}
     const stars=Array.from({length:90},()=>({x:rand()*W,y:rand()*260,s:rand()*1.8+.4,a:rand()*TAU}));
-    function readBest(){const n=Number(localStorage.getItem('dustline_best')||0);return n>0?n:0}function saveBest(n){try{localStorage.setItem('dustline_best',String(Math.round(n)))}catch{}}
+    function readBest(){const n=Number(ArcadeStorage.getItem('dustline_best')||0);return n>0?n:0}function saveBest(n){try{ArcadeStorage.setItem('dustline_best',String(Math.round(n)))}catch{}}
     function format(ms){if(!Number.isFinite(ms)||ms<=0)return'--:--.--';const m=Math.floor(ms/60000),s=Math.floor(ms%60000/1000),c=Math.floor(ms%1000/10);return`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(c).padStart(2,'0')}`}
     function tone(freq=.0,d=.05,type='sine',vol=.025){if(!audioOn||!freq)return;try{audioCtx??=new(window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(vol,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+d);o.connect(g).connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+d)}catch{}}
     function setPanel(panel){[ui.menu,ui.pause,ui.finish].forEach(x=>x.classList.toggle('active',x===panel))}
@@ -144,7 +146,7 @@
   </script>
   <script src="../mobile-arcade.js"></script>
   <script>
-  (()=>{if(!window.MobileArcade)return;const p1Pad=MobileArcade.dpad({up:'w',down:'s',left:'a',right:'d'},{side:'left',tag:'P1'}),p1Act=MobileArcade.actions([{label:'NITRO',key:'space'}],{side:'left',bottom:'190px'}),p2Pad=MobileArcade.dpad({up:'up',down:'down',left:'left',right:'right'},{side:'right',tag:'P2'}),p2Act=MobileArcade.actions([{label:'NITRO',key:'enter'}],{side:'right',bottom:'190px'}),tags=[...document.querySelectorAll('.ma-tag')];window.setRallyMobileControls=(mode,active)=>{p1Pad.style.display=active?'':'none';p1Act.style.display=active?'':'none';p2Pad.style.display=active&&mode===2?'':'none';p2Act.style.display=active&&mode===2?'':'none';if(tags[0])tags[0].style.display=active?'':'none';if(tags[1])tags[1].style.display=active&&mode===2?'':'none'};window.setRallyMobileControls(1,false)})();
+  (()=>{if(!window.MobileArcade)return;const p1Pad=MobileArcade.dpad({up:'w',down:'s',left:'a',right:'d'},{side:'left',tag:'P1'}),p1Act=MobileArcade.actions([{label:'NITRO',key:'space'}],{side:'left',abovePad:true}),p2Pad=MobileArcade.dpad({up:'up',down:'down',left:'left',right:'right'},{side:'right',tag:'P2'}),p2Act=MobileArcade.actions([{label:'NITRO',key:'enter'}],{side:'right',abovePad:true}),tags=[...document.querySelectorAll('.ma-tag')];window.setRallyMobileControls=(mode,active)=>{p1Pad.style.display=active?'':'none';p1Act.style.display=active?'':'none';p2Pad.style.display=active&&mode===2?'':'none';p2Act.style.display=active&&mode===2?'':'none';if(tags[0])tags[0].style.display=active?'':'none';if(tags[1])tags[1].style.display=active&&mode===2?'':'none'};window.setRallyMobileControls(1,false)})();
   </script>
 </body>
 </html>

@@ -2,8 +2,9 @@
 <html lang="ko">
   <head>
     <meta charset="utf-8" />
+    <link rel="icon" type="image/png" href="../assets/arcade-icon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>우리 섬을 지켜라! - DEFEND THE ISLAND</title>
+    <title>우리 섬을 지켜라! — Save the Island</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -41,6 +42,23 @@
         width: 100vw;
         height: 100vh;
         cursor: crosshair;
+      }
+
+      .back-link {
+        position: fixed;
+        top: max(12px, env(safe-area-inset-top));
+        right: max(12px, env(safe-area-inset-right));
+        z-index: 110;
+        display: grid;
+        place-items: center;
+        min-height: 44px;
+        padding: 0 12px;
+        border: 1px solid rgba(255,255,255,.19);
+        border-radius: 12px;
+        background: var(--glass);
+        color: #fff;
+        font-size: 12px;
+        text-decoration: none;
       }
 
       .hud {
@@ -224,6 +242,7 @@
     </style>
   </head>
   <body>
+    <a class="back-link" href="../">← Arcade</a>
     <canvas id="game"></canvas>
 
     <div class="hud">
@@ -240,7 +259,7 @@
         <button class="btn" id="upgrade-btn">Upgrade Gun ($20)</button>
         <div id="item-status" class="item-badge">No Special Item</div>
         <div class="controls-tip">
-          L-Click: Gun • R-Click: Cannon<br />
+          L-Click: Gun • R-Click / C: Cannon<br />
           [X]: Special Weapon
         </div>
       </div>
@@ -252,6 +271,7 @@
       <button class="btn" id="restart-btn">Try Again (R)</button>
     </div>
 
+    <script src="../mobile-arcade.js"></script>
     <script>
       const canvas = document.getElementById("game");
       const ctx = canvas.getContext("2d");
@@ -480,6 +500,8 @@
       canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
       window.addEventListener("keydown", (e) => {
+        if (e.repeat) return;
+        if (e.code === "KeyC" && !state.gameOver) fireCannon();
         if (e.key.toLowerCase() === "x" && state.itemReady && !state.gameOver) fireSuperShot();
         if (e.key.toLowerCase() === "r" && state.gameOver) restart();
       });
@@ -807,6 +829,7 @@
         updateHud();
         if (state.baseHp <= 0) {
           state.gameOver = true;
+          touchActions.style.display = "none";
           ui.gameOver.classList.add("show");
         }
       }
@@ -1784,6 +1807,7 @@
         projectiles.length = 0; enemies.length = 0; gifts.length = 0;
         enemyMissiles.length = 0; popups.length = 0; particles.length = 0;
         ui.gameOver.classList.remove("show");
+        touchActions.style.display = "";
         updateHud();
       }
 
@@ -1795,15 +1819,13 @@
         requestAnimationFrame(loop);
       }
 
+      MobileArcade.mouseBridge(canvas);
+      const touchActions = MobileArcade.actions([
+        { label: "대포", key: "c" },
+        { label: "특수", key: "x" }
+      ]);
       updateHud();
       requestAnimationFrame(loop);
-    </script>
-    <script src="../mobile-arcade.js"></script>
-    <script>
-        // Full-window canvas: no scaling needed. Bridge touch -> mouse for aim/shoot,
-        // and add a touch button for the super shot (X key).
-        MobileArcade.mouseBridge(document.getElementById('game'));
-        MobileArcade.actions([{ label: '💥특수', key: 'x' }], { side: 'right' });
     </script>
   </body>
 </html>

@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="../assets/arcade-icon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>City Race - Coin Collector</title>
     <link
@@ -254,6 +255,7 @@
             }
         }
     </style>
+  <script src="../arcade-storage.js"></script>
 </head>
 
 <body>
@@ -322,7 +324,7 @@
             wheelWidth: 10,
             wheelHeight: 6,
             color: '#e74c3c',
-            coins: parseInt(localStorage.getItem('city_coins') || '0')
+            coins: parseInt(ArcadeStorage.getItem('city_coins') || '0')
         };
 
         const colors = [
@@ -340,7 +342,7 @@
         let roadSpeckles = [];
         let distantGlows = [];
         let keys = {};
-        let joystick = { x: 0, y: 0, active: false };
+        const joystick = { x: 0, y: 0, pointerId: null };
         let lastFrameTime = 0;
         const fpsInterval = 1000 / 60;
         let gameTime = 0;
@@ -399,7 +401,7 @@
             spawnCoin();
             updateUI();
 
-            const savedColor = localStorage.getItem('city_color');
+            const savedColor = ArcadeStorage.getItem('city_color');
             if (savedColor) car.color = savedColor;
         }
 
@@ -454,10 +456,11 @@
 
         function updateUI() {
             coinValEl.innerText = car.coins;
-            localStorage.setItem('city_coins', car.coins);
+            ArcadeStorage.setItem('city_coins', car.coins);
         }
 
         function openShop() {
+            resetInput();
             shopModal.style.display = 'flex';
             renderShop();
         }
@@ -471,7 +474,7 @@
                 opt.className = `color-option ${car.color === c.hex ? 'selected' : ''}`;
                 opt.style.background = c.hex;
 
-                const owned = localStorage.getItem(`city_owned_${c.name}`) || c.cost === 0;
+                const owned = ArcadeStorage.getItem(`city_owned_${c.name}`) || c.cost === 0;
                 opt.innerHTML = `
                     <div style="color:black; background: white; padding: 2px 5px; border-radius: 4px;">
                         ${owned ? 'OWNED' : c.cost + '💰'}
@@ -481,13 +484,13 @@
                 opt.onclick = () => {
                     if (owned) {
                         car.color = c.hex;
-                        localStorage.setItem('city_color', c.hex);
+                        ArcadeStorage.setItem('city_color', c.hex);
                         renderShop();
                     } else if (car.coins >= c.cost) {
                         car.coins -= c.cost;
-                        localStorage.setItem(`city_owned_${c.name}`, 'true');
+                        ArcadeStorage.setItem(`city_owned_${c.name}`, 'true');
                         car.color = c.hex;
-                        localStorage.setItem('city_color', c.hex);
+                        ArcadeStorage.setItem('city_color', c.hex);
                         updateUI();
                         renderShop();
                     }
@@ -1127,20 +1130,21 @@
         }
 
         // Controls
-        window.addEventListener('keydown', e => keys[e.code] = true);
+        window.addEventListener('keydown', e => {
+            if (shopModal.style.display !== 'flex') keys[e.code] = true;
+        });
         window.addEventListener('keyup', e => keys[e.code] = false);
 
         // Joystick
         const jContainer = document.getElementById('joystick-container');
         const jKnob = document.getElementById('joystick-knob');
-        jContainer.addEventListener('touchstart', e => { joystick.active = true; });
-        window.addEventListener('touchmove', e => {
-            if (!joystick.active) return;
+        function moveJoystick(e) {
+            if (joystick.pointerId !== e.pointerId) return;
             const rect = jContainer.getBoundingClientRect();
             const cx = rect.left + rect.width / 2;
             const cy = rect.top + rect.height / 2;
-            const tx = e.touches[0].clientX - cx;
-            const ty = e.touches[0].clientY - cy;
+            const tx = e.clientX - cx;
+            const ty = e.clientY - cy;
             const dist = Math.hypot(tx, ty);
             const max = rect.width / 2;
             const nx = tx / (dist || 1);
@@ -1151,11 +1155,37 @@
             joystick.y = (ny * limitedDist) / max;
 
             jKnob.style.transform = `translate(calc(-50% + ${nx * limitedDist}px), calc(-50% + ${ny * limitedDist}px))`;
-        });
-        window.addEventListener('touchend', () => {
-            joystick.active = false;
-            joystick.x = 0; joystick.y = 0;
+        }
+
+        function resetJoystick() {
+            const captured = joystick.pointerId;
+            joystick.pointerId = null;
+            if (captured !== null && jContainer.hasPointerCapture(captured)) jContainer.releasePointerCapture(captured);
+            joystick.x = joystick.y = 0;
             jKnob.style.transform = 'translate(-50%, -50%)';
+        }
+
+        function resetInput() {
+            Object.keys(keys).forEach(key => { keys[key] = false; });
+            resetJoystick();
+        }
+
+        jContainer.addEventListener('pointerdown', e => {
+            if (e.button !== 0 || joystick.pointerId !== null) return;
+            e.preventDefault();
+            jContainer.setPointerCapture(e.pointerId);
+            joystick.pointerId = e.pointerId;
+            moveJoystick(e);
+        });
+        jContainer.addEventListener('pointermove', moveJoystick);
+        for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+            jContainer.addEventListener(type, e => {
+                if (joystick.pointerId === e.pointerId) resetJoystick();
+            });
+        }
+        window.addEventListener('blur', resetInput);
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) resetInput();
         });
 
         function loop(timestamp) {

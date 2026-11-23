@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="utf-8" />
+  <link rel="icon" type="image/png" href="../assets/arcade-icon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <meta name="theme-color" content="#060710" />
   <title>Nebula Run — ARCADE</title>
@@ -26,12 +27,11 @@
       background: #060710;
       font-family: Manrope, system-ui, sans-serif;
       user-select: none;
-      touch-action: none;
       -webkit-tap-highlight-color: transparent;
     }
 
     button { font: inherit; color: inherit; }
-    canvas { width: 100%; height: 100%; display: block; }
+    canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 
     .hud {
       position: fixed;
@@ -80,6 +80,8 @@
     }
     .back { left: 18px; padding: 0 14px; gap: 8px; }
     .icon-button { right: 18px; width: 44px; cursor: pointer; }
+    #pause-toggle { top: auto; bottom: max(16px, env(safe-area-inset-bottom)); }
+    #pause-toggle[hidden] { display: none; }
     .back:hover, .icon-button:hover { color: #fff; border-color: rgba(215,255,79,.45); transform: translateY(-1px); }
 
     #progress {
@@ -117,6 +119,9 @@
       display: none;
       flex-direction: column;
       align-items: stretch;
+      max-height: 100%;
+      overflow-y: auto;
+      touch-action: pan-y;
       gap: 18px;
       border: 1px solid rgba(255,255,255,.15);
       border-radius: 25px;
@@ -193,15 +198,28 @@
       #toast { top: 91px; }
     }
 
+    @media (max-height: 480px) {
+      #screens { padding: 73px 16px 8px; }
+      .hud { top: 8px; height: 48px; }
+      #progress { top: 62px; }
+      .screen { padding: 15px 20px; gap: 10px; }
+      .screen > * { flex-shrink: 0; }
+      h1, h2 { font-size: 34px; }
+      .features { display: none; }
+      .main-button { min-height: 44px; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
     }
   </style>
+  <script src="../arcade-storage.js"></script>
 </head>
 
 <body>
   <a class="back" href="../"><span>←</span> Arcade</a>
   <button id="sound" class="icon-button" type="button" aria-label="Mute sound">♪</button>
+  <button id="pause-toggle" class="icon-button" type="button" aria-label="Pause game" hidden>Ⅱ</button>
 
   <header class="hud" aria-label="Game status">
     <div class="stat"><span class="stat-label">Score</span><strong id="score">0</strong></div>
@@ -262,6 +280,7 @@
       const canvas = document.getElementById('game');
       const ctx = canvas.getContext('2d');
       const ui = {
+        pauseToggle: document.getElementById('pause-toggle'),
         score: document.getElementById('score'), combo: document.getElementById('combo'), best: document.getElementById('best-score'),
         shield: document.getElementById('shield-indicator'), progress: document.getElementById('progress-fill'), screens: document.getElementById('screens'),
         start: document.getElementById('start-screen'), over: document.getElementById('game-over-screen'), pause: document.getElementById('pause-screen'),
@@ -283,7 +302,7 @@
       let gates = [], pickups = [], particles = [], stars = [], clouds = [], w = 0, h = 0, dpr = 1, toastTimer, audio;
 
       function bestKey() { return `nebula_run_v2_${state.difficulty}`; }
-      function getBest() { return Number(localStorage.getItem(bestKey()) || 0); }
+      function getBest() { return Number(ArcadeStorage.getItem(bestKey()) || 0); }
       function setScreen(screen) {
         [ui.start, ui.over, ui.pause].forEach(item => item.classList.remove('active'));
         if (screen) screen.classList.add('active');
@@ -338,6 +357,7 @@
         spawnGate(w + 230); spawnGate(w + 230 + spacing); spawnGate(w + 230 + spacing * 2);
         document.body.classList.add('playing');
         document.body.classList.remove('engaged');
+        ui.pauseToggle.hidden = false;
         setScreen(null); updateHud(); tone(260, .05, 'sine', .035);
       }
 
@@ -346,10 +366,11 @@
       function endGame() {
         if (!state.active) return;
         state.active = false;
+        ui.pauseToggle.hidden = true;
         document.body.classList.remove('playing');
         const oldBest = getBest();
         const isBest = state.score > oldBest;
-        if (isBest) localStorage.setItem(bestKey(), String(state.score));
+        if (isBest) ArcadeStorage.setItem(bestKey(), String(state.score));
         ui.finalScore.textContent = state.score.toLocaleString();
         ui.finalCombo.textContent = `×${state.bestCombo}`;
         ui.finalShards.textContent = state.shards;
@@ -362,6 +383,7 @@
       function togglePause(force) {
         if (!state.active) return;
         state.paused = typeof force === 'boolean' ? force : !state.paused;
+        ui.pauseToggle.hidden = state.paused;
         state.lastTime = performance.now();
         setScreen(state.paused ? ui.pause : null);
       }
@@ -537,11 +559,16 @@
       document.getElementById('start').addEventListener('click', startGame);
       document.getElementById('restart').addEventListener('click', startGame);
       document.getElementById('resume').addEventListener('click', () => togglePause(false));
+      ui.pauseToggle.addEventListener('click', () => togglePause(true));
       ui.sound.addEventListener('click', () => { state.muted=!state.muted; ui.sound.textContent=state.muted?'×':'♪'; ui.sound.setAttribute('aria-label',state.muted?'Enable sound':'Mute sound'); if(!state.muted) tone(420,.06); });
       canvas.addEventListener('pointerdown', event => { event.preventDefault(); thrust(); });
       addEventListener('keydown', event => {
+        if (event.key === ' ' && event.target instanceof HTMLButtonElement) return;
         if ([' ','ArrowUp','p','P','Escape'].includes(event.key)) event.preventDefault();
-        if (event.key==='p'||event.key==='P'||event.key==='Escape') { togglePause(); return; }
+        if (event.key==='p'||event.key==='P'||event.key==='Escape') {
+          if (!event.repeat) togglePause();
+          return;
+        }
         if (![' ','ArrowUp','w','W'].includes(event.key)) return;
         if (state.active && !state.paused) thrust(); else if (ui.over.classList.contains('active')) startGame();
       });

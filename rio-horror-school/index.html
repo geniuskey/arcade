@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="../assets/arcade-icon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>리오의 공포학교</title>
     <style>
@@ -475,6 +476,8 @@
             letter-spacing: 0;
         }
 
+        .start-options, .start-options > div { display: contents; }
+
         .opt-btn {
             padding: 14px 18px;
             font-size: 17px;
@@ -727,7 +730,24 @@
             .opt-btn { padding: 10px 14px; font-size: 14px; min-width: 90px; }
         }
 
-        @media (max-width: 600px) {
+        @media (max-height: 520px) {
+            .screen {
+                overflow-y: auto;
+                justify-content: safe center;
+                padding: 12px 16px;
+            }
+            .screen > * { flex-shrink: 0; }
+            .screen h1 { font-size: 26px; margin-bottom: 8px; }
+            .screen p { font-size: 12px; margin-bottom: 8px; }
+            .select-group { margin: 0 0 8px; gap: 6px; }
+            .select-label { font-size: 12px; margin-bottom: 3px; }
+            .opt-btn { padding: 6px 10px; min-width: 78px; }
+            button.primary { padding: 8px 26px; font-size: 16px; min-height: 40px; }
+        }
+
+        @media (min-width: 480px) and (max-height: 520px) {
+            .start-options { display: grid; grid-template-columns: max-content max-content; gap: 16px; }
+            .start-options > div { display: block; }
         }
 
         .back-btn {
@@ -803,17 +823,22 @@
                 <strong>빌런</strong>은 돌진과 타격으로 리오의 탈출을 막는 것이 목표!
             </p>
 
-            <div class="select-label">역할 선택</div>
-            <div class="select-group" id="roleSelect">
-                <div class="opt-btn" data-role="rio">리오<small>1 · 탈출</small></div>
-                <div class="opt-btn" data-role="villain">빌런<small>2 · 추격</small></div>
-            </div>
-
-            <div class="select-label">난이도 선택</div>
-            <div class="select-group" id="diffSelect">
-                <div class="opt-btn" data-diff="easy">쉬움<small>3 · 상대 느림</small></div>
-                <div class="opt-btn" data-diff="normal">보통<small>4 · 상대 보통</small></div>
-                <div class="opt-btn" data-diff="hard">어려움<small>5 · 상대 빠름</small></div>
+            <div class="start-options">
+                <div>
+                    <div class="select-label">역할 선택</div>
+                    <div class="select-group" id="roleSelect" role="group" aria-label="역할 선택">
+                        <button type="button" class="opt-btn" data-role="rio" aria-pressed="false">리오<small>1 · 탈출</small></button>
+                        <button type="button" class="opt-btn" data-role="villain" aria-pressed="false">빌런<small>2 · 추격</small></button>
+                    </div>
+                </div>
+                <div>
+                    <div class="select-label">난이도 선택</div>
+                    <div class="select-group" id="diffSelect" role="group" aria-label="난이도 선택">
+                        <button type="button" class="opt-btn" data-diff="easy" aria-pressed="false">쉬움<small>3 · 상대 느림</small></button>
+                        <button type="button" class="opt-btn" data-diff="normal" aria-pressed="false">보통<small>4 · 상대 보통</small></button>
+                        <button type="button" class="opt-btn" data-diff="hard" aria-pressed="false">어려움<small>5 · 상대 빠름</small></button>
+                    </div>
+                </div>
             </div>
 
             <button class="primary" id="startBtn" onclick="startGame()" disabled>게임 시작</button>
@@ -3394,7 +3419,9 @@
         function selectRole(nextRole) {
             role = nextRole;
             document.querySelectorAll('#roleSelect .opt-btn').forEach(btn => {
-                btn.classList.toggle('selected', btn.dataset.role === nextRole);
+                const selected = btn.dataset.role === nextRole;
+                btn.classList.toggle('selected', selected);
+                btn.setAttribute('aria-pressed', String(selected));
             });
             syncRoleClass();
             checkReady();
@@ -3403,7 +3430,9 @@
         function selectDifficulty(nextDifficulty) {
             difficulty = nextDifficulty;
             document.querySelectorAll('#diffSelect .opt-btn').forEach(btn => {
-                btn.classList.toggle('selected', btn.dataset.diff === nextDifficulty);
+                const selected = btn.dataset.diff === nextDifficulty;
+                btn.classList.toggle('selected', selected);
+                btn.setAttribute('aria-pressed', String(selected));
             });
             checkReady();
         }
@@ -3440,7 +3469,8 @@
         }
 
         document.addEventListener('keydown', (e) => {
-            if (handleScreenKeyDown(e)) {
+            const activateButton = e.target instanceof HTMLButtonElement && (e.key === 'Enter' || e.key === ' ');
+            if (!activateButton && handleScreenKeyDown(e)) {
                 e.preventDefault();
                 return;
             }
@@ -3479,6 +3509,7 @@
         }
         function jStart(e) {
             e.preventDefault();
+            if (joystickActive) return;
             const t = e.changedTouches[0];
             joystickActive = true; joystickTouchId = t.identifier; joystickCenter = getJoystickCenter(); jMove(e);
         }
@@ -3524,7 +3555,7 @@
             e.preventDefault();
             if (role === 'villain') keys['shift'] = false;
         }, { passive: false });
-        document.getElementById('gameContainer').addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+        canvas.style.touchAction = 'none';
 
         // ---------------- Responsive scaling ----------------
         // The game is laid out at a fixed size (960px canvas + bottom bar). On small
@@ -3544,8 +3575,8 @@
             const mobileMenu = window.innerWidth <= 1000 &&
                 (gameState === 'start' || gameState === 'keypad' || gameState === 'gameover' || gameState === 'victory');
             if (mobileMenu) {
-                gameContainer.style.width = '100vw';
-                gameContainer.style.height = '100vh';
+                gameContainer.style.width = 'calc(100vw - 10px)';
+                gameContainer.style.height = 'calc(100dvh - 10px)';
                 canvas.style.display = 'none';
                 bottomBar.style.display = 'none';
                 return;

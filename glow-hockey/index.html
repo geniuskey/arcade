@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" type="image/png" href="../assets/arcade-icon.png">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
   <title>Neon Strike — Glow Hockey</title>
   <style>
@@ -30,6 +31,7 @@
     .result-title{margin:9px 0 0;font-size:42px;line-height:1;font-weight:1000;letter-spacing:-.055em}.result-title span{color:var(--lime)}.results{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:21px 0}.result{padding:12px 6px;border:1px solid #ffffff12;border-radius:13px;background:#ffffff05}.result span{display:block;color:#828a9e;font-size:7px;font-weight:900;letter-spacing:.1em}.result strong{display:block;margin-top:5px;font:950 17px/1 ui-monospace,monospace}
     @media(max-aspect-ratio:4/5){#game-shell{width:calc(100vw - 12px);border-radius:18px}#hud{inset:7px 39px auto;gap:3px}.player-hud{padding:5px 6px;border-radius:8px}.score{width:24px;height:24px;border-radius:6px;font-size:12px}.player-line{font-size:5px}.control-label,.power-track,.match-hud small{display:none}.match-hud{min-width:59px;padding:5px}.match-hud strong{font-size:5px}.match-hud span{font-size:9px}.corner{top:7px;height:28px;padding:0 8px;border-radius:8px;font-size:7px}#back{left:7px;width:28px;padding:0}.back-label{display:none}#sound{right:7px;width:28px}#hint{display:none}.panel{padding:21px 17px;border-radius:19px}.title{font-size:37px}.tagline{font-size:10px;margin:13px auto 16px}.actions{grid-template-columns:1fr}.primary{height:42px}.difficulty button{height:29px}.panel-foot{margin-top:12px}#callout{top:24%;font-size:7px;padding:6px 9px}}
   </style>
+  <script src="../arcade-storage.js"></script>
 </head>
 <body>
   <main id="game-shell">
@@ -69,7 +71,7 @@
     const keys={},pressed=new Set(),particles=[],shockwaves=[],confetti=[],pointers=new Map();
     let mode=1,level='sport',state='menu',paused=false,last=performance.now(),serveTimer=0,serveRun=0,calloutTimer=0,audioOn=true,audioCtx=null,scores=[0,0],rally=0,matchBest=0,powerShots=0,shake=0,flash=0,goalGlow=0,slowTimer=0;
     const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t;
-    function readNumber(k){const n=Number(localStorage.getItem(k)||0);return Number.isFinite(n)?n:0}function saveNumber(k,v){try{localStorage.setItem(k,String(v))}catch{}}
+    function readNumber(k){const n=Number(ArcadeStorage.getItem(k)||0);return Number.isFinite(n)?n:0}function saveNumber(k,v){try{ArcadeStorage.setItem(k,String(v))}catch{}}
     function tone(freq,d=.05,type='sine',vol=.025){if(!audioOn)return;try{audioCtx??=new(window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(vol,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+d);o.connect(g).connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+d)}catch{}}
     function setPanel(panel){[ui.menu,ui.pause,ui.over].forEach(x=>x.classList.toggle('active',x===panel))}
     function setCallout(text,color='#d7ff4f',ms=720){ui.callout.textContent=text;ui.callout.style.color=color;ui.callout.classList.remove('show');void ui.callout.offsetWidth;ui.callout.classList.add('show');clearTimeout(calloutTimer);calloutTimer=setTimeout(()=>ui.callout.classList.remove('show'),ms)}

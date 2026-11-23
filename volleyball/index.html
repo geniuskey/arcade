@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="utf-8" />
+  <link rel="icon" type="image/png" href="../assets/arcade-icon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <meta name="theme-color" content="#090916" />
   <title>Skyline Spike — Cute Volleyball</title>
@@ -181,6 +182,7 @@
       #controls-hint { display: none; }
     }
   </style>
+  <script src="../arcade-storage.js"></script>
 </head>
 
 <body>
@@ -270,8 +272,8 @@
       let particles = [], confetti = [], shake = 0, flash = 0, calloutTimer, serveTimer, lastTime = performance.now();
       let crowd = Array.from({length: 150}, (_,i) => ({x:(i*73)%W,y:105+(i*47)%185,c:i%4,p:Math.random()*Math.PI*2}));
 
-      function readNumber(key) { try { return Number(localStorage.getItem(key) || 0); } catch { return 0; } }
-      function saveNumber(key, value) { try { localStorage.setItem(key, String(value)); } catch { /* optional persistence */ } }
+      function readNumber(key) { try { return Number(ArcadeStorage.getItem(key) || 0); } catch { return 0; } }
+      function saveNumber(key, value) { try { ArcadeStorage.setItem(key, String(value)); } catch { /* optional persistence */ } }
       function setMenu(target) { [ui.menu,ui.over,ui.pause].forEach(el=>el.classList.remove('active')); if(target) target.classList.add('active'); }
       function setCallout(text, color = '#d8ff4f', duration = 850) { clearTimeout(calloutTimer); ui.callout.textContent=text; ui.callout.style.color=color; ui.callout.classList.add('show'); calloutTimer=setTimeout(()=>ui.callout.classList.remove('show'),duration); }
 
@@ -412,9 +414,9 @@
   <script>
     (() => {
       const p1Pad=MobileArcade.dpad({up:'w',left:'a',right:'d'},{side:'left',tag:'P1'});
-      const p1Act=MobileArcade.actions([{label:'SPIKE',key:'space'}],{side:'left',bottom:'180px'});
+      const p1Act=MobileArcade.actions([{label:'SPIKE',key:'space'}],{side:'left',abovePad:true});
       const p2Pad=MobileArcade.dpad({up:'up',left:'left',right:'right'},{side:'right',tag:'P2'});
-      const p2Act=MobileArcade.actions([{label:'SPIKE',key:'enter'}],{side:'right',bottom:'180px'});
+      const p2Act=MobileArcade.actions([{label:'SPIKE',key:'enter'}],{side:'right',abovePad:true});
       const tags=[...document.querySelectorAll('.ma-tag')];
       window.setVolleyballMobileControls=(mode,active)=>{p1Pad.style.display=active?'':'none';p1Act.style.display=active?'':'none';p2Pad.style.display=active&&mode===2?'':'none';p2Act.style.display=active&&mode===2?'':'none';if(tags[0])tags[0].style.display=active?'':'none';if(tags[1])tags[1].style.display=active&&mode===2?'':'none';};
       window.setVolleyballMobileControls(1,false);

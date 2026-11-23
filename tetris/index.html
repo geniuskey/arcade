@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta charset="utf-8"><link rel="icon" type="image/png" href="../assets/arcade-icon.png"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
   <title>Nova Stack — Cosmic Tetris</title>
   <style>
     :root{color-scheme:dark;--cyan:#42eaff;--lime:#ccff4c;--violet:#a35cff;--rose:#ff5b88;--ink:#f8fbff;--muted:#9ba3b8}*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden}body{display:grid;place-items:center;color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;touch-action:none;background:radial-gradient(circle at 50% 38%,#183253 0,#0c1027 48%,#02040c 100%)}button,a{font:inherit}button{border:0;color:inherit}button:focus-visible,a:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
@@ -9,10 +9,33 @@
     #callout{position:absolute;z-index:12;top:24px;left:50%;min-width:170px;padding:8px 14px;translate:-50% -8px;opacity:0;text-align:center;border:1px solid currentColor;border-radius:999px;color:var(--lime);background:rgba(4,8,18,.86);font:950 10px ui-monospace,monospace;letter-spacing:.1em;pointer-events:none;transition:.2s}.show#callout{translate:-50% 0;opacity:1}#hint{position:absolute;z-index:11;left:50%;bottom:10px;translate:-50% 0;padding:6px 11px;border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#8e97a9;background:rgba(4,7,17,.8);font:850 7.5px ui-monospace,monospace;letter-spacing:.06em;pointer-events:none;transition:.18s opacity}#hint.hidden{opacity:0}
     #ui{position:absolute;z-index:20;inset:0;display:grid;place-items:center;pointer-events:none}.panel{display:none;width:min(570px,calc(100% - 34px));padding:34px 36px;border:1px solid rgba(255,255,255,.14);border-radius:25px;background:linear-gradient(145deg,rgba(12,21,43,.97),rgba(8,7,24,.96));box-shadow:0 34px 100px rgba(0,0,0,.64),inset 0 1px rgba(255,255,255,.06);backdrop-filter:blur(18px);pointer-events:auto}.panel.active{display:block}.kicker{color:var(--lime);font:950 9px ui-monospace,monospace;letter-spacing:.15em}.panel h1,.panel h2{margin:9px 0 10px;font-size:44px;line-height:.95;letter-spacing:-.055em}.panel h1 span,.panel h2 span{-webkit-text-stroke:1px rgba(255,255,255,.55);color:transparent}.tagline{margin:0;color:#a7afc0;font-size:13px;line-height:1.65}.features{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:19px 0}.feature{padding:11px 9px;border:1px solid rgba(255,255,255,.1);border-radius:13px;background:rgba(255,255,255,.025)}.feature b{display:block;color:#fff;font:950 9px ui-monospace,monospace;letter-spacing:.06em}.feature span{display:block;margin-top:5px;color:#929bad;font-size:10px;line-height:1.35}.mode{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px;border:1px solid rgba(255,255,255,.09);border-radius:14px;background:rgba(0,0,0,.16)}.mode button{height:36px;cursor:pointer;border-radius:10px;color:#8b94a8;background:transparent;font:900 9px ui-monospace,monospace;letter-spacing:.08em}.mode button.active{color:#07131a;background:linear-gradient(90deg,var(--cyan),var(--lime));box-shadow:0 6px 20px rgba(66,234,255,.18)}.primary{width:100%;height:52px;margin-top:12px;cursor:pointer;border-radius:14px;color:#07131a;background:linear-gradient(90deg,var(--cyan),var(--lime));font:950 11px ui-monospace,monospace;letter-spacing:.1em;box-shadow:0 13px 32px rgba(66,234,255,.16)}.primary.alt{color:#dfe7f2;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.035);box-shadow:none}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.results{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:20px 0 2px}.result{padding:12px 7px;text-align:center;border:1px solid rgba(255,255,255,.09);border-radius:13px;background:rgba(255,255,255,.025)}.result span{display:block;color:#8d96aa;font:850 8px ui-monospace,monospace;letter-spacing:.08em}.result strong{display:block;margin-top:6px;font:950 20px ui-monospace,monospace}.new{color:var(--lime)}
     @media(max-width:700px){#shell{width:calc(100vw - 12px);border-radius:18px}.corner{top:7px;height:27px;border-radius:8px;font-size:7px}#back{left:7px;padding:0 8px}.back-label{display:none}#sound{right:7px;width:27px}#callout{top:8px;min-width:90px;padding:4px 7px;font-size:5px}#hint{display:none}.panel{padding:18px 20px;border-radius:15px}.panel h1,.panel h2{font-size:25px}.tagline{font-size:8px}.features{margin:10px 0;gap:4px}.feature{padding:6px 5px}.feature b{font-size:5px}.feature span{font-size:5.5px}.mode button{height:24px;font-size:5px}.primary{height:31px;margin-top:7px;font-size:6px}.results{margin:10px 0}.result{padding:7px 3px}.result span{font-size:5px}.result strong{font-size:11px}}
+    #pause-toggle{right:68px;width:42px;cursor:pointer}
+    #pause-toggle[hidden]{display:none}
+    @media(max-width:700px) and (orientation:portrait){
+      body{padding-bottom:150px}
+      #shell{width:min(calc(100vw - 16px),calc((100dvh - 166px) * .6857));aspect-ratio:480/700}
+      .corner{top:8px;height:34px;font-size:14px}
+      #sound,#pause-toggle{width:34px}
+      #pause-toggle{right:49px}
+      #callout{top:10px;left:36%;max-width:42%;font-size:8px}
+      .panel{padding:21px;max-height:calc(100% - 64px);overflow-y:auto}
+      .panel h1,.panel h2{font-size:clamp(26px,8vw,39px)}
+      .tagline{font-size:12px}
+      .features{display:none}
+      .mode{margin-top:16px}
+      .mode button{height:38px;font-size:8px}
+      .primary{height:44px;font-size:10px}
+      .result span{font-size:8px}
+      .result strong{font-size:14px}
+    }
+    @media(max-width:700px) and (orientation:landscape){
+      #pause-toggle{right:41px;width:27px}
+    }
   </style>
+  <script src="../arcade-storage.js"></script>
 </head>
 <body>
-  <main id="shell"><canvas id="game" width="1120" height="700" aria-label="우주 정거장 블록 쌓기 게임"></canvas><a id="back" class="corner" href="../">← <span class="back-label">Arcade</span></a><button id="sound" class="corner" type="button" aria-label="소리 끄기">♪</button><div id="callout">TETRIS · BACK TO BACK</div><div id="hint" class="hidden">← → MOVE · ↓ SOFT · ↑ / X ROTATE · SPACE HARD DROP · C HOLD · P PAUSE</div>
+  <main id="shell"><canvas id="game" width="1120" height="700" aria-label="우주 정거장 블록 쌓기 게임"></canvas><a id="back" class="corner" href="../">← <span class="back-label">Arcade</span></a><button id="sound" class="corner" type="button" aria-label="소리 끄기">♪</button><button id="pause-toggle" class="corner" type="button" aria-label="일시 정지" hidden>Ⅱ</button><div id="callout">TETRIS · BACK TO BACK</div><div id="hint" class="hidden">← → MOVE · ↓ SOFT · ↑ / X ROTATE · SPACE HARD DROP · C HOLD · P PAUSE</div>
     <div id="ui"><section id="main-menu" class="panel active"><div class="kicker">GENIUSKEY ORBITAL CONSTRUCTION</div><h1>NOVA <span>STACK</span></h1><p class="tagline">궤도 정거장의 에너지 블록을 정렬하세요. 고스트 위치를 읽고, 홀드 슬롯과 다음 3개 블록을 활용해 연속 라인 제거를 설계하세요.</p><div class="features"><div class="feature"><b>7-BAG SYSTEM</b><span>7종 블록이 공정한 묶음으로 공급됩니다.</span></div><div class="feature"><b>C · HOLD</b><span>현재 블록을 보관하거나 교체합니다.</span></div><div class="feature"><b>SPACE · DROP</b><span>고스트 위치로 즉시 낙하합니다.</span></div></div><div id="mode" class="mode"><button class="active" type="button" data-mode="marathon">MARATHON</button><button type="button" data-mode="sprint">SPRINT · 40 LINES</button></div><button id="start" class="primary" type="button">POWER THE TOWER</button></section>
       <section id="pause" class="panel"><div class="kicker">GRAVITY SUSPENDED</div><h2>STACK <span>PAUSED</span></h2><p class="tagline">낙하 타이머와 입력이 잠시 멈췄습니다.</p><button id="resume" class="primary" type="button">RESUME</button></section>
       <section id="game-over" class="panel"><div id="result-kicker" class="kicker">TOWER OFFLINE</div><h2 id="result-title">STACK <span>COMPLETE</span></h2><div class="results"><div class="result"><span>SCORE</span><strong id="final-score">0</strong></div><div class="result"><span>LINES</span><strong id="final-lines">0</strong></div><div class="result"><span>BEST SCORE</span><strong id="best">0</strong></div></div><div class="actions"><button id="retry" class="primary" type="button">REBUILD</button><button id="to-menu" class="primary alt" type="button">MENU</button></div></section>
@@ -22,13 +45,17 @@
   (()=>{
     'use strict';
     const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d'),W=1120,H=700,TAU=Math.PI*2,$=s=>document.querySelector(s),COLS=10,ROWS=22,VISIBLE=20,CELL=30,BX=410,BY=70,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-    const ui={callout:$('#callout'),hint:$('#hint'),menu:$('#main-menu'),pause:$('#pause'),over:$('#game-over'),kicker:$('#result-kicker'),title:$('#result-title'),finalScore:$('#final-score'),finalLines:$('#final-lines'),best:$('#best')};
+    const portrait = matchMedia('(max-width: 700px) and (orientation: portrait)');
+    const ui={pauseToggle:$('#pause-toggle'),callout:$('#callout'),hint:$('#hint'),menu:$('#main-menu'),pause:$('#pause'),over:$('#game-over'),kicker:$('#result-kicker'),title:$('#result-title'),finalScore:$('#final-score'),finalLines:$('#final-lines'),best:$('#best')};
     const SHAPES={I:[[1,1,1,1]],J:[[2,0,0],[2,2,2]],L:[[0,0,3],[3,3,3]],O:[[4,4],[4,4]],S:[[0,5,5],[5,5,0]],T:[[0,6,0],[6,6,6]],Z:[[7,7,0],[0,7,7]]},COLORS=['','#42eaff','#4f74ff','#ff9a43','#e9ff4b','#53ee93','#b45cff','#ff5b78'],TYPES=Object.keys(SHAPES);
     let seed=310947;const rand=()=>((seed=(seed*1664525+1013904223)>>>0)/4294967296);const stars=Array.from({length:165},()=>({x:rand()*W,y:rand()*H,r:.4+rand()*1.7,a:rand()*TAU,c:rand()>.68?'#62ecff':rand()>.55?'#bd88ff':'#fff'}));
-    let state='menu',paused=false,mode='marathon',board=[],piece=null,queue=[],bag=[],held=null,canHold=true,score=0,lines=0,level=1,combo=-1,b2b=false,elapsed=0,dropAcc=0,lockTimer=0,lockResets=0,last=performance.now(),shake=0,flash=0,particles=[],beams=[],calloutTimer=0,audioOn=true,audioCtx=null,best=Number(localStorage.getItem('tetris_best')||0),newBest=false;
+    let state='menu',paused=false,mode='marathon',board=[],piece=null,queue=[],bag=[],held=null,canHold=true,score=0,lines=0,level=1,combo=-1,b2b=false,elapsed=0,dropAcc=0,lockTimer=0,lockResets=0,last=performance.now(),shake=0,flash=0,particles=[],beams=[],calloutTimer=0,audioOn=true,audioCtx=null,best=Number(ArcadeStorage.getItem('tetris_best')||0),newBest=false;
     function tone(f,d=.05,type='sine',vol=.025){if(!audioOn)return;try{audioCtx??=new(window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(vol,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+d);o.connect(g).connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+d)}catch{}}
     const clone=m=>m.map(r=>[...r]),makeBoard=()=>Array.from({length:ROWS},()=>Array(COLS).fill(0));
-    function setPanel(p){[ui.menu,ui.pause,ui.over].forEach(x=>x.classList.toggle('active',x===p))}
+    function setPanel(p){
+      [ui.menu,ui.pause,ui.over].forEach(panel => panel.classList.toggle('active', panel === p));
+      ui.pauseToggle.hidden = Boolean(p);
+    }
     function notify(text,color='#ccff4c'){ui.callout.textContent=text;ui.callout.style.color=color;ui.callout.classList.remove('show');void ui.callout.offsetWidth;ui.callout.classList.add('show');clearTimeout(calloutTimer);calloutTimer=setTimeout(()=>ui.callout.classList.remove('show'),750)}
     function refillBag(){const next=[...TYPES];for(let i=next.length-1;i>0;i--){const j=Math.floor(rand()*(i+1));[next[i],next[j]]=[next[j],next[i]]}bag.push(...next)}
     function takeType(){if(!bag.length)refillBag();return bag.shift()}
@@ -36,7 +63,7 @@
     function createPiece(type){const matrix=clone(SHAPES[type]);return{type,matrix,x:Math.floor((COLS-matrix[0].length)/2),y:1-matrix.length,ghost:0}}
     function collision(test=piece,dx=0,dy=0,matrix=test.matrix){for(let y=0;y<matrix.length;y++)for(let x=0;x<matrix[y].length;x++)if(matrix[y][x]){const bx=test.x+x+dx,by=test.y+y+dy;if(bx<0||bx>=COLS||by>=ROWS||(by>=0&&board[by][bx]))return true}return false}
     function ghostY(){let y=piece.y;while(!collision({...piece,y:y+1}))y++;return y}
-    function spawn(type=queue.shift()){ensureQueue();piece=createPiece(type);piece.ghost=ghostY();canHold=true;lockTimer=0;lockResets=0;if(collision(piece))finish(false)}
+    function spawn(type=queue.shift()){ensureQueue();piece=createPiece(type);piece.ghost=ghostY();canHold=true;dropAcc=0;lockTimer=0;lockResets=0;if(collision(piece))finish(false)}
     function resetWorld(){seed=(Date.now()^0x7831)>>>0;board=makeBoard();piece=null;queue=[];bag=[];held=null;canHold=true;score=0;lines=0;level=1;combo=-1;b2b=false;elapsed=0;dropAcc=0;lockTimer=0;lockResets=0;particles=[];beams=[];shake=0;flash=0;newBest=false;ensureQueue();spawn()}
     function startGame(){resetWorld();state='playing';paused=false;setPanel(null);ui.hint.classList.remove('hidden');window.setTetrisMobile?.(true);last=performance.now();notify('ORBITAL GRID ONLINE');tone(520,.12,'triangle',.035)}
     function menu(){state='menu';paused=false;resetWorld();ui.hint.classList.add('hidden');setPanel(ui.menu);window.setTetrisMobile?.(false)}
@@ -45,11 +72,55 @@
     function rotate(dir=1){if(state!=='playing'||paused||piece.type==='O')return false;const m=rotateMatrix(piece.matrix,dir),kicks=[0,-1,1,-2,2];for(const k of kicks)for(const up of [0,-1])if(!collision(piece,k,up,m)){piece.matrix=m;piece.x+=k;piece.y+=up;piece.ghost=ghostY();if(lockTimer>0&&lockResets<12){lockTimer=0;lockResets++}tone(330,.035,'square',.015);return true}return false}
     function softDrop(){if(state!=='playing'||paused)return;if(!collision(piece,0,1)){piece.y++;score++;dropAcc=0;piece.ghost=ghostY()}else lockTimer=Math.max(lockTimer,.01)}
     function hardDrop(){if(state!=='playing'||paused)return;const dist=piece.ghost-piece.y;piece.y=piece.ghost;score+=dist*2;shake=5;lockPiece();tone(105,.08,'square',.04)}
-    function hold(){if(state!=='playing'||paused||!canHold)return;const current=piece.type;if(held){const swap=held;held=current;piece=createPiece(swap);piece.ghost=ghostY();if(collision(piece)){finish(false);return}}else{held=current;spawn()}canHold=false;lockTimer=0;notify(`HOLD · ${held}`,'#a976ff');tone(280,.06,'triangle',.025)}
+    function hold(){if(state!=='playing'||paused||!canHold)return;const current=piece.type;if(held){const swap=held;held=current;piece=createPiece(swap);piece.ghost=ghostY();if(collision(piece)){finish(false);return}}else{held=current;spawn()}if(state!=='playing')return;canHold=false;dropAcc=0;lockTimer=0;lockResets=0;notify(`HOLD · ${held}`,'#a976ff');tone(280,.06,'triangle',.025)}
     function blockBurst(row,color){for(let x=0;x<COLS;x++)for(let i=0;i<5;i++)particles.push({x:BX+(x+.5)*CELL,y:BY+(row-2+.5)*CELL,vx:(Math.random()-.5)*240,vy:-40-Math.random()*160,life:.6+Math.random()*.45,r:1+Math.random()*3,color})}
-    function clearLines(){const rows=[];for(let y=0;y<ROWS;y++)if(board[y].every(Boolean))rows.push(y);if(!rows.length){combo=-1;return 0}for(const y of [...rows].sort((a,b)=>b-a)){blockBurst(y,'#fff');board.splice(y,1);board.unshift(Array(COLS).fill(0));beams.push({y:BY+(y-2+.5)*CELL,life:1})}const n=rows.length,isTetris=n===4,base=[0,100,300,500,800][n]*level;combo++;const comboBonus=combo>0?combo*50*level:0,b2bBonus=isTetris&&b2b?Math.floor(base*.5):0;score+=base+comboBonus+b2bBonus;lines+=n;level=1+Math.floor(lines/10);if(isTetris){notify(b2b?'BACK TO BACK TETRIS':'TETRIS · FOUR LINES');b2b=true}else{notify(`${n} LINE${n>1?'S':''} · ${base+comboBonus} PT`,'#42eaff');b2b=false}shake=8+n*3;flash=.7;tone(isTetris?760:420+n*70,.14,'triangle',.05);if(mode==='sprint'&&lines>=40)finish(true);return n}
-    function lockPiece(){if(state!=='playing')return;let above=false;for(let y=0;y<piece.matrix.length;y++)for(let x=0;x<piece.matrix[y].length;x++)if(piece.matrix[y][x]){const by=piece.y+y,bx=piece.x+x;if(by<0)above=true;else board[by][bx]=piece.matrix[y][x]}if(above){finish(false);return}clearLines();if(state==='playing')spawn()}
-    function finish(cleared=false){if(state==='gameover')return;state='gameover';newBest=score>best;if(newBest){best=score;localStorage.setItem('tetris_best',String(best))}ui.finalScore.textContent=score.toLocaleString();ui.finalLines.textContent=lines;ui.best.textContent=best.toLocaleString();ui.best.classList.toggle('new',newBest);ui.kicker.textContent=cleared?'SPRINT COMPLETE':newBest?'NEW TOWER RECORD':'TOWER OFFLINE';ui.title.innerHTML=cleared?'40 LINES <span>CLEARED</span>':newBest?'NOVA <span>RECORD</span>':'STACK <span>COMPLETE</span>';ui.hint.classList.add('hidden');setPanel(ui.over);window.setTetrisMobile?.(false);tone(cleared||newBest?760:105,.3,cleared||newBest?'triangle':'sawtooth',.05)}
+    function clearLines() {
+      const remaining = board.filter((row, y) => {
+        if (!row.every(Boolean)) return true;
+        blockBurst(y, '#fff');
+        beams.push({ y: BY + (y - 2 + .5) * CELL, life: 1 });
+        return false;
+      });
+      const cleared = ROWS - remaining.length;
+      if (!cleared) {
+        combo = -1;
+        return;
+      }
+
+      board = [...Array.from({ length: cleared }, () => Array(COLS).fill(0)), ...remaining];
+      const isTetris = cleared === 4;
+      const base = [0, 100, 300, 500, 800][cleared] * level;
+      combo++;
+      const comboBonus = combo > 0 ? combo * 50 * level : 0;
+      const b2bBonus = isTetris && b2b ? Math.floor(base * .5) : 0;
+      score += base + comboBonus + b2bBonus;
+      lines += cleared;
+      level = 1 + Math.floor(lines / 10);
+      if (isTetris) {
+        notify(b2b ? 'BACK TO BACK TETRIS' : 'TETRIS · FOUR LINES');
+      } else {
+        notify(`${cleared} LINE${cleared > 1 ? 'S' : ''} · ${base + comboBonus} PT`, '#42eaff');
+      }
+      b2b = isTetris;
+      shake = 8 + cleared * 3;
+      flash = .7;
+      tone(isTetris ? 760 : 420 + cleared * 70, .14, 'triangle', .05);
+      if (mode === 'sprint' && lines >= 40) finish(true);
+    }
+
+    function lockPiece() {
+      if (state !== 'playing') return;
+      if (piece.y < 0 && piece.matrix.slice(0, -piece.y).some(row => row.some(Boolean))) {
+        finish(false);
+        return;
+      }
+      piece.matrix.forEach((row, y) => row.forEach((value, x) => {
+        if (value) board[piece.y + y][piece.x + x] = value;
+      }));
+      clearLines();
+      if (state === 'playing') spawn();
+    }
+    function finish(cleared=false){if(state==='gameover')return;state='gameover';newBest=score>best;if(newBest){best=score;ArcadeStorage.setItem('tetris_best',String(best))}ui.finalScore.textContent=score.toLocaleString();ui.finalLines.textContent=lines;ui.best.textContent=best.toLocaleString();ui.best.classList.toggle('new',newBest);ui.kicker.textContent=cleared?'SPRINT COMPLETE':newBest?'NEW TOWER RECORD':'TOWER OFFLINE';ui.title.innerHTML=cleared?'40 LINES <span>CLEARED</span>':newBest?'NOVA <span>RECORD</span>':'STACK <span>COMPLETE</span>';ui.hint.classList.add('hidden');setPanel(ui.over);window.setTetrisMobile?.(false);tone(cleared||newBest?760:105,.3,cleared||newBest?'triangle':'sawtooth',.05)}
     function togglePause(){if(paused){paused=false;state='playing';setPanel(null);window.setTetrisMobile?.(true);last=performance.now()}else if(state==='playing'){paused=true;state='paused';setPanel(ui.pause);window.setTetrisMobile?.(false)}}
     function dropInterval(){return Math.max(.075,.82*Math.pow(.82,level-1))}
     function update(dt){if(state!=='playing')return;elapsed+=dt;dropAcc+=dt;const interval=dropInterval();if(dropAcc>=interval){dropAcc%=interval;if(!collision(piece,0,1)){piece.y++;piece.ghost=ghostY();lockTimer=0}else lockTimer=Math.max(lockTimer,.001)}if(collision(piece,0,1)){lockTimer+=dt;if(lockTimer>=.45)lockPiece()}else lockTimer=0;for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=220*dt;p.vx*=Math.pow(.08,dt);p.life-=dt}for(const b of beams)b.life-=2.7*dt;particles=particles.filter(p=>p.life>0);beams=beams.filter(b=>b.life>0);shake*=Math.pow(.001,dt);flash*=Math.pow(.002,dt)}
@@ -60,16 +131,61 @@
     function drawTower(t){ctx.save();ctx.fillStyle='rgba(3,6,16,.9)';ctx.strokeStyle='rgba(66,234,255,.35)';ctx.lineWidth=3;ctx.shadowColor='#000';ctx.shadowBlur=28;ctx.fillRect(BX-16,BY-12,COLS*CELL+32,VISIBLE*CELL+24);ctx.shadowBlur=0;ctx.strokeRect(BX-16,BY-12,COLS*CELL+32,VISIBLE*CELL+24);ctx.fillStyle='#050916';ctx.fillRect(BX,BY,COLS*CELL,VISIBLE*CELL);ctx.strokeStyle='rgba(93,143,184,.12)';ctx.lineWidth=1;for(let x=0;x<=COLS;x++){ctx.beginPath();ctx.moveTo(BX+x*CELL,BY);ctx.lineTo(BX+x*CELL,BY+VISIBLE*CELL);ctx.stroke()}for(let y=0;y<=VISIBLE;y++){ctx.beginPath();ctx.moveTo(BX,BY+y*CELL);ctx.lineTo(BX+COLS*CELL,BY+y*CELL);ctx.stroke()}for(let y=2;y<ROWS;y++)for(let x=0;x<COLS;x++)drawBlock(BX+x*CELL,BY+(y-2)*CELL,board[y][x]);if(piece&&state!=='menu'){for(let y=0;y<piece.matrix.length;y++)for(let x=0;x<piece.matrix[y].length;x++)if(piece.matrix[y][x]){const gy=piece.ghost+y;if(gy>=2)drawBlock(BX+(piece.x+x)*CELL,BY+(gy-2)*CELL,piece.matrix[y][x],CELL,.5,true)}for(let y=0;y<piece.matrix.length;y++)for(let x=0;x<piece.matrix[y].length;x++)if(piece.matrix[y][x]&&piece.y+y>=2)drawBlock(BX+(piece.x+x)*CELL,BY+(piece.y+y-2)*CELL,piece.matrix[y][x])}for(const b of beams){ctx.globalAlpha=Math.max(0,b.life);ctx.fillStyle='#fff';ctx.shadowColor='#42eaff';ctx.shadowBlur=24;ctx.fillRect(BX,b.y-4,COLS*CELL,8)}ctx.restore();ctx.globalAlpha=1}
     function drawSide(){panel(130,120,220,190,'HOLD · C');drawMini(held,240,210,25);panel(770,90,220,320,'NEXT QUEUE');queue.slice(0,3).forEach((t,i)=>drawMini(t,880,162+i*83,22));panel(130,330,220,235,'TOWER DATA');const left=[['SCORE',score.toLocaleString()],['LINES',lines],['LEVEL',level],['TIME',`${Math.floor(elapsed/60)}:${String(Math.floor(elapsed%60)).padStart(2,'0')}`]];left.forEach(([k,v],i)=>{ctx.fillStyle='#8e9aae';ctx.font='850 9px ui-monospace,monospace';ctx.fillText(k,150,366+i*47);ctx.fillStyle=i===0?'#ccff4c':'#fff';ctx.font='950 22px ui-monospace,monospace';ctx.fillText(String(v),150,390+i*47)});panel(770,435,220,130,mode==='sprint'?'SPRINT TARGET':'MARATHON');ctx.fillStyle='#fff';ctx.font='950 30px ui-monospace,monospace';ctx.fillText(mode==='sprint'?`${Math.min(lines,40)} / 40`:`LV ${level}`,790,490);ctx.fillStyle='#8f99ad';ctx.font='850 9px ui-monospace,monospace';ctx.fillText(b2b?'BACK TO BACK ACTIVE':combo>0?`COMBO ${combo}`:'BUILD THE TOWER',790,520)}
     function drawEffects(){for(const p of particles){ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.r*p.life,0,TAU);ctx.fill()}ctx.globalAlpha=1}
-    function draw(t){ctx.clearRect(0,0,W,H);ctx.save();if(shake>.1)ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);drawSpace(t);drawTower(t);drawSide();drawEffects();ctx.restore();if(flash>.01){ctx.fillStyle=`rgba(255,255,255,${flash*.14})`;ctx.fillRect(0,0,W,H)}}
+    function drawPortraitSide() {
+      panel(340, 78, 125, 107, 'HOLD');
+      drawMini(held, 402, 143, 20);
+      panel(340, 202, 125, 211, 'NEXT');
+      queue.slice(0, 3).forEach((type, i) => drawMini(type, 402, 258 + i * 59, 18));
+      panel(340, 430, 125, 169, 'SCORE');
+      ctx.fillStyle = '#ccff4c';
+      ctx.font = '900 22px ui-monospace,monospace';
+      ctx.fillText(score.toLocaleString(), 352, 494, 102);
+      ctx.fillStyle = '#fff';
+      ctx.font = '800 15px ui-monospace,monospace';
+      ctx.fillText(mode === 'sprint' ? `${lines} / 40` : `${lines} LINES`, 352, 536);
+      ctx.fillText(`LEVEL ${level}`, 352, 569);
+    }
+
+    function draw(t) {
+      ctx.clearRect(0, 0, canvas.width, H);
+      ctx.save();
+      if (shake > .1) ctx.translate((Math.random() - .5) * shake, (Math.random() - .5) * shake);
+      if (portrait.matches) {
+        ctx.save();
+        ctx.translate(-320, 0);
+        drawSpace(t);
+        ctx.translate(-70, 0);
+        drawTower(t);
+        drawEffects();
+        ctx.restore();
+        drawPortraitSide();
+      } else {
+        drawSpace(t);
+        drawTower(t);
+        drawSide();
+        drawEffects();
+      }
+      ctx.restore();
+      if (flash > .01) {
+        ctx.fillStyle = `rgba(255,255,255,${flash * .14})`;
+        ctx.fillRect(0, 0, canvas.width, H);
+      }
+    }
+
+    function resizeBoard() {
+      canvas.width = portrait.matches ? 480 : W;
+    }
+    portrait.addEventListener('change', resizeBoard);
+    resizeBoard();
     function loop(now){const dt=clamp((now-last)/1000,.001,.034);last=now;if(!paused)update(dt);draw(now);requestAnimationFrame(loop)}
-    addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowDown','ArrowUp','Space'].includes(e.code))e.preventDefault();if(state!=='playing'||paused){if(['KeyP','Escape'].includes(e.code)&&!e.repeat)togglePause();return}if(e.code==='ArrowLeft')move(-1);if(e.code==='ArrowRight')move(1);if(e.code==='ArrowDown')softDrop();if(['ArrowUp','KeyX'].includes(e.code)&&!e.repeat)rotate(1);if(e.code==='KeyZ'&&!e.repeat)rotate(-1);if(e.code==='Space'&&!e.repeat)hardDrop();if(['KeyC','KeyH','ShiftLeft','ShiftRight'].includes(e.code)&&!e.repeat)hold();if(['KeyP','Escape'].includes(e.code)&&!e.repeat){e.preventDefault();togglePause()}});addEventListener('blur',()=>{if(state==='playing')togglePause()});
-    $('#mode').onclick=e=>{const b=e.target.closest('button[data-mode]');if(!b)return;mode=b.dataset.mode;document.querySelectorAll('#mode button').forEach(x=>x.classList.toggle('active',x===b));tone(370,.04,'sine',.018)};$('#start').onclick=startGame;$('#retry').onclick=startGame;$('#to-menu').onclick=menu;$('#resume').onclick=togglePause;$('#sound').onclick=()=>{audioOn=!audioOn;$('#sound').textContent=audioOn?'♪':'×'};
+    addEventListener('keydown',e=>{if(e.code==='Space'&&e.target instanceof HTMLButtonElement)return;if(['ArrowLeft','ArrowRight','ArrowDown','ArrowUp','Space'].includes(e.code))e.preventDefault();if(state!=='playing'||paused){if(['KeyP','Escape'].includes(e.code)&&!e.repeat)togglePause();return}if(e.code==='ArrowLeft')move(-1);if(e.code==='ArrowRight')move(1);if(e.code==='ArrowDown')softDrop();if(['ArrowUp','KeyX'].includes(e.code)&&!e.repeat)rotate(1);if(e.code==='KeyZ'&&!e.repeat)rotate(-1);if(e.code==='Space'&&!e.repeat)hardDrop();if(['KeyC','KeyH','ShiftLeft','ShiftRight'].includes(e.code)&&!e.repeat)hold();if(['KeyP','Escape'].includes(e.code)&&!e.repeat){e.preventDefault();togglePause()}});addEventListener('blur',()=>{if(state==='playing')togglePause()});
+    $('#mode').onclick=e=>{const b=e.target.closest('button[data-mode]');if(!b)return;mode=b.dataset.mode;document.querySelectorAll('#mode button').forEach(x=>x.classList.toggle('active',x===b));tone(370,.04,'sine',.018)};$('#start').onclick=startGame;$('#retry').onclick=startGame;$('#to-menu').onclick=menu;$('#resume').onclick=togglePause;ui.pauseToggle.onclick=togglePause;$('#sound').onclick=()=>{audioOn=!audioOn;$('#sound').textContent=audioOn?'♪':'×'};
     window.startTetris=startGame;window.resetTetris=menu;resetWorld();loop(last);
   })();
   </script>
   <script src="../mobile-arcade.js"></script>
   <script>
-  (()=>{if(!window.MobileArcade)return;const pad=MobileArcade.dpad({left:'left',right:'right',down:'down'},{side:'left',tag:'MOVE'}),acts=MobileArcade.actions([{label:'ROTATE',key:'up'},{label:'DROP',key:'space'},{label:'HOLD',key:'h'}],{side:'right',bottom:'18px'});window.setTetrisMobile=active=>{pad.style.display=active?'':'none';acts.style.display=active?'':'none';document.querySelectorAll('.ma-tag').forEach(x=>x.style.display=active?'':'none')};window.setTetrisMobile(false)})();
+  (()=>{if(!window.MobileArcade)return;const pad=MobileArcade.dpad({left:'left',right:'right',down:'down'},{side:'left',tag:'MOVE',repeat:true}),acts=MobileArcade.actions([{label:'ROTATE',key:'up'},{label:'DROP',key:'space'},{label:'HOLD',key:'h'}],{side:'right',bottom:'18px'});window.setTetrisMobile=active=>{pad.style.display=active?'':'none';acts.style.display=active?'':'none';document.querySelectorAll('.ma-tag').forEach(x=>x.style.display=active?'':'none')};window.setTetrisMobile(false)})();
   </script>
 </body>
 </html>

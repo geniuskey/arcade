@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" type="image/png" href="../assets/arcade-icon.png">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
   <title>Night Shift — Prison Life</title>
   <style>
@@ -29,6 +30,7 @@
     .result-title{margin:9px 0 0;font-size:42px;line-height:1;font-weight:1000;letter-spacing:-.05em}.result-title span{color:var(--lime)}.results{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:20px 0}.result{padding:12px 6px;border:1px solid #ffffff12;border-radius:13px;background:#ffffff05}.result span{display:block;color:#828b99;font-size:7px;font-weight:900;letter-spacing:.09em}.result strong{display:block;margin-top:5px;font:950 16px/1 ui-monospace,monospace}
     @media(max-aspect-ratio:4/5){#game-shell{width:calc(100vw - 12px);border-radius:18px}#hud{inset:7px 38px auto;grid-template-columns:1fr 1.2fr 1fr;gap:3px}.hud-card{padding:5px 6px;border-radius:8px}.hud-line,.alert-head,.loot-line{font-size:5px}.lives{margin-top:4px;gap:2px}.life{width:12px;height:3px}.mission-card{padding:5px}.mission-card strong{font-size:5px}.mission-card span{font-size:6px;margin-top:3px}.mission-card small{display:none}.alert-track{height:3px;margin-top:4px}.corner{top:7px;height:28px;padding:0 8px;border-radius:8px;font-size:7px}#back{left:7px;width:28px;padding:0}.back-label{display:none}#sound{right:7px;width:28px}#prompt{bottom:3px;min-width:0;padding:5px 8px;font-size:6px}.panel{padding:21px 17px;border-radius:19px}.title{font-size:36px}.tagline{font-size:10px;margin:13px auto 16px}.briefing{gap:4px}.brief{padding:8px 4px}.brief b{font-size:12px}.actions{grid-template-columns:1fr}.primary{height:41px}.panel-foot{margin-top:11px}#callout{top:24%;font-size:7px;padding:6px 9px}}
   </style>
+  <script src="../arcade-storage.js"></script>
 </head>
 <body>
   <main id="game-shell">
@@ -67,7 +69,7 @@
     const keys={},pressed=new Set(),map=[],caches=[],guards=[],particles=[],noiseRings=[],decor=[];
     let state='menu',paused=false,last=performance.now(),elapsed=0,catches=0,contraband=0,hasKey=false,powerOff=false,audioOn=true,audioCtx=null,calloutTimer=0,shake=0,flash=0,nearAction=null;
     const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t,center=(x,y)=>({x:(x+.5)*TS,y:(y+.5)*TS}),angleDiff=(a,b)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
-    function readBest(){const n=Number(localStorage.getItem('prison_life_best')||0);return n>0?n:0}function saveBest(n){try{localStorage.setItem('prison_life_best',String(Number(n.toFixed(1))))}catch{}}
+    function readBest(){const n=Number(ArcadeStorage.getItem('prison_life_best')||0);return n>0?n:0}function saveBest(n){try{ArcadeStorage.setItem('prison_life_best',String(Number(n.toFixed(1))))}catch{}}
     function format(sec){if(!Number.isFinite(sec)||sec<=0)return'--:--';const m=Math.floor(sec/60),s=Math.floor(sec%60),d=Math.floor(sec*10)%10;return`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${d}`}
     function tone(freq,d=.05,type='sine',vol=.025){if(!audioOn)return;try{audioCtx??=new(window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(vol,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+d);o.connect(g).connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+d)}catch{}}
     function setPanel(panel){[ui.menu,ui.pause,ui.caught,ui.victory].forEach(x=>x.classList.toggle('active',x===panel))}

@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <link rel="icon" type="image/png" href="../assets/arcade-icon.png">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
   <title>Island Siege — Defend the Island</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -57,6 +58,7 @@
     @media(max-width:720px){
       .back{top:9px;right:9px;padding:7px 10px;font-size:10px}#hud{top:9px;left:9px;width:178px;padding:10px 11px;border-radius:12px}.brand{font-size:15px}.eyebrow{font-size:6px}.row{margin-top:8px}.label{font-size:6px}.value{font-size:13px}.hp-track{height:6px}#wave-card{top:112px;min-width:110px;padding:6px 11px}#wave{font-size:15px}#threats{font-size:6px}#combo{top:158px}.hint{display:none}#dock{bottom:9px;width:calc(100% - 18px);gap:5px;padding:5px}.upgrade,.salvo{min-width:0;flex:1;padding:8px 5px;text-align:center}.upgrade strong,.salvo strong{font-size:8px}.upgrade span,.salvo span{font-size:6px}.card{padding:24px 20px}.copy{font-size:10px}}
   </style>
+  <script src="../arcade-storage.js"></script>
 </head>
 <body>
   <canvas id="game" aria-label="Island Siege game area"></canvas>
@@ -115,7 +117,7 @@
     function useBarrage(){if(!state.active||state.paused||state.salvos<1)return;state.salvos--;state.flash=.45;rings.push({x:cx,y:cy,r:islandR*.55,max:Math.hypot(w,h),life:.9,color:'#63efff'});enemyShots.splice(0).forEach(p=>burst(p.x,p.y,'#63efff',7,4));[...enemies].forEach(e=>hitEnemy(e,5+state.cannonLv));state.shake=16;sync();}
     function upgradeCannon(){const c=costCannon();if(state.gold>=c&&state.cannonLv<7){state.gold-=c;state.cannonLv++;announce('CANNON UPGRADED',cx,cy-islandR*.55,'#63efff',14);sync();}}
     function upgradeWall(){const c=costWall();if(state.gold>=c&&state.wallLv<7){state.gold-=c;state.wallLv++;state.maxHp+=25;state.hp=Math.min(state.maxHp,state.hp+35);rings.push({x:cx,y:cy,r:islandR*.5,max:islandR*1.08,life:.65,color:'#55e896'});sync();}}
-    function gameOver(){state.active=false;state.over=true;state.firing=false;const best=Math.max(state.wave,Number(localStorage.getItem(bestKey())||0));localStorage.setItem(bestKey(),best);$('final-wave').textContent=state.wave;$('final-kills').textContent=state.kills;$('final-score').textContent=state.score.toLocaleString();$('over').classList.add('show');}
+    function gameOver(){state.active=false;state.over=true;state.firing=false;const best=Math.max(state.wave,Number(ArcadeStorage.getItem(bestKey())||0));ArcadeStorage.setItem(bestKey(),best);$('final-wave').textContent=state.wave;$('final-kills').textContent=state.kills;$('final-score').textContent=state.score.toLocaleString();$('over').classList.add('show');}
     function togglePause(force){if(!state.active)return;state.paused=force??!state.paused;$('pause').classList.toggle('show',state.paused);state.firing=false;}
     function burst(x,y,color,count=10,power=4){for(let i=0;i<count;i++){const a=Math.random()*Math.PI*2,s=Math.random()*power+1;particles.push({x,y,vx:Math.cos(a)*s*28,vy:Math.sin(a)*s*28,life:.35+Math.random()*.55,max:.9,r:1+Math.random()*2.8,color});}}
     function announce(text,x,y,color,size){floaters.push({text,x,y,color,size,life:1,max:1});}
@@ -137,8 +139,8 @@
     function pos(e){const r=canvas.getBoundingClientRect(),p=e.touches?.[0]||e;return{x:(p.clientX-r.left)*w/r.width,y:(p.clientY-r.top)*h/r.height}}
     canvas.addEventListener('pointermove',e=>{const p=pos(e);state.aimX=p.x;state.aimY=p.y});canvas.addEventListener('pointerdown',e=>{if(e.button!==0)return;const p=pos(e);state.aimX=p.x;state.aimY=p.y;state.firing=true;fire()});addEventListener('pointerup',()=>state.firing=false);canvas.addEventListener('pointerleave',()=>state.firing=false);
     addEventListener('keydown',e=>{if(['Space','KeyQ','KeyP'].includes(e.code))e.preventDefault();if(e.code==='Space'){state.firing=true;fire()}if(e.code==='KeyQ')useBarrage();if(e.code==='KeyP')togglePause()});addEventListener('keyup',e=>{if(e.code==='Space')state.firing=false});
-    document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;document.querySelectorAll('.mode').forEach(x=>x.classList.toggle('active',x===b));$('best-wave').textContent=localStorage.getItem(bestKey())||0});$('start-btn').onclick=startGame;$('retry').onclick=startGame;$('resume').onclick=()=>togglePause(false);ui.cannonUp.onclick=upgradeCannon;ui.wallUp.onclick=upgradeWall;ui.salvo.onclick=useBarrage;addEventListener('resize',resize);
-    resize();$('best-wave').textContent=localStorage.getItem(bestKey())||0;sync();
+    document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;document.querySelectorAll('.mode').forEach(x=>x.classList.toggle('active',x===b));$('best-wave').textContent=ArcadeStorage.getItem(bestKey())||0});$('start-btn').onclick=startGame;$('retry').onclick=startGame;$('resume').onclick=()=>togglePause(false);ui.cannonUp.onclick=upgradeCannon;ui.wallUp.onclick=upgradeWall;ui.salvo.onclick=useBarrage;addEventListener('resize',resize);
+    resize();$('best-wave').textContent=ArcadeStorage.getItem(bestKey())||0;sync();
     function frame(t){const dt=Math.min(.034,(t-last||16)/1000);last=t;update(dt);draw(t/1000);requestAnimationFrame(frame)}requestAnimationFrame(frame);
     Object.assign(window,{state,enemies,shots,enemyShots,startGame,useBarrage,upgradeCannon,upgradeWall,spawnEnemy,togglePause});
   })();

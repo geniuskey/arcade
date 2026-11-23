@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
+  <link rel="icon" type="image/png" href="../assets/arcade-icon.png">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
   <title>Rift Serpent — Cosmic Snake</title>
   <style>
@@ -13,6 +14,7 @@
     #ui{position:absolute;z-index:20;inset:0;display:grid;place-items:center;pointer-events:none}.panel{display:none;width:min(570px,calc(100% - 34px));padding:34px 36px;border:1px solid rgba(255,255,255,.14);border-radius:25px;background:linear-gradient(145deg,rgba(11,24,34,.96),rgba(9,7,25,.96));box-shadow:0 34px 100px rgba(0,0,0,.64),inset 0 1px rgba(255,255,255,.06);backdrop-filter:blur(18px);pointer-events:auto}.panel.active{display:block}.kicker{color:var(--lime);font:950 9px ui-monospace,monospace;letter-spacing:.15em}.panel h1,.panel h2{margin:9px 0 10px;font-size:44px;line-height:.95;letter-spacing:-.055em}.panel h1 span,.panel h2 span{-webkit-text-stroke:1px rgba(255,255,255,.55);color:transparent}.tagline{margin:0;color:#a5afbc;font-size:13px;line-height:1.65}.features{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:19px 0}.feature{padding:11px 9px;border:1px solid rgba(255,255,255,.1);border-radius:13px;background:rgba(255,255,255,.025)}.feature b{display:block;color:#fff;font:950 9px ui-monospace,monospace;letter-spacing:.06em}.feature span{display:block;margin-top:5px;color:#919bad;font-size:10px;line-height:1.35}.difficulty{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:4px;border:1px solid rgba(255,255,255,.09);border-radius:14px;background:rgba(0,0,0,.16)}.difficulty button{height:36px;cursor:pointer;border-radius:10px;color:#8b94a7;background:transparent;font:900 9px ui-monospace,monospace;letter-spacing:.08em}.difficulty button.active{color:#061713;background:linear-gradient(90deg,var(--mint),var(--cyan));box-shadow:0 6px 20px rgba(73,255,177,.18)}.primary{width:100%;height:52px;margin-top:12px;cursor:pointer;border-radius:14px;color:#061612;background:linear-gradient(90deg,var(--mint),var(--cyan));font:950 11px ui-monospace,monospace;letter-spacing:.1em;box-shadow:0 13px 32px rgba(73,255,177,.16)}.primary.alt{color:#dfe8ef;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.035);box-shadow:none}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.results{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:20px 0 2px}.result{padding:12px 7px;text-align:center;border:1px solid rgba(255,255,255,.09);border-radius:13px;background:rgba(255,255,255,.025)}.result span{display:block;color:#8d97aa;font:850 8px ui-monospace,monospace;letter-spacing:.08em}.result strong{display:block;margin-top:6px;font:950 20px ui-monospace,monospace}.new{color:var(--lime)}
     @media(max-width:700px){#shell{width:calc(100vw - 12px);border-radius:18px}.corner{top:7px;height:27px;border-radius:8px;font-size:7px}#back{left:7px;padding:0 8px}.back-label{display:none}#sound{right:7px;width:27px}#hud{inset:7px 40px auto;grid-template-columns:1fr 108px 1fr;gap:4px}.hud-card{min-height:34px;padding:5px 7px;border-radius:8px}.hud-card small{font-size:4.8px}.hud-card strong{font-size:10px}.rift-row b{font-size:5px}.charges{gap:2px}.charges i{width:13px;height:5px}.combo-track{height:2px;margin-top:4px}#callout{top:49px;min-width:96px;padding:4px 7px;font-size:5px}#hint{display:none}.panel{padding:18px 20px;border-radius:15px}.panel h1,.panel h2{font-size:25px}.tagline{font-size:8px}.features{margin:10px 0;gap:4px}.feature{padding:6px 5px}.feature b{font-size:5px}.feature span{font-size:5.5px}.difficulty button{height:24px;font-size:5px}.primary{height:31px;margin-top:7px;font-size:6px}.results{margin:10px 0}.result{padding:7px 3px}.result span{font-size:5px}.result strong{font-size:11px}}
   </style>
+  <script src="../arcade-storage.js"></script>
 </head>
 <body>
   <main id="shell">
@@ -31,18 +33,54 @@
     const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d'),W=1120,H=700,TAU=Math.PI*2,$=s=>document.querySelector(s),COLS=32,ROWS=18,CELL=31,BX=64,BY=108,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
     const ui={hud:$('#hud'),score:$('#score'),combo:$('#combo'),fill:$('#combo-fill'),charges:[...$('#charges').children],sector:$('#sector'),callout:$('#callout'),hint:$('#hint'),menu:$('#main-menu'),pause:$('#pause'),over:$('#game-over'),kicker:$('#result-kicker'),title:$('#result-title'),finalScore:$('#final-score'),finalCombo:$('#final-combo'),best:$('#best')};
     const CFG={calm:{tick:.155,rocks:0},rift:{tick:.115,rocks:5},hyper:{tick:.083,rocks:9}};let seed=901731;const rand=()=>((seed=(seed*1664525+1013904223)>>>0)/4294967296);const stars=Array.from({length:160},()=>({x:rand()*W,y:rand()*H,r:.4+rand()*1.8,a:rand()*TAU,c:rand()>.66?'#45ffc0':rand()>.55?'#aa70ff':'#fff'}));
-    let state='menu',paused=false,diff='rift',snake=[],prevSnake=[],dir={x:1,y:0},queued={x:1,y:0},food=null,rocks=[],portals=[],score=0,combo=0,maxCombo=0,comboTime=0,phaseCharges=2,phaseTicks=0,cores=0,wraps=0,grow=0,acc=0,last=performance.now(),shake=0,flash=0,particles=[],rings=[],calloutTimer=0,audioOn=true,audioCtx=null,best=Number(localStorage.getItem('snake_best')||0),newBest=false;
+    let state='menu',paused=false,diff='rift',snake=[],prevSnake=[],dir={x:1,y:0},queued={x:1,y:0},food=null,rocks=[],portals=[],score=0,combo=0,maxCombo=0,comboTime=0,phaseCharges=2,phaseTicks=0,cores=0,wraps=0,grow=0,acc=0,last=performance.now(),shake=0,flash=0,particles=[],rings=[],calloutTimer=0,audioOn=true,audioCtx=null,best=Number(ArcadeStorage.getItem('snake_best')||0),newBest=false;
     function tone(f,d=.05,type='sine',vol=.025){if(!audioOn)return;try{audioCtx??=new(window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(vol,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+d);o.connect(g).connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+d)}catch{}}
     const key=p=>`${p.x},${p.y}`,same=(a,b)=>a&&b&&a.x===b.x&&a.y===b.y;
     function setPanel(p){[ui.menu,ui.pause,ui.over].forEach(x=>x.classList.toggle('active',x===p))}
     function notify(text,color='#49ffb1'){ui.callout.textContent=text;ui.callout.style.color=color;ui.callout.classList.remove('show');void ui.callout.offsetWidth;ui.callout.classList.add('show');clearTimeout(calloutTimer);calloutTimer=setTimeout(()=>ui.callout.classList.remove('show'),700)}
     function burstCell(p,color,n=18,power=150){const x=BX+(p.x+.5)*CELL,y=BY+(p.y+.5)*CELL;for(let i=0;i<n;i++){const a=Math.random()*TAU,s=25+Math.random()*power;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.7+Math.random()*.45,r:1+Math.random()*3,color})}}
     function occupied(p,includeFood=false){return snake.some(s=>same(s,p))||rocks.some(r=>same(r,p))||portals.some(r=>same(r,p))||(includeFood&&same(food,p))}
-    function randomCell(){for(let n=0;n<500;n++){const p={x:1+Math.floor(rand()*(COLS-2)),y:1+Math.floor(rand()*(ROWS-2))};if(!occupied(p,true))return p}return{x:2,y:2}}
-    function spawnFood(forceCore=false){const p=randomCell(),roll=rand();food={...p,kind:forceCore?'core':cores>2&&roll>.83?'phase':cores>1&&roll>.6?'comet':'core',life:cores>1&&roll>.6&&roll<=.83?5.2:99,pulse:rand()*TAU}}
-    function addRock(){const p=randomCell();rocks.push({...p,spin:rand()*TAU})}
-    function spawnPortals(){portals=[];const a=randomCell();portals.push({...a,id:0,pulse:0});const b=randomCell();if(Math.hypot(a.x-b.x,a.y-b.y)<9){b.x=(b.x+15)%COLS;b.y=clamp(b.y+7,1,ROWS-2)}portals.push({...b,id:1,pulse:Math.PI})}
-    function resetWorld(){seed=(Date.now()^0x34af)>>>0;snake=[{x:11,y:9},{x:10,y:9},{x:9,y:9},{x:8,y:9}];prevSnake=snake.map(x=>({...x}));dir={x:1,y:0};queued={x:1,y:0};rocks=[];portals=[];score=0;combo=0;maxCombo=0;comboTime=0;phaseCharges=2;phaseTicks=0;cores=0;wraps=0;grow=0;acc=0;particles=[];rings=[];shake=0;flash=0;newBest=false;for(let i=0;i<CFG[diff].rocks;i++)addRock();spawnFood(true);updateHud()}
+    function randomCell(preference = () => true) {
+      const free = [], preferred = [];
+      for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+          const cell = { x, y };
+          if (occupied(cell, true)) continue;
+          free.push(cell);
+          if (x > 0 && x < COLS - 1 && y > 0 && y < ROWS - 1 && preference(cell)) {
+            preferred.push(cell);
+          }
+        }
+      }
+      const pool = preferred.length ? preferred : free;
+      return pool.length ? pool[Math.floor(rand() * pool.length)] : null;
+    }
+
+    function spawnFood(forceCore = false) {
+      food = null;
+      const cell = randomCell();
+      if (!cell) {
+        finish(true);
+        return;
+      }
+      const roll = rand();
+      const kind = forceCore ? 'core' : cores > 2 && roll > .83 ? 'phase' : cores > 1 && roll > .6 ? 'comet' : 'core';
+      food = { ...cell, kind, life: kind === 'comet' ? 5.2 : 99, pulse: rand() * TAU };
+    }
+
+    function addRock() {
+      const cell = randomCell();
+      if (cell) rocks.push({ ...cell, spin: rand() * TAU });
+    }
+
+    function spawnPortals() {
+      const a = randomCell();
+      if (!a) return;
+      portals = [{ ...a, id: 0, pulse: 0 }];
+      const b = randomCell(cell => Math.hypot(a.x - cell.x, a.y - cell.y) >= 9);
+      portals = b ? [...portals, { ...b, id: 1, pulse: Math.PI }] : [];
+    }
+    function resetWorld(){seed=(Date.now()^0x34af)>>>0;snake=[{x:11,y:9},{x:10,y:9},{x:9,y:9},{x:8,y:9}];prevSnake=snake.map(x=>({...x}));dir={x:1,y:0};queued={x:1,y:0};rocks=[];portals=[];score=0;combo=0;maxCombo=0;comboTime=0;phaseCharges=2;phaseTicks=0;cores=0;wraps=0;grow=0;acc=0;particles=[];rings=[];shake=0;flash=0;newBest=false;food=null;for(let i=0;i<CFG[diff].rocks;i++)addRock();spawnFood(true);updateHud()}
     function startGame(){resetWorld();state='playing';paused=false;setPanel(null);ui.hud.classList.remove('hidden');ui.hint.classList.remove('hidden');window.setSnakeMobile?.(true);last=performance.now();notify('RIFT GRID ONLINE');tone(520,.12,'triangle',.035)}
     function menu(){state='menu';paused=false;resetWorld();ui.hud.classList.add('hidden');ui.hint.classList.add('hidden');setPanel(ui.menu);window.setSnakeMobile?.(false)}
     function setDirection(x,y){if(state!=='playing'||paused)return;if(x===-dir.x&&y===-dir.y)return;queued={x,y}}
@@ -51,7 +89,7 @@
     function eat(){const base=food.kind==='comet'?25:food.kind==='phase'?15:10;combo++;maxCombo=Math.max(maxCombo,combo);comboTime=4.5;const mult=1+Math.floor((combo-1)/4);score+=base*mult;cores++;grow+=food.kind==='comet'?2:0;if(food.kind==='phase'){phaseCharges=Math.min(2,phaseCharges+1);notify('PHASE SHARD RECOVERED','#a976ff')}else if(food.kind==='comet')notify(`COMET CORE · ${base*mult} PT`,'#ff79c8');else if(combo%4===0)notify(`${combo} CRYSTAL CHAIN`);burstCell(food,food.kind==='phase'?'#a976ff':food.kind==='comet'?'#ff65b4':'#49ffb1',food.kind==='comet'?34:20,220);tone(460+combo*16,.07,'triangle',.035);if(cores===5)spawnPortals();if(cores>0&&cores%4===0)addObstacleWave();spawnFood();updateHud()}
     function crash(){if(phaseTicks>0){shake=8;flash=.45;notify('PHASE COLLISION','#a976ff');tone(210,.08,'square',.035);return false}finish();return true}
     function tick(){if(state!=='playing')return;prevSnake=snake.map(x=>({...x}));if(!(queued.x===-dir.x&&queued.y===-dir.y))dir={...queued};let head={x:snake[0].x+dir.x,y:snake[0].y+dir.y};let wrapped=false;if(head.x<0){head.x=COLS-1;wrapped=true}else if(head.x>=COLS){head.x=0;wrapped=true}if(head.y<0){head.y=ROWS-1;wrapped=true}else if(head.y>=ROWS){head.y=0;wrapped=true}if(wrapped){wraps++;combo=0;notify('EDGE RIFT · CHAIN RESET','#42eaff')}if(portals.length===2){const entry=portals.find(p=>same(p,head));if(entry){const exit=portals[1-entry.id];head={x:clamp(exit.x+dir.x,0,COLS-1),y:clamp(exit.y+dir.y,0,ROWS-1)};rings.push({x:BX+(exit.x+.5)*CELL,y:BY+(exit.y+.5)*CELL,r:8,life:1,color:'#a25dff'});notify('WORMHOLE TRANSIT','#a976ff');tone(115,.14,'sine',.045)}}const tailWillMove=grow<=0,selfHit=snake.some((s,i)=>i<(tailWillMove?snake.length-1:snake.length)&&same(s,head)),rockHit=rocks.some(r=>same(r,head));if((selfHit||rockHit)&&crash())return;snake.unshift(head);if(same(head,food)){eat()}else if(grow>0)grow--;else snake.pop();if(phaseTicks>0)phaseTicks--;updateHud()}
-    function finish(){if(state==='gameover')return;state='gameover';newBest=score>best;if(newBest){best=score;localStorage.setItem('snake_best',String(best))}ui.finalScore.textContent=score;ui.finalCombo.textContent=maxCombo;ui.best.textContent=best;ui.best.classList.toggle('new',newBest);ui.kicker.textContent=newBest?'NEW RIFT RECORD':'RIFT SIGNAL LOST';ui.title.innerHTML=newBest?'SERPENT <span>ASCENDED</span>':'SERPENT <span>SHATTERED</span>';ui.hint.classList.add('hidden');setPanel(ui.over);window.setSnakeMobile?.(false);tone(newBest?760:92,.28,newBest?'triangle':'sawtooth',.055)}
+    function finish(cleared=false){if(state==='gameover')return;state='gameover';newBest=score>best;if(newBest){best=score;ArcadeStorage.setItem('snake_best',String(best))}ui.finalScore.textContent=score;ui.finalCombo.textContent=maxCombo;ui.best.textContent=best;ui.best.classList.toggle('new',newBest);ui.kicker.textContent=cleared?'RIFT CLEARED':newBest?'NEW RIFT RECORD':'RIFT SIGNAL LOST';ui.title.innerHTML=cleared?'GRID <span>COMPLETE</span>':newBest?'SERPENT <span>ASCENDED</span>':'SERPENT <span>SHATTERED</span>';ui.hint.classList.add('hidden');setPanel(ui.over);window.setSnakeMobile?.(false);tone(cleared||newBest?760:92,.28,newBest?'triangle':'sawtooth',.055)}
     function togglePause(){if(paused){paused=false;state='playing';setPanel(null);window.setSnakeMobile?.(true);last=performance.now()}else if(state==='playing'){paused=true;state='paused';setPanel(ui.pause);window.setSnakeMobile?.(false)}}
     function updateHud(){ui.score.textContent=score;ui.combo.textContent=combo;ui.fill.style.width=`${clamp(comboTime/4.5,0,1)*100}%`;ui.charges.forEach((x,i)=>x.classList.toggle('empty',i>=phaseCharges));ui.sector.textContent=portals.length?'WORMHOLE OPEN':cores<4?'CALM RIFT':cores<10?'SHARD STORM':'DEEP RIFT'}
     function update(dt){if(state!=='playing')return;comboTime=Math.max(0,comboTime-dt);if(comboTime===0&&combo>0)combo=0;if(food&&food.life<90){food.life-=dt;if(food.life<=0){notify('COMET CORE COLLAPSED','#ff7197');spawnFood(true)}}acc+=dt;const step=CFG[diff].tick;while(acc>=step&&state==='playing'){acc-=step;tick()}for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=45*dt;p.vx*=Math.pow(.1,dt);p.life-=dt}for(const r of rings){r.r+=190*dt;r.life-=1.35*dt}particles=particles.filter(p=>p.life>0);rings=rings.filter(r=>r.life>0);shake*=Math.pow(.001,dt);flash*=Math.pow(.002,dt);updateHud()}

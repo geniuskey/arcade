@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" type="image/png" href="../assets/arcade-icon.png">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
   <title>Core Lock — Safe Zone Scramble</title>
   <style>
@@ -103,7 +104,7 @@
   </script>
   <script src="../mobile-arcade.js"></script>
   <script>
-  (()=>{if(!window.MobileArcade)return;const p1Pad=MobileArcade.dpad({up:'w',down:'s',left:'a',right:'d'},{side:'left',tag:'P1'}),p1Act=MobileArcade.actions([{label:'DASH',key:'space'}],{side:'left',bottom:'190px'}),p2Pad=MobileArcade.dpad({up:'up',down:'down',left:'left',right:'right'},{side:'right',tag:'P2'}),p2Act=MobileArcade.actions([{label:'DASH',key:'enter'}],{side:'right',bottom:'190px'}),tags=[...document.querySelectorAll('.ma-tag')];window.setSafeMobileControls=(mode,active)=>{p1Pad.style.display=active?'':'none';p1Act.style.display=active?'':'none';p2Pad.style.display=active&&mode===2?'':'none';p2Act.style.display=active&&mode===2?'':'none';if(tags[0])tags[0].style.display=active?'':'none';if(tags[1])tags[1].style.display=active&&mode===2?'':'none'};window.setSafeMobileControls(2,false)})();
+  (()=>{if(!window.MobileArcade)return;const p1Pad=MobileArcade.dpad({up:'w',down:'s',left:'a',right:'d'},{side:'left',tag:'P1'}),p1Act=MobileArcade.actions([{label:'DASH',key:'space'}],{side:'left',abovePad:true}),p2Pad=MobileArcade.dpad({up:'up',down:'down',left:'left',right:'right'},{side:'right',tag:'P2'}),p2Act=MobileArcade.actions([{label:'DASH',key:'enter'}],{side:'right',abovePad:true}),tags=[...document.querySelectorAll('.ma-tag')];window.setSafeMobileControls=(mode,active)=>{p1Pad.style.display=active?'':'none';p1Act.style.display=active?'':'none';p2Pad.style.display=active&&mode===2?'':'none';p2Act.style.display=active&&mode===2?'':'none';if(tags[0])tags[0].style.display=active?'':'none';if(tags[1])tags[1].style.display=active&&mode===2?'':'none'};window.setSafeMobileControls(2,false)})();
   </script>
 </body>
 </html>

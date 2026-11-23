@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="../assets/arcade-icon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Black Hole Eater - Arcade</title>
     <link
@@ -346,6 +347,7 @@
         #mobile-hint { padding: 7px 12px; border: 1px solid rgba(255,255,255,.09); border-radius: 10px; background: rgba(5,7,18,.68); }
         @media (max-width: 768px) { #top-bar { top: 6px; width: calc(100% - 80px); padding: 5px 8px; border-radius: 8px; } .stat-label { font-size: 5px; } .stat-value { font-size: 9px; } #leaderboard { top: 46px; left: 7px; padding: 7px; min-width: 95px; transform: scale(.72); transform-origin: top left; } .back-btn { top: 6px; left: 6px; padding: 7px 8px; font-size: 7px; } .screen { padding: 20px; gap: 10px; } h2 { font-size: 26px; } .screen p { font-size: 8px; } .diff-btn { padding: 7px 5px; font-size: 6px; } .btn { padding: 10px; font-size: 7px; } }
     </style>
+  <script src="../arcade-storage.js"></script>
 </head>
 
 <body>
@@ -500,7 +502,7 @@
         }
 
         function updateBestScoreDisplay() {
-            const best = localStorage.getItem(`eater_best_${currentDifficulty}`) || 0;
+            const best = ArcadeStorage.getItem(`eater_best_${currentDifficulty}`) || 0;
             bestScoreEl.innerText = best;
         }
 
@@ -596,9 +598,9 @@
             const finalMass = Math.floor(player.radius * player.radius);
             finalScoreEl.innerText = finalMass;
             const bestKey = `eater_best_${currentDifficulty}`;
-            const best = parseInt(localStorage.getItem(bestKey) || 0);
+            const best = parseInt(ArcadeStorage.getItem(bestKey) || 0);
             if (finalMass > best) {
-                localStorage.setItem(bestKey, finalMass);
+                ArcadeStorage.setItem(bestKey, finalMass);
                 bestScoreEl.innerText = finalMass;
             }
             document.getElementById('game-over-screen').classList.add('active');

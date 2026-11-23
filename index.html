@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="utf-8" />
+  <link rel="icon" type="image/png" href="assets/arcade-icon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#07080f" />
   <title>ARCADE — Play the Universe</title>
@@ -442,6 +443,11 @@
 
     .empty { display: none; padding: 60px 20px; color: var(--muted); border: 1px dashed var(--line); border-radius: 18px; text-align: center; }
     .empty.visible { display: block; }
+    .empty p { margin: 0 0 16px; }
+    .empty .ghost { min-height: 40px; }
+    [data-random]:disabled { opacity: .48; cursor: default; }
+    #catalog { scroll-margin-top: 85px; }
+    :focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
 
     footer { margin-top: 64px; padding-top: 20px; display: flex; justify-content: space-between; gap: 20px; color: #6e7181; border-top: 1px solid var(--line); font: 500 9px DM Mono, monospace; text-transform: uppercase; letter-spacing: .08em; }
     footer a { color: inherit; }
@@ -497,6 +503,7 @@
       .game-card, .primary, .ghost, .spacecraft { transition: none; }
     }
   </style>
+  <script src="arcade-storage.js"></script>
 </head>
 
 <body>
@@ -558,7 +565,7 @@
     <section id="catalog" aria-labelledby="catalog-title">
       <div class="section-head">
         <div><p class="section-kicker">Choose your next obsession</p><h2 id="catalog-title">Game library</h2></div>
-        <span id="catalog-count" class="catalog-count">22 games</span>
+        <span id="catalog-count" class="catalog-count" role="status">22 games</span>
       </div>
 
       <div class="tools">
@@ -578,8 +585,8 @@
         <article class="game-card" data-id="mine-escape" data-name="Mine Escape" data-tags="action arcade escape solo" style="--c1:#d69a3a;--c2:#6ee7b7">
           <button class="favorite" type="button" aria-label="Favorite Mine Escape">☆</button><a class="card-link track-launch" data-id="mine-escape" href="mine-escape/"><div class="cover"><span class="orbit-dot one"></span><span class="orbit-dot two"></span><span class="game-glyph">⛏</span></div><div class="card-body"><div class="card-meta">Action · 1 player</div><h3>Mine Escape</h3><p>Collect five minerals, dodge mine traps, and unlock the way out.</p><div class="card-foot"><span>Escape all ten</span><span class="play-arrow">→</span></div></div></a>
         </article>
-        <article class="game-card" data-id="othello" data-name="Cosmic Othello" data-tags="strategy board solo" style="--c1:#865cff;--c2:#d9c4ff">
-          <button class="favorite" type="button" aria-label="Favorite Cosmic Othello">☆</button><a class="card-link track-launch" data-id="othello" href="othello/"><div class="cover"><span class="orbit-dot one"></span><span class="orbit-dot two"></span><span class="game-glyph">◐</span></div><div class="card-body"><div class="card-meta">Strategy · 1 player</div><h3>Cosmic Othello</h3><p>Outflank the rival fleet and flip the board in a neon duel.</p><div class="card-foot"><span>Think ahead</span><span class="play-arrow">→</span></div></div></a>
+        <article class="game-card" data-id="othello" data-name="Cosmic Othello" data-tags="strategy board solo multiplayer" style="--c1:#865cff;--c2:#d9c4ff">
+          <button class="favorite" type="button" aria-label="Favorite Cosmic Othello">☆</button><a class="card-link track-launch" data-id="othello" href="othello/"><div class="cover"><span class="orbit-dot one"></span><span class="orbit-dot two"></span><span class="game-glyph">◐</span></div><div class="card-body"><div class="card-meta">Strategy · 1–2 players</div><h3>Cosmic Othello</h3><p>Outflank the rival fleet and flip the board in a neon duel.</p><div class="card-foot"><span>Think ahead</span><span class="play-arrow">→</span></div></div></a>
         </article>
         <article class="game-card" data-id="city-race" data-name="City Race" data-tags="racing action solo driving" style="--c1:#ff4d6d;--c2:#ffca3a">
           <button class="favorite" type="button" aria-label="Favorite City Race">☆</button><a class="card-link track-launch" data-id="city-race" href="city-race/"><div class="cover"><span class="orbit-dot one"></span><span class="orbit-dot two"></span><span class="game-glyph">»</span></div><div class="card-body"><div class="card-meta">Racing · Upgrades</div><h3>City Race</h3><p>Weave through neon traffic, collect coins, customize your ride.</p><div class="card-foot"><span>Night drive</span><span class="play-arrow">→</span></div></div></a>
@@ -608,8 +615,8 @@
         <article class="game-card" data-id="stairs" data-name="Infinite Stairs" data-tags="action arcade reflex solo" style="--c1:#ff3d81;--c2:#ffc24d">
           <button class="favorite" type="button" aria-label="Favorite Infinite Stairs">☆</button><a class="card-link track-launch" data-id="stairs" href="stairs/"><div class="cover"><span class="orbit-dot one"></span><span class="orbit-dot two"></span><span class="game-glyph">⌁</span></div><div class="card-body"><div class="card-meta">Reflex · Endless</div><h3>Infinite Stairs</h3><p>Read the turn, switch direction, and never stop climbing.</p><div class="card-foot"><span>Find rhythm</span><span class="play-arrow">→</span></div></div></a>
         </article>
-        <article class="game-card" data-id="offload" data-name="Offroad Racing" data-tags="racing action driving solo" style="--c1:#b46a2b;--c2:#ffcf5a">
-          <button class="favorite" type="button" aria-label="Favorite Offroad Racing">☆</button><a class="card-link track-launch" data-id="offload" href="offload/"><div class="cover"><span class="orbit-dot one"></span><span class="orbit-dot two"></span><span class="game-glyph">⌁</span></div><div class="card-body"><div class="card-meta">Racing · Offroad</div><h3>Offroad Racing</h3><p>Kick up alien dust and throw the rover through every bend.</p><div class="card-foot"><span>Drive sideways</span><span class="play-arrow">→</span></div></div></a>
+        <article class="game-card" data-id="offload" data-name="Offroad Racing" data-tags="racing action driving solo multiplayer" style="--c1:#b46a2b;--c2:#ffcf5a">
+          <button class="favorite" type="button" aria-label="Favorite Offroad Racing">☆</button><a class="card-link track-launch" data-id="offload" href="offload/"><div class="cover"><span class="orbit-dot one"></span><span class="orbit-dot two"></span><span class="game-glyph">⌁</span></div><div class="card-body"><div class="card-meta">Racing · 1–2 players</div><h3>Offroad Racing</h3><p>Kick up alien dust and throw the rover through every bend.</p><div class="card-foot"><span>Drive sideways</span><span class="play-arrow">→</span></div></div></a>
         </article>
         <article class="game-card" data-id="rio-horror-school" data-name="Rio Horror School" data-tags="horror action adventure solo" style="--c1:#9f1239;--c2:#ff5353">
           <button class="favorite" type="button" aria-label="Favorite Rio Horror School">☆</button><a class="card-link track-launch" data-id="rio-horror-school" href="rio-horror-school/"><div class="cover"><span class="orbit-dot one"></span><span class="orbit-dot two"></span><span class="game-glyph">眼</span></div><div class="card-body"><div class="card-meta">Horror · Adventure</div><h3>Rio Horror School</h3><p>Search the abandoned halls. Stay quiet. Find a way out.</p><div class="card-foot"><span>Lights off</span><span class="play-arrow">→</span></div></div></a>
@@ -642,7 +649,10 @@
           <button class="favorite" type="button" aria-label="Favorite Glow Hockey">☆</button><a class="card-link track-launch" data-id="glow-hockey" href="glow-hockey/"><div class="cover"><span class="orbit-dot one"></span><span class="orbit-dot two"></span><span class="game-glyph">⊙</span></div><div class="card-body"><div class="card-meta">Sports · 1–2 players</div><h3>Glow Hockey</h3><p>Bank impossible angles against the AI or a friend.</p><div class="card-foot"><span>First to seven</span><span class="play-arrow">→</span></div></div></a>
         </article>
       </div>
-      <div id="empty" class="empty">No worlds found. Try another signal.</div>
+      <div id="empty" class="empty">
+        <p id="empty-message"></p>
+        <button id="clear-filters" class="ghost" type="button">Show all games</button>
+      </div>
     </section>
 
     <footer><span>Arcade · Portal 3.0</span><span>Built for keyboard, touch & friends · by <a href="https://euiyun.com">Euiyun Lab</a></span></footer>
@@ -655,17 +665,33 @@
       const search = document.getElementById('search');
       const count = document.getElementById('catalog-count');
       const empty = document.getElementById('empty');
+      const emptyMessage = document.getElementById('empty-message');
+      const filters = [...document.querySelectorAll('.filter')];
+      const randomButtons = [...document.querySelectorAll('[data-random]')];
+      const cardsById = new Map(cards.map(card => [card.dataset.id, card]));
       const favoriteKey = 'arcade_favorites_v1';
       const recentKey = 'arcade_recent_v1';
       let activeFilter = 'all';
-      let favorites = new Set(read(favoriteKey, []));
+      let favorites = new Set(readGameIds(favoriteKey));
+      let visibleCards = cards;
 
-      function read(key, fallback) {
-        try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
+      function readList(key) {
+        try {
+          const value = JSON.parse(ArcadeStorage.getItem(key));
+          return Array.isArray(value) ? value : [];
+        } catch { return []; }
+      }
+
+      function readGameIds(key) {
+        return readList(key).filter(id => cardsById.has(id));
+      }
+
+      function readRecent() {
+        return readList(recentKey).filter(item => cardsById.has(item?.id) && Number.isFinite(item.at));
       }
 
       function save(key, value) {
-        try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* storage can be unavailable */ }
+        try { ArcadeStorage.setItem(key, JSON.stringify(value)); } catch { /* storage can be unavailable */ }
       }
 
       function todayKey() {
@@ -675,10 +701,9 @@
       }
 
       function gameData(id) {
-        const card = cards.find(item => item.dataset.id === id);
-        if (!card) return null;
+        const card = cardsById.get(id);
         const link = card.querySelector('.card-link');
-        return { id, name: card.dataset.name, href: link.getAttribute('href'), color: getComputedStyle(card).getPropertyValue('--c2').trim(), glyph: card.querySelector('.game-glyph').textContent, thumb: `assets/thumbnails/${id}.webp` };
+        return { id, name: card.dataset.name, href: link.getAttribute('href'), thumb: `assets/thumbnails/${id}.webp` };
       }
 
       function refreshFavorites() {
@@ -693,25 +718,46 @@
 
       function applyFilters() {
         const term = search.value.trim().toLowerCase();
-        let visible = 0;
+        const focused = document.activeElement;
 
         const orderedCards = activeFilter === 'all'
-          ? [...cards].sort((a, b) => {
-              const favoriteOrder = Number(favorites.has(b.dataset.id)) - Number(favorites.has(a.dataset.id));
-              return favoriteOrder || cards.indexOf(a) - cards.indexOf(b);
-            })
+          ? [...cards].sort((a, b) => Number(favorites.has(b.dataset.id)) - Number(favorites.has(a.dataset.id)))
           : cards;
-        orderedCards.forEach(card => grid.appendChild(card));
-
-        cards.forEach(card => {
-          const haystack = `${card.dataset.name} ${card.dataset.tags}`.toLowerCase();
-          const filterMatch = activeFilter === 'all' || (activeFilter === 'favorite' ? favorites.has(card.dataset.id) : card.dataset.tags.includes(activeFilter));
-          const show = filterMatch && (!term || haystack.includes(term));
-          card.classList.toggle('hidden', !show);
-          if (show) visible++;
+        orderedCards.forEach((card, index) => {
+          if (grid.children[index] !== card) grid.insertBefore(card, grid.children[index]);
         });
-        count.textContent = `${visible} game${visible === 1 ? '' : 's'}`;
-        empty.classList.toggle('visible', visible === 0);
+
+        visibleCards = orderedCards.filter(card => {
+          const haystack = `${card.dataset.name} ${card.dataset.tags}`.toLowerCase();
+          const filterMatch = activeFilter === 'all' || (activeFilter === 'favorite' ? favorites.has(card.dataset.id) : card.dataset.tags.split(' ').includes(activeFilter));
+          const show = filterMatch && term.split(/\s+/).every(word => haystack.includes(word));
+          card.classList.toggle('hidden', !show);
+          return show;
+        });
+        count.textContent = `${visibleCards.length} game${visibleCards.length === 1 ? '' : 's'}`;
+        empty.classList.toggle('visible', visibleCards.length === 0);
+        emptyMessage.textContent = activeFilter === 'favorite' && favorites.size === 0
+          ? 'Tap the star on a game to save it here.'
+          : 'No games match your search and filters.';
+        randomButtons.forEach(button => { button.disabled = visibleCards.length === 0; });
+
+        const focusedCard = focused?.closest('.game-card');
+        if (focusedCard) {
+          const nextFocus = visibleCards.includes(focusedCard)
+            ? focused
+            : visibleCards[0]?.querySelector('.favorite') || document.getElementById('clear-filters');
+          if (document.activeElement !== nextFocus) nextFocus.focus({ preventScroll: true });
+        }
+      }
+
+      function setFilter(filter) {
+        activeFilter = filter;
+        filters.forEach(button => {
+          const selected = button.dataset.filter === filter;
+          button.classList.toggle('active', selected);
+          button.setAttribute('aria-pressed', String(selected));
+        });
+        applyFilters();
       }
 
       cards.forEach(card => {
@@ -725,37 +771,44 @@
         });
       });
 
-      document.querySelectorAll('.filter').forEach(button => button.addEventListener('click', () => {
-        document.querySelectorAll('.filter').forEach(item => item.classList.remove('active'));
-        button.classList.add('active');
-        activeFilter = button.dataset.filter;
-        applyFilters();
-      }));
+      filters.forEach(button => button.addEventListener('click', () => setFilter(button.dataset.filter)));
       search.addEventListener('input', applyFilters);
+      document.getElementById('clear-filters').addEventListener('click', () => {
+        search.value = '';
+        setFilter('all');
+        search.focus();
+      });
 
       function trackLaunch(id) {
-        const game = gameData(id);
-        if (!game) return;
-        const recent = read(recentKey, []).filter(item => item.id !== id);
+        const recent = readRecent().filter(item => item.id !== id);
         recent.unshift({ id, at: Date.now() });
         save(recentKey, recent.slice(0, 6));
 
-        const day = todayKey();
-        const questKey = `arcade_quest_${day}`;
-        const visited = new Set(read(questKey, []));
+        const questKey = `arcade_quest_${todayKey()}`;
+        const visited = new Set(readGameIds(questKey));
         visited.add(id);
         save(questKey, [...visited]);
+        renderQuest();
       }
 
-      document.querySelectorAll('.track-launch').forEach(link => link.addEventListener('click', () => trackLaunch(link.dataset.id)));
+      function trackGameLink(event) {
+        const link = event.target.closest('.track-launch, .track-recent');
+        if (!link) return;
+        trackLaunch(link.dataset.id);
+        if (event.type === 'auxclick' || event.ctrlKey || event.metaKey || event.shiftKey) renderRecent();
+      }
+      document.addEventListener('click', trackGameLink);
+      document.addEventListener('auxclick', event => {
+        if (event.button === 1) trackGameLink(event);
+      });
 
       function randomLaunch() {
-        const pool = cards.filter(card => !card.classList.contains('hidden'));
-        const choice = pool[Math.floor(Math.random() * pool.length)] || cards[Math.floor(Math.random() * cards.length)];
+        if (!visibleCards.length) return;
+        const choice = visibleCards[Math.floor(Math.random() * visibleCards.length)];
         trackLaunch(choice.dataset.id);
         window.location.href = choice.querySelector('.card-link').href;
       }
-      document.querySelectorAll('[data-random]').forEach(button => button.addEventListener('click', randomLaunch));
+      randomButtons.forEach(button => button.addEventListener('click', randomLaunch));
 
       function relativeTime(timestamp) {
         const minutes = Math.floor((Date.now() - timestamp) / 60000);
@@ -767,16 +820,14 @@
       }
 
       function renderRecent() {
-        const recent = read(recentKey, []).map(item => ({ ...item, game: gameData(item.id) })).filter(item => item.game).slice(0, 3);
-        if (!recent.length) return;
-        document.getElementById('recent').classList.add('visible');
+        const recent = readRecent().slice(0, 3).map(item => ({ ...item, game: gameData(item.id) }));
+        document.getElementById('recent').classList.toggle('visible', recent.length > 0);
         document.getElementById('recent-list').innerHTML = recent.map(({ at, game }) => `<a class="recent-item track-recent" data-id="${game.id}" href="${game.href}"><img class="recent-thumb" src="${game.thumb}" alt=""><span><span class="recent-name">${game.name}</span><span class="recent-time">${relativeTime(at)}</span></span><span class="play-arrow" style="margin-left:auto">→</span></a>`).join('');
-        document.querySelectorAll('.track-recent').forEach(link => link.addEventListener('click', () => trackLaunch(link.dataset.id)));
       }
 
       function renderQuest() {
         const day = todayKey();
-        const total = Math.min(3, new Set(read(`arcade_quest_${day}`, [])).size);
+        const total = Math.min(3, new Set(readGameIds(`arcade_quest_${day}`)).size);
         document.getElementById('quest-count').textContent = `${total} / 3`;
         document.getElementById('quest-fill').style.width = `${total / 3 * 100}%`;
       }
@@ -784,7 +835,9 @@
       function spaceBackdrop() {
         const canvas = document.getElementById('space');
         const ctx = canvas.getContext('2d');
-        const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (!ctx) return;
+        const motion = matchMedia('(prefers-reduced-motion: reduce)');
+        let frame = 0;
         let w, h, stars, pointerX = .5, pointerY = .5;
 
         function resize() {
@@ -794,30 +847,49 @@
           canvas.style.width = `${w}px`; canvas.style.height = `${h}px`;
           ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
           stars = Array.from({ length: Math.min(150, Math.floor(w * h / 8500)) }, () => ({ x: Math.random() * w, y: Math.random() * h, r: Math.random() * 1.25 + .2, a: Math.random() * .55 + .12, z: Math.random() * .75 + .25 }));
+          if (motion.matches) draw();
         }
 
         function draw(time = 0) {
           ctx.clearRect(0, 0, w, h);
           for (const star of stars) {
             const x = (star.x + (pointerX - .5) * 14 * star.z + w) % w;
-            const y = (star.y + (pointerY - .5) * 10 * star.z + (reduceMotion ? 0 : time * .002 * star.z)) % h;
+            const y = (star.y + (pointerY - .5) * 10 * star.z + time * .002 * star.z + h) % h;
             ctx.globalAlpha = star.a * (.82 + Math.sin(time * .0015 + star.x) * .18);
             ctx.fillStyle = star.z > .72 ? '#d7ff4f' : '#d9ddff';
             ctx.beginPath(); ctx.arc(x, y, star.r, 0, Math.PI * 2); ctx.fill();
           }
           ctx.globalAlpha = 1;
-          if (!reduceMotion) requestAnimationFrame(draw);
+          if (!motion.matches) frame = requestAnimationFrame(draw);
         }
 
         addEventListener('resize', resize, { passive: true });
-        addEventListener('pointermove', event => { pointerX = event.clientX / w; pointerY = event.clientY / h; }, { passive: true });
-        resize(); draw();
+        addEventListener('pointermove', event => {
+          if (motion.matches) return;
+          pointerX = event.clientX / w;
+          pointerY = event.clientY / h;
+        }, { passive: true });
+        motion.addEventListener('change', () => {
+          cancelAnimationFrame(frame);
+          pointerX = pointerY = .5;
+          draw();
+        });
+        resize();
+        if (!motion.matches) draw();
       }
 
       refreshFavorites();
-      applyFilters();
+      setFilter('all');
       renderRecent();
       renderQuest();
+      addEventListener('pageshow', event => {
+        if (!event.persisted) return;
+        favorites = new Set(readGameIds(favoriteKey));
+        refreshFavorites();
+        applyFilters();
+        renderRecent();
+        renderQuest();
+      });
       spaceBackdrop();
     })();
   </script>
